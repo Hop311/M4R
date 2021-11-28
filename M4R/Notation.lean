@@ -49,4 +49,13 @@ namespace M4R
     inv : α → α
   postfix:max " ⁻¹ " => Inv.inv
 
+  class Zero (α : Type _) where
+    zero : α
+  class One (α : Type _) where
+    one : α
+  instance [Zero α] : OfNat α (nat_lit 0) where
+    ofNat := Zero.zero
+  instance [One α] : OfNat α (nat_lit 1) where
+    ofNat := One.one
+
 end M4R
