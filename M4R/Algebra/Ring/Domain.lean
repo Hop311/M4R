@@ -4,7 +4,8 @@ namespace M4R
   namespace Ring
   
     class IntegralDomain (α : Type _) extends Ring α where
-    integral : ∀ a b : α, a ≠ 0 → b ≠ 0 → a * b ≠ 0
+      one_neq_zero : (1 : α) ≠ 0
+      integral : ∀ a b : α, a ≠ 0 → b ≠ 0 → a * b ≠ 0
 
     class PrincipalIdealDomain (α : Type _) extends IntegralDomain α where
       pid : ∀ I : Ideal α, Ideal.is_principal I
@@ -14,7 +15,6 @@ namespace M4R
       div_remainder (a b : α) : b ≠ 0 → ∃ q r, a = q * b + r ∧ (r = 0 ∨ norm r < norm b)
 
     class Field (α : Type _) extends Ring α where
-      one_neq_zero : (1 : α) ≠ 0
       inverses     : ∀ a : α, a = 0 ∨ isUnit a
       
   end Ring

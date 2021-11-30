@@ -38,15 +38,6 @@ namespace M4R
 
     protected def equivalent (s₁ s₂ : Set α) : Prop := ∀ a, a ∈ s₁ ↔ a ∈ s₂
 
-    protected def subseteq (s₁ s₂ : Set α) : Prop := ∀ a : α, a ∈ s₁ → a ∈ s₂
-    instance SetSubset: Subset (Set α) where subset := Set.subseteq
-
-    protected def subsetneq (s₁ s₂ : Set α) : Prop := (Set.subseteq s₁ s₂) ∧ ∃ a : α, a ∉ s₁ ∧ a ∈ s₂
-    instance SetProperSubset : ProperSubset (Set α) where propersubset := Set.subsetneq
-
-    protected def notsubset (s₁ s₂ : Set α) : Prop := ¬ Set.subseteq s₁ s₂
-    instance SetNotSubset : NotSubset (Set α) where notsubset := Set.notsubset
-
     protected def Empty : Set α := fun _ => False
     protected def Universal : Set α := fun _ => True
 

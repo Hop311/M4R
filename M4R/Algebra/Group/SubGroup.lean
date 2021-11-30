@@ -13,8 +13,9 @@ namespace M4R
       neg_closed := by intros; trivial
 
     protected def image [Group α] (s : SubGroup α) (a : α) (p : a ∈ s.subset) : ↑s.subset := ⟨a, p⟩
-    protected theorem image_eq [Group α] (s : SubGroup α) (a b : ↑s.subset) : a = b ↔ Set.inclusion a = b.val :=
-      ⟨congrArg Set.inclusion, Set.ext a b⟩
+    protected theorem image_eq [Group α] (s : SubGroup α) (a b : ↑s.subset) :
+      a = b ↔ Set.inclusion a = Set.inclusion b :=
+        ⟨congrArg Set.inclusion, Set.ext a b⟩
     
     instance SubGroupGroup [Group α] (s : SubGroup α) : Group ↑s.subset where
       zero := ⟨0, s.has_zero⟩

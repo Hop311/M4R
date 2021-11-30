@@ -5,6 +5,19 @@ namespace M4R
   infixl:55 " ∈ " => Mem.mem
   notation:55 x:55 " ∉ " s:56 => ¬ (x ∈ s)
 
+  declare_syntax_cat binderterm -- notation for `a` or `a : A` or `a ∈ S`
+  syntax ident : binderterm
+  syntax ident " ∈ " term : binderterm
+
+  syntax "∀ " binderterm ", " term : term
+  syntax "∃ " binderterm ", " term : term
+
+  macro_rules
+  -- ∀ x ∈ s, p := ∀ x, x ∈ s → p
+  | `(∀ $x:ident ∈ $s, $p) => `(∀ $x:ident, $x ∈ $s → $p)
+  -- ∃ x ∈ s, p := ∃ x, x ∈ s ∧ p
+  | `(∃ $x:ident ∈ $s, $p) => `(∃ $x:ident, $x ∈ $s ∧ $p)
+
   class Subset (α : Type u) where
     subset : α → α → Prop
   infix:50 " ⊆ " => Subset.subset
@@ -16,6 +29,25 @@ namespace M4R
   class NotSubset (α : Type u) where
      notsubset : α → α → Prop
   infix:50 " ⊈ " => NotSubset.notsubset
+
+  namespace Subset
+    instance MemSubset [Mem α γ] : Subset γ where
+      subset (a b : γ) := ∀ ⦃x : α⦄, x ∈ a → x ∈ b
+    instance MemProperSubset [Mem α γ] : ProperSubset γ where
+      propersubset (a b : γ) := (a ⊆ b) ∧ ∃ x : α, x ∉ a ∧ x ∈ b
+    instance MemNotSubset [Mem α γ] : NotSubset γ where
+      notsubset (a b : γ) := ¬(a ⊆ b)
+  
+    @[simp] theorem ext [Mem α γ] (a b : γ) : a ⊆ b ∧ b ⊆ a ↔ ∀ x : α, x ∈ a ↔ x ∈ b :=
+      Iff.intro (fun ⟨ab, ba⟩ x => ⟨@ab x, @ba x⟩) (fun h => And.intro
+        (fun x => (h x).mp) (fun x => (h x).mpr))
+  
+    @[simp] theorem toSuperset [Mem α γ] (a b : γ) (x : α) : x ∈ a ∧ a ⊆ b → x ∈ b := by
+      intro ⟨xa, ab⟩; exact @ab x xa
+  
+    @[simp] theorem toProperSubset [Mem α γ] (a b : γ) : a ⊊ b → a ⊆ b := fun x => x.left
+  
+  end Subset
 
   class Union (α : Type u) where
     union : α → α → α
@@ -34,16 +66,16 @@ namespace M4R
   postfix:max " ᶜ " => Complement.complement
 
   /- Notation for sets -/
-    syntax "{ " ident " | " term " }" : term
-    syntax "{ " ident ":" term " | " term " }" : term
-    syntax "{ " ident "∈" term " | " term " }" : term
-    macro_rules
-    -- {a : A | p a}
-    | `({ $x:ident : $t | $p }) => `(fun ($x:ident : $t) => $p)
-    -- {a | p a}
-    | `({ $x:ident | $p }) => `(fun ($x:ident) => $p)
-    -- {a ∈ s | p a} := {a | a ∈ s ∧ p a}
-    | `({ $x:ident ∈ $s | $p }) => `(fun $x => $x ∈ $s ∧ $p)
+  syntax "{ " ident " | " term " }" : term
+  syntax "{ " ident ":" term " | " term " }" : term
+  syntax "{ " ident "∈" term " | " term " }" : term
+  macro_rules
+  -- {a : A | p a}
+  | `({ $x:ident : $t | $p }) => `(fun ($x:ident : $t) => $p)
+  -- {a | p a}
+  | `({ $x:ident | $p }) => `(fun ($x:ident) => $p)
+  -- {a ∈ s | p a} := {a | a ∈ s ∧ p a}
+  | `({ $x:ident ∈ $s | $p }) => `(fun $x => $x ∈ $s ∧ $p)
 
   class Inv (α : Type u) where
     inv : α → α
