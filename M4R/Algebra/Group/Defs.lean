@@ -15,18 +15,7 @@ namespace M4R
       has_zero   : 0 ∈ subset
       add_closed : ∀ a b, a ∈ subset → b ∈ subset → a + b ∈ subset
       neg_closed : ∀ a, a ∈ subset → -a ∈ subset
-
-  structure GHomomorphism (α : Type _) (β : Type _) [Group α] [Group β] where
-    hom           : α → β
-    preserve_zero : hom 0 = 0
-    preserve_add  : ∀ a b, hom (a + b) = hom a + hom b
-    preserve_neg  : ∀ a, hom (-a) = -hom a
-
-  structure GIsomorphism (α : Type _) (β : Type _) [Group α] [Group β] extends GHomomorphism α β where
-    bij : Function.bijective hom
-
-  def GHomomorphism.kernel [Group α] [Group β] (gh : GHomomorphism α β) : Set α := Function.fibre gh.hom 0
-
+  
   namespace Group
 
     protected def sub [Group α] (a b : α) : α := a + (-b)
@@ -41,8 +30,20 @@ namespace M4R
     protected def mul_int [Group α] (n : Int) (a : α) : α :=
       match n with
       | Int.ofNat m   => m * a
-      | Int.negSucc m => (Nat.succ m) * (-a)
+      | Int.negSucc m => -(Nat.succ m * a)
     instance GroupHMulInt [Group α] : HMul Int α α where hMul := Group.mul_int
+
+/-
+  ### Instances
+-/
+    instance GroupInhabited [Group α] : Inhabited α where default := 0
+    instance TrivialGroup [Singleton α] : Group α where
+      zero := Inhabited.default
+      add := fun _ _ => Inhabited.default
+      neg := fun _ => Inhabited.default
+      add_zero := by intro a; rw [Singleton.single a]; rfl
+      add_assoc := by intro a b c; rw [Singleton.single a, Singleton.single b, Singleton.single c]; rfl
+      add_neg := by intro a; rfl
 
   end Group
 end M4R

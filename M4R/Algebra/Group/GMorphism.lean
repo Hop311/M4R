@@ -1,16 +1,36 @@
 import M4R.Algebra.Group.SubGroup
 
 namespace M4R
+
+  structure GHomomorphism (α : Type _) (β : Type _) [Group α] [Group β] where
+    hom           : α → β
+    preserve_zero : hom 0 = 0
+    preserve_add  : ∀ a b, hom (a + b) = hom a + hom b
+    preserve_neg  : ∀ a, hom (-a) = -hom a
+
+  structure GIsomorphism (α : Type _) (β : Type _) [Group α] [Group β] extends GHomomorphism α β where
+    bij : Function.bijective hom
+
+  def GHomomorphism.kernel [Group α] [gb : Group β] (gh : GHomomorphism α β) : SubGroup α where
+    subset := Function.fibre gh.hom 0
+    has_zero := gh.preserve_zero
+    add_closed := by
+      intro _ _ x0 y0; simp [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_add, x0, y0, gb.add_zero]
+    neg_closed := by
+      intro x x0; simp [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_neg, x0, gb.neg_zero]
+
   namespace GHomomorphism
 
-    theorem hom_inj [ga : Group α] [Group β] (gh : GHomomorphism α β) :
-      Function.injective gh.hom ↔ kernel gh = {x | x = 0} := by
+    theorem hom_inj [ga : Group α] [gb : Group β] (gh : GHomomorphism α β) :
+      Function.injective gh.hom ↔ kernel gh = SubGroup.Trivial α := by
         simp [kernel, Function.fibre];
         apply Iff.intro;
-          { intro inj; apply funext; intro x; have h := @inj x 0; rw [←gh.preserve_zero];
-          apply propext (Iff.intro h (by intro xz; rw [xz])) };
-          { intro hzero x y ghxy; rw [←ga.add_right_cancel _ _ (-y), ga.add_neg, ←congrFun hzero (x + -y),
-            gh.preserve_add, ghxy, ←gh.preserve_add, ga.add_neg, gh.preserve_zero] }
+          { intro inj; apply (SubGroup.trivialExt (kernel gh)).mpr;
+             intro x; have h := @inj x 0; rw [gh.preserve_zero] at h; exact fun x => h x }
+          { intro kertriv x y ghxy; rw [←ga.add_right_cancel _ _ (-y), ga.add_neg];
+            rw [←gb.add_right_cancel _ _ (gh.hom (-y)), gh.preserve_neg, gb.add_neg,
+              ←gh.preserve_neg, ←gh.preserve_add] at ghxy;
+            exact (SubGroup.trivialExt (kernel gh)).mp kertriv (x + -y) ghxy }
 
     protected theorem comp [Group α] [Group β] [Group γ] (hbc : GHomomorphism β γ)
       (hab : GHomomorphism α β) : GHomomorphism α γ where

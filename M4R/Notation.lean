@@ -46,7 +46,7 @@ namespace M4R
       intro ⟨xa, ab⟩; exact @ab x xa
   
     @[simp] theorem toProperSubset [Mem α γ] (a b : γ) : a ⊊ b → a ⊆ b := fun x => x.left
-  
+
   end Subset
 
   class Union (α : Type u) where
@@ -85,9 +85,17 @@ namespace M4R
     zero : α
   class One (α : Type _) where
     one : α
-  instance [Zero α] : OfNat α (nat_lit 0) where
+  instance Nat0 [Zero α] : OfNat α (nat_lit 0) where
     ofNat := Zero.zero
-  instance [One α] : OfNat α (nat_lit 1) where
+  instance Nat1 [One α] : OfNat α (nat_lit 1) where
     ofNat := One.one
+    
+  class Divides (α : Type u) where
+    divides : α → α → Prop
+  infix:55 " ÷ " => Divides.divides
+
+  class RingEq (α : Type u) where
+    ringeq : α → α → Prop
+  infix:55 " ≗ " => RingEq.ringeq -- \=o -> ≗
 
 end M4R

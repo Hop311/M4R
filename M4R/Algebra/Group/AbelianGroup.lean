@@ -13,7 +13,7 @@ namespace M4R
           rw [h2, h2, h2, g.add_assoc (Nat.succ k * a) a, add_comm a (Nat.succ k * b + b),
             g.add_assoc _ b a, add_comm b a, ←g.add_assoc (Nat.succ k * a), g.add_right_cancel]; exact ih
 
-    instance SingletonAbelian [s : Singleton α] : AbelianGroup α where
+    instance TrivialAbelian [s : Singleton α] : AbelianGroup α where
       add_comm := by intro a b; rfl
       
   end AbelianGroup

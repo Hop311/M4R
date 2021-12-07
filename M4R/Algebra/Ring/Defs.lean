@@ -2,11 +2,13 @@ import M4R.Algebra.Group
 
 namespace M4R
 
-  class Ring (α : Type _) extends AbelianGroup α, One α, Mul α where
-      mul_one          : ∀ a : α, a * 1 = a
-      mul_assoc        : ∀ a b c : α, (a * b) * c = a * (b * c)
-      mul_distrib_left : ∀ a b c : α, a * (b + c) = a * b + a * c
-      mul_comm         : ∀ a b : α, a * b = b * a
+  class NonCommutativeRing (α : Type _) extends AbelianGroup α, One α, Mul α where
+    mul_one          : ∀ a : α, a * 1 = a
+    mul_assoc        : ∀ a b c : α, (a * b) * c = a * (b * c)
+    mul_distrib_left : ∀ a b c : α, a * (b + c) = a * b + a * c
+
+  class Ring (α : Type _) extends NonCommutativeRing α where
+    mul_comm         : ∀ a b : α, a * b = b * a
 
   namespace Ring
     protected def ofNat [r : Ring α] (n : Nat) : α :=
@@ -19,8 +21,16 @@ namespace M4R
     instance RingOfNat [Ring α] (n : Nat) : OfNat α n where ofNat := Ring.ofNat n
     
     def divides [Ring α] (a b : α) : Prop := ∃ c, a * c = b
-    def isUnit [Ring α] (a : α) : Prop := divides a 1
+    instance [Ring α] : Divides α where
+      divides := divides
+
+    def isUnit [Ring α] (a : α) : Prop := a ÷ 1
+    --noncomputable def unitInverse [Ring α] (a : α) (h : isUnit a) : α := Classical.choose h
+    
     def associates [Ring α] (a b : α) : Prop := ∃ c, isUnit c ∧ a * c = b
+    instance [Ring α] : RingEq α where
+      ringeq := associates
+
     def nonZeroNonUnit [Ring α] (a : α) : Prop := a ≠ 0 ∧ ¬isUnit a
     def irreducible [Ring α] (a : α) : Prop :=  nonZeroNonUnit a → ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
 

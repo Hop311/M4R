@@ -3,7 +3,7 @@ import M4R.Set.Defs
 namespace M4R
   namespace Set
 
-    protected theorem ext {s : Set α} : ∀ a b : s, inclusion a = inclusion b → a = b
+    protected theorem elementExt {s : Set α} : ∀ a b : s, inclusion a = inclusion b → a = b
     | ⟨_, _⟩, ⟨_, _⟩, heq => by rw [Subtype.mk.injEq]; exact heq
 
     /- Set instances -/
@@ -26,13 +26,13 @@ namespace M4R
         refl := equivalent.refl
         symm := equivalent.symm
         trans := equivalent.trans
+    
+    end equivalent
 
-      theorem ext {s₁ s₂ : Set α} : Set.equivalent s₁ s₂ ↔ s₁ = s₂ := by
+    protected theorem ext {s₁ s₂ : Set α} : Set.equivalent s₁ s₂ ↔ s₁ = s₂ := by
           apply Iff.intro
           { intro hiff; apply funext; intro a; exact propext (hiff a) }
           { intro heq a; rw [heq]; exact Iff.refl (s₂ a) }
-    
-    end equivalent
     
     namespace subset
 
@@ -40,7 +40,7 @@ namespace M4R
         intro _ as; exact as
         
       protected theorem antisymmIff {a b : Set α} : a = b ↔ a ⊆ b ∧ b ⊆ a := by
-        rw [Subset.ext a b, ←Set.equivalent.ext]; simp [Set.equivalent]
+        rw [Subset.ext a b, ←Set.ext]; simp [Set.equivalent]
       
       protected theorem antisymm {a b : Set α} (hab : a ⊆ b) (hba : b ⊆ a) : a = b :=
         Set.subset.antisymmIff.mpr ⟨hab, hba⟩

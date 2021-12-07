@@ -6,16 +6,32 @@ namespace M4R
     instance SubGroupToSet {α : Type u} [Group α] : CoeSort (SubGroup α) (Set α) where
       coe := fun s => s.subset
 
-    instance SelfSubGroup [Group α] : SubGroup α where
+    def Self (α : Type _) [Group α] : SubGroup α where
       subset   := Set.Universal
       has_zero := trivial
       add_closed := by intros; trivial
       neg_closed := by intros; trivial
 
+    def Trivial (α : Type _) [g : Group α] : SubGroup α where
+      subset     := {x | x = 0}
+      has_zero   := by trivial
+      add_closed := by intro _ _ a0 b0; rw [a0, b0, g.add_zero]; trivial
+      neg_closed := by intro a a0; rw[a0, g.neg_zero]; trivial
+
+    protected theorem ext [Group α] (s₁ s₂ : SubGroup α) : s₁.subset = s₂.subset ↔ s₁ = s₂ :=
+      ⟨match s₁, s₂ with
+      | ⟨ss₁, h0₁, ha₁, hn₁⟩, ⟨ss₂, h0₂, ha₂, hn₂⟩ => by rw [SubGroup.mk.injEq]; exact id,
+      by intro h; rw [h]⟩
+
+    theorem trivialExt [Group α] (s : SubGroup α) : s = Trivial α ↔ (∀ x ∈ s.subset, x = 0) := by
+      rw [←(SubGroup.ext s (Trivial α))]; exact ⟨fun hs => by rw [hs]; exact (fun _ xs => xs),
+        fun hx => by rw [←Set.ext]; exact (fun x => ⟨fun xs => hx x xs,
+          fun x0 => by rw [x0]; exact s.has_zero⟩)⟩
+
     protected def image [Group α] (s : SubGroup α) (a : α) (p : a ∈ s.subset) : ↑s.subset := ⟨a, p⟩
     protected theorem image_eq [Group α] (s : SubGroup α) (a b : ↑s.subset) :
       a = b ↔ Set.inclusion a = Set.inclusion b :=
-        ⟨congrArg Set.inclusion, Set.ext a b⟩
+        ⟨congrArg Set.inclusion, Set.elementExt a b⟩
     
     instance SubGroupGroup [Group α] (s : SubGroup α) : Group ↑s.subset where
       zero := ⟨0, s.has_zero⟩
