@@ -7,8 +7,13 @@ namespace M4R
     mul_assoc        : ∀ a b c : α, (a * b) * c = a * (b * c)
     mul_distrib_left : ∀ a b c : α, a * (b + c) = a * b + a * c
 
+  class NonTrivialNonCommutativeRing (α : Type _) extends NonCommutativeRing α where
+    one_neq_zero : (1 : α) ≠ 0
+
   class Ring (α : Type _) extends NonCommutativeRing α where
     mul_comm         : ∀ a b : α, a * b = b * a
+
+  class NonTrivialRing (α : Type _) extends Ring α, NonTrivialNonCommutativeRing α
 
   namespace Ring
     protected def ofNat [r : Ring α] (n : Nat) : α :=
@@ -32,7 +37,7 @@ namespace M4R
       ringeq := associates
 
     def nonZeroNonUnit [Ring α] (a : α) : Prop := a ≠ 0 ∧ ¬isUnit a
-    def irreducible [Ring α] (a : α) : Prop :=  nonZeroNonUnit a → ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
+    def irreducible [Ring α] (a : α) : Prop := nonZeroNonUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
 
   end Ring
 end M4R

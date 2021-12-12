@@ -38,7 +38,7 @@ namespace M4R
       add := fun x y => ⟨x.val + y.val, s.add_closed x.val y.val x.property y.property⟩
       neg := fun x => ⟨-x.val, s.neg_closed x.val x.property⟩
       add_zero := by
-        intro a; rw [SubGroup.image_eq] exact Group.add_zero a.val
+        intro a; rw [SubGroup.image_eq]; exact Group.add_zero a.val
       add_assoc := by
         intro a b c; rw [SubGroup.image_eq]; exact Group.add_assoc a.val b.val c.val
       add_neg := by

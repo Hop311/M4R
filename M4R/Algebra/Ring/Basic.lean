@@ -27,6 +27,8 @@ namespace M4R
     | ⟨x, axb⟩, ⟨y, ayc⟩ => ⟨x + y, by rw [mul_distrib_left, axb, ayc]⟩
     theorem divides_mul [Ring α] (a b c : α) : a ÷ b → a ÷ (b * c)
     | ⟨x, axb⟩ => ⟨x * c, by rw [←mul_assoc, axb]⟩
+    theorem divides_mul' [Ring α] (a b c : α) : a ÷ c → a ÷ (b * c) := by
+      rw [mul_comm]; exact divides_mul a c b
 
     theorem isUnit_1 [Ring α] : isUnit (1 : α) := ⟨1, show 1 * 1 = 1 by rw [mul_one]⟩
     theorem notUnit_0 [Ring α] : (0 : α) ≠ (1 : α) → ¬isUnit (0 : α) := by
@@ -34,6 +36,12 @@ namespace M4R
     theorem unit_mul [Ring α] {a b : α} : isUnit a → isUnit b → isUnit (a * b)
     | ⟨x, xs⟩, ⟨y, ys⟩ => by
       apply Exists.intro (y * x); rw [mul_assoc, ←mul_assoc b, ys, one_mul, xs];
+    theorem divides_unit [Ring α] {a b : α} : isUnit b → a ÷ b → isUnit a := by
+      intro ub ab;
+      let ⟨binv, bbinv⟩ := Classical.indefiniteDescription _ ub;
+      let ⟨c, ac⟩ := Classical.indefiniteDescription _ ab;
+      exact ⟨c * binv, by rw [←mul_assoc, ac, bbinv];⟩
+
 
     /-def unit_set (α : Type _) [Ring α] : Set α := {x | isUnit x}
     instance UnitGroup [Ring α] : Group ↑(unit_set α) where

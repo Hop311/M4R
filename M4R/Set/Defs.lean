@@ -41,7 +41,5 @@ namespace M4R
     protected def Empty : Set α := fun _ => False
     protected def Universal : Set α := fun _ => True
 
-    def nonEmpty (s : Set α) : Prop := ∃ x, x ∈ s
-
   end Set
 end M4R

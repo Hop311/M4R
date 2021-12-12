@@ -1,7 +1,19 @@
 import M4R.Set.Basic
 import M4R.Set.Finite.Pairwise
 
+import M4R.Function
+
 namespace M4R
+
+  namespace List
+  
+    theorem filterMap_Eq_map (f : α → β) : List.filterMap (some ∘ f) = List.map f := by
+      apply funext; intro l;
+      induction l with
+      | nil => simp [List.filterMap, List.map];
+      | cons _ _ ih => simp [List.filterMap, List.map]; exact ih
+
+  end List
 
   inductive Perm : List α → List α → Prop
   | nil                           : Perm [] []
@@ -159,9 +171,36 @@ namespace M4R
       | swap _ _ _ => rw [List.sizeOf_cons, List.sizeOf_cons, List.sizeOf_cons, List.sizeOf_cons]
       | trans _ _ h₁ h₂ => exact Eq.trans h₁ h₂
 
+    theorem filterMap (f : α → Option β) {l₁ l₂ : List α} (p : l₁ ~ l₂) :
+      List.filterMap f l₁ ~ List.filterMap f l₂ := by
+        induction p with
+        | nil => simp [List.filterMap]; exact Perm.nil
+        | cons x p ih =>
+          simp [List.filterMap]
+          cases f x with
+          | none => exact ih
+          | some a => exact cons a ih;
+        | swap x y l =>
+          simp [List.filterMap]
+          cases f x with
+          | none =>
+            cases f y with
+            | none => exact Perm.refl _
+            | some b => exact Perm.cons b (Perm.refl _)
+          | some a =>
+            cases f y with
+            | none => exact Perm.refl _
+            | some b => exact Perm.swap a b _
+        | trans p₁₂ p₂₃ ih₁₂ ih₂₃ => exact ih₁₂.trans ih₂₃
+
+    theorem map (f : α → β) {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.map f ~ l₂.map f := by
+      rw [←List.filterMap_Eq_map f]; exact filterMap (some ∘ f) p
+
   end Perm
 
   def UnorderedList (α : Type u) : Type u := Quotient (Perm.PermSetoid α)
+
+  def List.to_UnorderedList (l : List α) : UnorderedList α := Quotient.mk l
 
   namespace UnorderedList
 
@@ -178,6 +217,19 @@ namespace M4R
 
     protected def length (s : UnorderedList α) : Nat :=
       Quot.liftOn s List.length (fun _ _ => Perm.lengthEq)
+
+    protected def Empty (α : Type _) : UnorderedList α := List.to_UnorderedList []
+
+    protected def map (f : α → β) (s : UnorderedList α) : UnorderedList β := by
+      apply Quot.liftOn s (fun l : List α => List.to_UnorderedList (l.map f))
+        (fun l₁ l₂ p => Quot.sound (p.map f))
+
+    protected def cons (a : α) (s : UnorderedList α) : UnorderedList α :=
+      Quot.liftOn s (fun l => List.to_UnorderedList (a::l)) (fun _ _ p => Quot.sound (p.cons a))
+
+    inductive rel (r : α → β → Prop) : UnorderedList α → UnorderedList β → Prop
+    | zero             : rel r (UnorderedList.Empty α) (UnorderedList.Empty β)
+    | cons {a b as bs} : r a b → rel r as bs → rel r (as.cons a) (bs.cons b)
 
   end UnorderedList
 end M4R

@@ -7,10 +7,8 @@ namespace M4R
     | ⟨_, _⟩, ⟨_, _⟩, heq => by rw [Subtype.mk.injEq]; exact heq
 
     /- Set instances -/
-    instance EmptySet : Set α := Set.Empty
-    instance SetInhabited : Inhabited (Set α) where default := EmptySet
-    instance UniversalSet : Set α := Set.Universal
-    instance SingletonSet [Singleton α] : Set α := UniversalSet
+    def SetInhabited : Inhabited (Set α) where default := Set.Empty
+    def SingletonSet [Singleton α] : Set α := Set.Universal
     def SingletonSet.mk {α : Type _} (a : α) : Set α := {x | x = a}
 
     namespace equivalent

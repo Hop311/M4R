@@ -24,8 +24,8 @@ namespace M4R
 
     theorem eqNilOfLengthEqZero {l : List α} : l.length = 0 → l = [] := by
       induction l with
-      | nil          => intros; rfl
-      | cons a as ih => intros; contradiction
+      | nil  => intros; rfl
+      | cons => intros; contradiction
 
     @[simp] theorem memNilIff (a : α) : a ∈ ([] : List α) ↔ False :=
       Iff.rfl
@@ -34,7 +34,13 @@ namespace M4R
 
     theorem memConsSelf (a : α) (l : List α) : a ∈ a :: l :=
       Or.inl rfl
-      
+    
+    @[simp] theorem mem_cons_of_mem (y : α) {a : α} {l : List α} : a ∈ l → a ∈ y :: l :=
+      Or.inr
+
+    @[simp] theorem eq_or_mem_of_mem_cons {a y : α} {l : List α} : a ∈ y::l → a = y ∨ a ∈ l := by
+      simp [Mem.mem, List.mem]; exact id
+
     theorem memSplit {l : List α} (h : a ∈ l) : ∃ s t : List α, l = s ++ a :: t := by
       induction l with 
       | nil         => contradiction
@@ -45,12 +51,32 @@ namespace M4R
     @[simp] theorem memAppend {a : α} {s t : List α} : a ∈ s ++ t ↔ a ∈ s ∨ a ∈ t := by
         induction s with
         | nil => simp
-        | cons x l ih => exact
+        | cons _ _ ih => exact
           ⟨fun p => Or.elim p (fun x => Or.inl (Or.inl x)) (fun x => Or.assoc.mp (Or.inr (ih.mp x))),
             fun p => Or.elim p (fun q => Or.elim q Or.inl
               (fun x => Or.inr (ih.mpr (Or.inl x)))) (fun x => Or.inr (ih.mpr (Or.inr x)))⟩
 
     @[simp] theorem appendSingleton {a : α} {l : List α} : [a] ++ l = a::l := by rfl
+
+    theorem mem_map_of_mem (f : α → β) {a : α} {l : List α} (h : a ∈ l) : f a ∈ l.map f := by
+      induction l with
+      | nil => cases h
+      | cons _ _ ih =>
+        cases h with
+        | inl h' => rw [h']; apply Or.inl; rfl
+        | inr h' => exact Or.inr (ih h')
+
+    theorem exists_of_mem_map {f : α → β} {b : β} {l : List α} (h : b ∈ l.map f) :
+      ∃ a, a ∈ l ∧ f a = b := by
+      induction l with
+      | nil => cases h
+      | cons c _ ih =>
+        cases (eq_or_mem_of_mem_cons h) with
+        | inl h' => exact ⟨c, memConsSelf _ _, h'.symm⟩
+        | inr h' => let ⟨a, ha₁, ha₂⟩ := ih h'; exact ⟨a, mem_cons_of_mem _ ha₁, ha₂⟩ 
+
+    @[simp] theorem mem_map {f : α → β} {b : β} {l : List α} : b ∈ l.map f ↔ ∃ a, a ∈ l ∧ f a = b :=
+      ⟨exists_of_mem_map, fun ⟨a, la, h⟩ => by rw [←h]; exact mem_map_of_mem f la⟩
 
   end List
   namespace Pairwise

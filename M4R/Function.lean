@@ -1,4 +1,4 @@
-import M4R.Set
+import M4R.Set.Basic
 
 namespace M4R
   namespace Function

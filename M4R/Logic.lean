@@ -16,4 +16,10 @@ namespace M4R
     have : ∀ p q, p ∨ q → q ∨ p := fun _ _ h => Or.elim h Or.inr Or.inl;
     exact ⟨this p q, this q p⟩
 
+  @[simp] theorem exists_imp_distrib {p : α → Prop} : ((∃ x, p x) → b) ↔ ∀ x, p x → b :=
+    ⟨fun h x hpx => h ⟨x, hpx⟩, fun h ⟨x, hpx⟩ => h x hpx⟩
+
+  @[simp] theorem and_imp : (a ∧ b → c) ↔ (a → b → c) :=
+    Iff.intro (fun h ha hb => h ⟨ha, hb⟩) (fun h ⟨ha, hb⟩ => h ha hb)
+
 end M4R

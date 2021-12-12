@@ -1,13 +1,21 @@
 import M4R.Algebra.Ring.Quotient
+import M4R.Set
 
 namespace M4R
   namespace Ring
   
-    class IntegralDomain (α : Type _) extends Ring α where
-      one_neq_zero : (1 : α) ≠ 0
+    class IntegralDomain (α : Type _) extends NonTrivialRing α where
       integral : ∀ a b : α, a ≠ 0 → b ≠ 0 → a * b ≠ 0
 
-    class PrincipalIdealDomain (α : Type _) extends IntegralDomain α where
+    -- UnorderedList.prod not yet defined
+    /-class UFD (α : Type _) extends IntegralDomain α where
+      factors : α → UnorderedList α
+      factorsProd : ∀ {a : α}, (factors a).prod ≗ a --∀ {a : α}, a ≠ 0 → (factors a).prod ≗ a
+      irreducible_factors : ∀ {a : α}, a ≠ 0 →  ∀ x ∈ factors a, irreducible x
+      unique : ∀ {f g : UnorderedList α},
+        (∀ x ∈ f, irreducible x) → (∀ x ∈ g, irreducible x) → f.prod ≗ g.prod → UnorderedList.rel associates f g-/
+
+    class PID (α : Type _) extends IntegralDomain α where
       pid : ∀ I : Ideal α, Ideal.is_principal I
 
     class EuclideanDomain (α : Type _) extends IntegralDomain α where
