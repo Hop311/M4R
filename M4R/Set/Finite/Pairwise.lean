@@ -32,7 +32,7 @@ namespace M4R
     @[simp] theorem notMemNil (a : α) : a ∉ ([] : List α) :=
       Iff.mp (memNilIff a)
 
-    theorem memConsSelf (a : α) (l : List α) : a ∈ a :: l :=
+    theorem mem_cons_self (a : α) (l : List α) : a ∈ a :: l :=
       Or.inl rfl
     
     @[simp] theorem mem_cons_of_mem (y : α) {a : α} {l : List α} : a ∈ l → a ∈ y :: l :=
@@ -72,7 +72,7 @@ namespace M4R
       | nil => cases h
       | cons c _ ih =>
         cases (eq_or_mem_of_mem_cons h) with
-        | inl h' => exact ⟨c, memConsSelf _ _, h'.symm⟩
+        | inl h' => exact ⟨c, mem_cons_self _ _, h'.symm⟩
         | inr h' => let ⟨a, ha₁, ha₂⟩ := ih h'; exact ⟨a, mem_cons_of_mem _ ha₁, ha₂⟩ 
 
     @[simp] theorem mem_map {f : α → β} {b : β} {l : List α} : b ∈ l.map f ↔ ∃ a, a ∈ l ∧ f a = b :=
@@ -100,7 +100,7 @@ namespace M4R
         intro a axl b; apply Or.elim axl; intro ax bl; rw [ax]; exact h.left b (Or.inr bl);
         intro al bl; exact (IH.mp h.right).right.right a al b bl;
         intro h; apply And.intro; intro a all; apply Or.elim all (h.left.left a);
-        apply h.right.right x (List.memConsSelf x l₁) a;
+        apply h.right.right x (List.mem_cons_self x l₁) a;
         apply IH.mpr; apply And.intro h.left.right; apply And.intro h.right.left;
         intro _ al _ bl; apply h.right.right; exact Or.inr al; exact bl
 
@@ -117,6 +117,45 @@ namespace M4R
           {rw [←List.append_assoc, appendIff, @appendIff _ _ ([a] ++ l₁), appendComm h];
           simp only [List.memAppend, Or.comm]; apply Iff.refl}
         simp only [List.appendSingleton] at this; exact this
+
+    theorem imp_of_mem {r s : α → α → Prop} {l : List α}
+      (h : ∀ {a b}, a ∈ l → b ∈ l → r a b → s a b) (p : Pairwise r l) : Pairwise s l := by
+      induction p with
+      | nil => exact nil
+      | @cons a l lr p ih =>
+        constructor; exact fun b bl => h (List.mem_cons_self a l) (Or.inr bl) (lr b bl);
+        exact ih (fun xl yl => h (Or.inr xl) (Or.inr yl))
+
+    theorem imp {r : α → α → Prop} {s : α → α → Prop} (h : ∀ a b, r a b → s a b) {l : List α} :
+      Pairwise r l → Pairwise s l := imp_of_mem (fun _ _ => h _ _)
+
+    theorem map' {r : α → α → Prop} (f : β → α) (b : β) (l : List β):
+      (∀ a b', b' ∈ l → f b' = a → r (f b) a) ↔ ∀ (b' : β), b' ∈ l → r (f b) (f b') := by
+      apply Iff.intro (fun h x xl => h (f x) x xl rfl);
+      intro h _ y yl eq; rw [←eq]; exact h y yl;
+
+    /-
+      fail to show termination for
+        M4R.Pairwise.map
+      with errors
+      argument #5 was not used for structural recursion
+        failed to eliminate recursive application
+          map f
+
+      structural recursion cannot be used
+
+      'termination_by' modifier missing
+    -/
+    theorem map {r : α → α → Prop} (f : β → α) : ∀ {l : List β},
+      Pairwise r (l.map f) ↔ Pairwise (fun a b : β => r (f a) (f b)) l
+    | []     => by simp [map]
+    | b::l => by 
+      simp [List.map, consIff, List.mem_map, exists_imp_distrib, and_imp, map', map];
+    --termination_by sorry
+
+    theorem pairwise_map_of_pairwise {r : α → α → Prop} {s : β → β → Prop} (f : α → β)
+      (H : ∀ a b : α, r a b → s (f a) (f b)) {l : List α}
+      (p : Pairwise r l) : Pairwise s (l.map f) := (map f).2 (p.imp H)
 
   end Pairwise
 end M4R
