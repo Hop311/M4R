@@ -153,7 +153,7 @@ namespace M4R
         induction pwl₁ generalizing l₂ with
         | nil => rw [p₁₂.nilEq]; constructor
         | @cons a l₃ hl₃ pwl₃ ih =>
-          let ⟨s, t, e⟩ := List.memSplit (p₁₂.subset (List.memConsSelf a l₃));
+          let ⟨s, t, e⟩ := List.memSplit (p₁₂.subset (List.mem_cons_self a l₃));
           rw [e, Pairwise.middle, Pairwise.consIff]; rw [e] at p₁₂;
           have p' : l₃ ~ s ++ t := (p₁₂.trans (middle _ _ _)).consInv;
           exact And.intro (fun x xst => hl₃ x ((memIff p').mpr xst)) (ih p')
