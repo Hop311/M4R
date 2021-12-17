@@ -5,30 +5,26 @@ namespace M4R
     open Group
     open AbelianGroup
     open NonCommutativeRing
-    
-    theorem one_mul [Ring α] (a : α) : 1 * a = a := by
-      rw [mul_comm, mul_one]
-    theorem mul_distrib_right [Ring α] (a b c: α) : (a + b) * c = a * c + b * c := by
-      rw [mul_comm, mul_distrib_left, mul_comm c, mul_comm c, add_comm]
 
-    theorem mul_zero [Ring α] (a : α) : a * 0 = 0 := by
+
+    theorem mul_zero [NonCommutativeRing α] (a : α) : a * 0 = 0 := by
       rw [←add_right_cancel _ _ (a * 0), zero_add, ←mul_distrib_left, zero_add]
-    theorem zero_mul [Ring α] (a : α) : 0 * a = 0 := by
-      rw [mul_comm, mul_zero]
+    theorem zero_mul [NonCommutativeRing α] (a : α) : 0 * a = 0 := by
+      rw [←add_right_cancel _ _ (0 * a), zero_add, ←mul_distrib_right, zero_add]
 
-    theorem neg_mul [Ring α] (a b : α) : -a * b = -(a * b) := by
+    theorem neg_mul [NonCommutativeRing α] (a b : α) : -a * b = -(a * b) := by
       rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_right, neg_add, zero_mul]
-    theorem mul_neg [Ring α] (a b : α) : a * -b = -(a * b) := by
-      rw [mul_comm, neg_mul, mul_comm]
+    theorem mul_neg [NonCommutativeRing α] (a b : α) : a * -b = -(a * b) := by
+      rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_left, neg_add, mul_zero]
 
     theorem divides_self [Ring α] (a : α) : a ÷ a := ⟨1, mul_one a⟩
     theorem divides_zero [Ring α] (a : α) : a ÷ 0 := ⟨0, mul_zero a⟩
-    theorem divides_add [Ring α] (a b c : α) : a ÷ b → a ÷ c → a ÷ (b + c)
+    theorem divides_add [Ring α] {a b c : α} : a ÷ b → a ÷ c → a ÷ (b + c)
     | ⟨x, axb⟩, ⟨y, ayc⟩ => ⟨x + y, by rw [mul_distrib_left, axb, ayc]⟩
-    theorem divides_mul [Ring α] (a b c : α) : a ÷ b → a ÷ (b * c)
+    theorem divides_mul [Ring α] {a b : α} (c : α) : a ÷ b → a ÷ (b * c)
     | ⟨x, axb⟩ => ⟨x * c, by rw [←mul_assoc, axb]⟩
-    theorem divides_mul' [Ring α] (a b c : α) : a ÷ c → a ÷ (b * c) := by
-      rw [mul_comm]; exact divides_mul a c b
+    theorem divides_mul' [Ring α] {a c : α} (b : α) : a ÷ c → a ÷ (b * c) := by
+      rw [mul_comm]; exact divides_mul b
 
     theorem isUnit_1 [Ring α] : isUnit (1 : α) := ⟨1, show 1 * 1 = 1 by rw [mul_one]⟩
     theorem notUnit_0 [Ring α] : (0 : α) ≠ (1 : α) → ¬isUnit (0 : α) := by
