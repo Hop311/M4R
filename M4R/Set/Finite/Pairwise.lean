@@ -151,7 +151,8 @@ namespace M4R
     | []     => by simp [map]
     | b::l => by 
       simp [List.map, consIff, List.mem_map, exists_imp_distrib, and_imp, map', map];
-    --termination_by sorry
+    termination_by sorry --sizeOfWFRel
+    decreasing_by sorry
 
     theorem pairwise_map_of_pairwise {r : α → α → Prop} {s : β → β → Prop} (f : α → β)
       (H : ∀ a b : α, r a b → s (f a) (f b)) {l : List α}
