@@ -1,4 +1,5 @@
 import M4R.Set.Defs
+import M4R.Logic
 
 namespace M4R
   namespace Set
@@ -47,5 +48,21 @@ namespace M4R
         intro _ _; trivial
         
     end subset
+
+    namespace union
+
+      protected theorem comm (s₁ s₂ : Set α) : s₁ ∪ s₂ = s₂ ∪ s₁ := by
+        have : ∀ (t₁ t₂ : Set α), t₁ ∪ t₂ ⊆ t₂ ∪ t₁ := fun _ _ _ => Or.comm.mp
+        exact Set.subset.antisymm (this s₁ s₂) (this s₂ s₁)
+
+    end union
+    
+    namespace intersection
+
+      protected theorem comm (s₁ s₂ : Set α) : s₁ ∩ s₂ = s₂ ∩ s₁ := by
+        have : ∀ (t₁ t₂ : Set α), t₁ ∩ t₂ ⊆ t₂ ∩ t₁ :=  fun _ _ _ => And.comm.mp
+        exact Set.subset.antisymm (this s₁ s₂) (this s₂ s₁)
+
+    end intersection
   end Set
 end M4R

@@ -13,8 +13,12 @@ namespace M4R
       (fun x => Or.inr (Or.inr x))⟩
 
   theorem Or.comm : p ∨ q ↔ q ∨ p := by
-    have : ∀ p q, p ∨ q → q ∨ p := fun _ _ h => Or.elim h Or.inr Or.inl;
-    exact ⟨this p q, this q p⟩
+    have : ∀ {p q}, p ∨ q → q ∨ p := fun h => Or.elim h Or.inr Or.inl;
+    exact ⟨this, this⟩
+
+  theorem And.comm : a ∧ b ↔ b ∧ a := by
+    have : ∀ {p q}, p ∧ q → q ∧ p := fun ⟨p, q⟩ => ⟨q, p⟩
+    exact ⟨this, this⟩
 
   @[simp] theorem exists_imp_distrib {p : α → Prop} : ((∃ x, p x) → b) ↔ ∀ x, p x → b :=
     ⟨fun h x hpx => h ⟨x, hpx⟩, fun h ⟨x, hpx⟩ => h x hpx⟩

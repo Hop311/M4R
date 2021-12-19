@@ -37,6 +37,8 @@ namespace M4R
       let ⟨binv, bbinv⟩ := Classical.indefiniteDescription _ ub;
       let ⟨c, ac⟩ := Classical.indefiniteDescription _ ab;
       exact ⟨c * binv, by rw [←mul_assoc, ac, bbinv];⟩
+    theorem unit_divides [Ring α] : ∀ a b : α, isUnit a → a ÷ b := by
+      intro a b ⟨c, ac⟩; exact ⟨c * b, by rw [←mul_assoc, ac, one_mul];⟩
 
 
     /-def unit_set (α : Type _) [Ring α] : Set α := {x | isUnit x}
