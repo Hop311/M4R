@@ -31,6 +31,14 @@ namespace M4R
     @[defaultInstance high]
     instance RingOfNat [NonCommutativeRing α] (n : Nat) : OfNat α n where ofNat := Ring.ofNat n
     
+    protected def pow_nat [Ring α] (a : α) (n : Nat) : α :=
+      match n with
+      | Nat.zero   => 1
+      | Nat.succ m => match m with
+        | Nat.zero => a
+        | _        => (Ring.pow_nat a m) * a
+    instance RingPowNat [Ring α] : Pow α Nat where pow := Ring.pow_nat
+
     def divides [Ring α] (a b : α) : Prop := ∃ c, a * c = b
     instance [Ring α] : Divides α where
       divides := divides

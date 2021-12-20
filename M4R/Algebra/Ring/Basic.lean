@@ -52,7 +52,33 @@ namespace M4R
       add_assoc := by intro a b c; apply Set.ext; exact mul_assoc a.val b.val c.val
       add_neg := by
         intro a; apply Set.ext; simp [Set.inclusion, HAdd.hAdd, Add.add, Neg.neg];-/
-        
+      
+    theorem pow_nat_succ [Ring α] (a : α) (x : Nat) : a ^ (Nat.succ x) = a^x * a :=
+      match x with
+      | Nat.zero => by simp [HPow.hPow, Pow.pow, Ring.pow_nat, one_mul]
+      | Nat.succ k  => rfl
+
+    theorem pow_nat_one [Ring α] (n : Nat) : (1 : α)^n = 1 := by
+      induction n with
+      | zero      => rfl
+      | succ k ih => rw [pow_nat_succ, ih, one_mul];
+    theorem pow_nat_0 [Ring α] (a : α) : a ^ (0 : Nat) = 1 := rfl
+    theorem pow_nat_1 [Ring α] (a : α) : a ^ (1 : Nat) = a := rfl
+
+    theorem pow_nat_add_distrib [Ring α] (a : α) (m n : Nat) : a^(m + n) = a^m * a^n := by
+      induction n with
+      | zero      => rw [Nat.add_zero, pow_nat_0, mul_one]
+      | succ k ih => rw [Nat.add_succ, pow_nat_succ, pow_nat_succ, ←mul_assoc, ih]
+    
+    theorem pow_nat_mul_distrib [Ring α] (a b : α) (m : Nat) : (a * b)^m = a^m * b^m := by
+      induction m with
+      | zero      => simp [pow_nat_0, mul_one]
+      | succ k ih => simp [pow_nat_succ, ←mul_assoc, ih, mul_comm]
+
+    theorem pow_nat_comp [Ring α] (a : α) (m n : Nat) : (a^m)^n = a^(m*n) := by 
+      induction m with
+      | zero => rw [Nat.zero_mul, pow_nat_0, pow_nat_one]
+      | succ k ih => rw [pow_nat_succ, Nat.succ_mul, pow_nat_mul_distrib, ih, pow_nat_add_distrib]
 
   end Ring
 end M4R
