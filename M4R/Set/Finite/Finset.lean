@@ -31,5 +31,25 @@ namespace M4R
     protected def Universal [Fintype α] : Finset α := Fintype.elems
 
   end Finset
+  
+  namespace Set
 
+    def to_finset (s : Set α) [ft : Fintype s] : Finset α :=
+      ⟨(@Finset.Universal s ft).elems.map Subtype.val, by
+        apply UnorderedList.nodup_map; apply Set.elementExt; exact Finset.Universal.nodup;⟩
+
+  end Set
+
+  def finite (s : Set α) : Prop := Nonempty (Fintype s)
+  def infinite (s : Set α) : Prop := ¬ finite s
+
+  namespace finite
+  
+      noncomputable def to_fintype {s : Set α} (h : finite s) : Fintype s :=
+        Classical.choice h
+
+      noncomputable def to_finset {s : Set α} (h : finite s) : Finset α :=
+        @Set.to_finset _ _ h.to_fintype
+
+  end finite
 end M4R

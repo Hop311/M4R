@@ -41,5 +41,10 @@ namespace M4R
     protected def Empty : Set α := fun _ => False
     protected def Universal : Set α := fun _ => True
     
+    def disjoint (s₁ s₂ : Set α) : Prop := s₁ ∩ s₂ = Set.Empty
+
+    def SetofSetsUnion (s : Set (Set α)) : Set α := {x | ∃ ss ∈ s, x ∈ ss}
+    def SetofSetsIntersection (s : Set (Set α)) : Set α := {x | ∀ ss ∈ s, x ∈ ss}
+  
   end Set
 end M4R

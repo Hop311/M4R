@@ -4,7 +4,7 @@ import M4R.Logic
 namespace M4R
   namespace Set
 
-    protected theorem elementExt {s : Set α} : ∀ a b : s, inclusion a = inclusion b → a = b
+    protected theorem elementExt {s : Set α} : ∀ a b : ↑s, inclusion a = inclusion b → a = b
     | ⟨_, _⟩, ⟨_, _⟩, heq => by rw [Subtype.mk.injEq]; exact heq
 
     /- Set instances -/
@@ -64,5 +64,19 @@ namespace M4R
         exact Set.subset.antisymm (this s₁ s₂) (this s₂ s₁)
 
     end intersection
+
+    namespace disjoint
+
+      protected theorem comm (s₁ s₂ : Set α) : disjoint s₁ s₂ ↔ disjoint s₂ s₁ := by
+        have : ∀ {t₁ t₂ : Set α}, disjoint t₁ t₂ → disjoint t₂ t₁ := by
+          intro _ _ dis; simp [disjoint]; rw [←dis]; exact Set.intersection.comm _ _
+        exact ⟨this, this⟩
+
+      theorem elementwise (s₁ s₂ : Set α) : disjoint s₁ s₂ ↔ ∀ a ∈ s₁, a ∉ s₂ := by
+        apply Iff.intro;
+        { intro dis x xs₁ xs₂; have : x ∈ s₁ ∩ s₂ := ⟨xs₁, xs₂⟩; rw [dis] at this; contradiction }
+        { exact fun h => Set.subset.antisymm (fun x xs => h x xs.left xs.right) (fun _ _ => by contradiction) }
+
+    end disjoint
   end Set
 end M4R

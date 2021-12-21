@@ -226,10 +226,20 @@ namespace M4R
 
     protected def cons (a : α) (s : UnorderedList α) : UnorderedList α :=
       Quot.liftOn s (fun l => List.to_UnorderedList (a::l)) (fun _ _ p => Quot.sound (p.cons a))
-
+      
     inductive rel (r : α → β → Prop) : UnorderedList α → UnorderedList β → Prop
     | zero             : rel r (UnorderedList.Empty α) (UnorderedList.Empty β)
     | cons {a b as bs} : r a b → rel r as bs → rel r (as.cons a) (bs.cons b)
+
+    theorem nodup_map_on {f : α → β} {s : UnorderedList α} (H : ∀ x ∈ s, ∀ y ∈ s, f x = f y → x = y) :
+      nodup s → nodup (s.map f) := by
+        apply @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+          (∀ (x : α), x ∈ l → ∀ (y : α), y ∈ l → f x = f y → x = y) → nodup l → nodup (l.map f))
+            s (fun _ => List.nodup_map_on) H;
+
+    theorem nodup_map {f : α → β} {s : UnorderedList α} (hf : Function.injective f) :
+      nodup s → nodup (s.map f) :=
+        nodup_map_on (fun x _ y _ h => hf h)
 
   end UnorderedList
 end M4R

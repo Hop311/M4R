@@ -126,37 +126,37 @@ namespace M4R
         constructor; exact fun b bl => h (List.mem_cons_self a l) (Or.inr bl) (lr b bl);
         exact ih (fun xl yl => h (Or.inr xl) (Or.inr yl))
 
-    theorem imp {r : α → α → Prop} {s : α → α → Prop} (h : ∀ a b, r a b → s a b) {l : List α} :
+    theorem imp {r s : α → α → Prop} (h : ∀ a b, r a b → s a b) {l : List α} :
       Pairwise r l → Pairwise s l := imp_of_mem (fun _ _ => h _ _)
 
-    theorem map' {r : α → α → Prop} (f : β → α) (b : β) (l : List β):
-      (∀ a b', b' ∈ l → f b' = a → r (f b) a) ↔ ∀ (b' : β), b' ∈ l → r (f b) (f b') := by
-      apply Iff.intro (fun h x xl => h (f x) x xl rfl);
-      intro h _ y yl eq; rw [←eq]; exact h y yl;
+    theorem iff_of_mem {r s : α → α → Prop} {l : List α} (H : ∀ {a b}, a ∈ l → b ∈ l → (r a b ↔ s a b)) :
+      Pairwise r l ↔ Pairwise s l :=
+        ⟨imp_of_mem (fun al bl => (H al bl).mp),
+        imp_of_mem (fun al bl => (H al bl).mpr)⟩
 
-    /-
-      fail to show termination for
-        M4R.Pairwise.map
-      with errors
-      argument #5 was not used for structural recursion
-        failed to eliminate recursive application
-          map f
+    theorem and_mem {r : α → α → Prop} {l : List α} : Pairwise r l ↔ Pairwise (fun x y => x ∈ l ∧ y ∈ l ∧ r x y) l := by
+      apply iff_of_mem (fun al bl => ⟨fun rab => ⟨al, bl, rab⟩, fun ⟨_, _, rab⟩ => rab⟩);
 
-      structural recursion cannot be used
-
-      'termination_by' modifier missing
-    -/
     theorem map {r : α → α → Prop} (f : β → α) : ∀ {l : List β},
       Pairwise r (l.map f) ↔ Pairwise (fun a b : β => r (f a) (f b)) l
-    | []     => by simp [map]
-    | b::l => by 
-      simp [List.map, consIff, List.mem_map, exists_imp_distrib, and_imp, map', map];
-    termination_by sorry --sizeOfWFRel
-    decreasing_by sorry
+    | []     => by simp [List.map, Pairwise.nil]
+    | b::l => by
+      have : (∀ a b', b' ∈ l → f b' = a → r (f b) a) ↔ ∀ (b' : β), b' ∈ l → r (f b) (f b') := by
+        apply Iff.intro (fun h x xl => h (f x) x xl rfl);
+        intro h _ y yl eq; rw [←eq]; exact h y yl;
+      simp [List.map, consIff, List.mem_map, exists_imp_distrib, and_imp, this, map];
 
-    theorem pairwise_map_of_pairwise {r : α → α → Prop} {s : β → β → Prop} (f : α → β)
+    theorem map_of_pairwise {r : α → α → Prop} {s : β → β → Prop} (f : α → β)
       (H : ∀ a b : α, r a b → s (f a) (f b)) {l : List α}
       (p : Pairwise r l) : Pairwise s (l.map f) := (map f).2 (p.imp H)
 
   end Pairwise
+
+  namespace List
+    
+    theorem nodup_map_on {f : α → β} {l : List α} (H : ∀ x ∈ l, ∀ y ∈ l, f x = f y → x = y)
+      (d : List.nodup l) : List.nodup (l.map f) :=
+        Pairwise.map_of_pairwise f (fun a b ⟨ma, mb, n⟩ e => n (H a ma b mb e)) (Pairwise.and_mem.mp d)
+
+  end List
 end M4R
