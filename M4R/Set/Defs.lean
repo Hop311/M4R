@@ -5,7 +5,7 @@ namespace M4R
     def Set (α : Type u) : Type u := α → Prop
 
     class Singleton (α : Type _) extends Inhabited α where single (a : α) : a = default
-    
+
   namespace Set
 
     protected def mem (a : α) (s : Set α) := s a
@@ -14,7 +14,7 @@ namespace M4R
     instance SetToSubtype {α : Type u} : CoeSort (Set α) (Type u) where coe := Subtype
 
     def inclusion {s : Set α} : ↑s → α := fun x => x.val
-    
+
     abbrev toSet (b : β) [Mem α β] : Set α := { x | x ∈ b }
 
     /- Set relations/operations -/
@@ -31,20 +31,19 @@ namespace M4R
     instance SetComplement : Complement (Set α) where complement := Set.complement
 
     protected def product (s₁ : Set α) (s₂ : Set β): Set (α × β) := {p | p.fst ∈ s₁ ∧ p.snd ∈ s₂}
-    instance ProductSet (s₁ : Set α) (s₂ : Set β): Set (α × β) := Set.product s₁ s₂
-
     protected def insert (a : α) (s : Set α) : Set α := {x | x = a ∨ x ∈ s}
-    instance InsertSet (a : α) (s : Set α) : Set α := Set.insert a s
 
     protected def equivalent (s₁ s₂ : Set α) : Prop := ∀ a, a ∈ s₁ ↔ a ∈ s₂
 
     protected def Empty : Set α := fun _ => False
     protected def Universal : Set α := fun _ => True
-    
+
     def disjoint (s₁ s₂ : Set α) : Prop := s₁ ∩ s₂ = Set.Empty
 
-    def SetofSetsUnion (s : Set (Set α)) : Set α := {x | ∃ ss ∈ s, x ∈ ss}
-    def SetofSetsIntersection (s : Set (Set α)) : Set α := {x | ∀ ss ∈ s, x ∈ ss}
-  
+    def SoSUnion (s : Set (Set α)) : Set α := {x | ∃ ss ∈ s, x ∈ ss}
+    prefix:110 "⋃₀" => SoSUnion
+    def SoSIntersection (s : Set (Set α)) : Set α := {x | ∀ ss ∈ s, x ∈ ss}
+    prefix:110 "⋂₀" => SoSIntersection
+
   end Set
 end M4R

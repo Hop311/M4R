@@ -115,7 +115,7 @@ namespace M4R
       Pairwise r (l₁ ++ a::l₂) ↔ Pairwise r (a::(l₁++l₂)) := by
         have : Pairwise r (l₁ ++ ([a] ++ l₂)) ↔ Pairwise r ([a] ++ l₁ ++ l₂) := by
           {rw [←List.append_assoc, appendIff, @appendIff _ _ ([a] ++ l₁), appendComm h];
-          simp only [List.memAppend, Or.comm]; apply Iff.refl}
+          simp only [List.memAppend, Or.comm']; apply Iff.refl}
         simp only [List.appendSingleton] at this; exact this
 
     theorem imp_of_mem {r s : α → α → Prop} {l : List α}
