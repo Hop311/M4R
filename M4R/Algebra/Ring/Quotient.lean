@@ -113,6 +113,41 @@ namespace M4R
       apply Iff.intro (fun h => by rw [h]; trivial); intro h;
       exact Ideal.antisymm (in_unit_ideal I) (by rw [←unit_principal (1 : α) isUnit_1]; exact principal_in I 1 h);
 
+    def ideal_chain [Ring α] (S : Set (Ideal α)) (hS : Nonempty S) (hc : Zorn.Chain Subset.subset S) : Ideal α where
+      subset := ⋃₀ (Set.toSetSet S Ideal.subset)
+      has_zero :=
+        let ⟨⟨x, xS⟩, _⟩ := Classical.exists_true_of_nonempty hS
+        ⟨x.subset, ⟨x, xS, rfl⟩, x.has_zero⟩
+      add_closed := by
+        intro a b ⟨i, ⟨I, IS, Ii⟩, ai⟩ ⟨j, ⟨J, JS, Jj⟩, bj⟩
+        cases Classical.em (I = J) with
+        | inl h =>
+          rw [←Ii] at ai; rw [←h] at Jj; rw [←Jj] at bj
+          exact ⟨I.subset, ⟨I, IS, rfl⟩, I.add_closed ai bj⟩
+        | inr h =>
+          cases hc I IS J JS h with
+          | inl h =>
+            rw [←Ii] at ai; rw [←Jj] at bj
+            exact ⟨J.subset, ⟨J, JS, rfl⟩, J.add_closed (h ai) bj⟩
+          | inr h =>
+            rw [←Ii] at ai; rw [←Jj] at bj
+            exact ⟨I.subset, ⟨I, IS, rfl⟩, I.add_closed ai (h bj)⟩
+      mul_closed := by
+        intro a b ⟨i, ⟨I, IS, Ii⟩, bi⟩
+        rw [←Ii] at bi
+        exact ⟨I.subset, ⟨I, IS, rfl⟩, I.mul_closed a bi⟩
+
+    theorem ideal_chain_subset [Ring α] (S : Set (Ideal α)) {I : Ideal α} (IS : I ∈ S)
+      (hc : Zorn.Chain Subset.subset S) : I ⊆ ideal_chain S ⟨I, IS⟩ hc :=
+        fun x xI => ⟨I.subset, ⟨I, IS, rfl⟩, xI⟩
+
+    theorem ideal_chain_proper [Ring α] (S : Set (Ideal α)) (hS : Nonempty S) (hc : Zorn.Chain Subset.subset S) :
+      (∀ I ∈ S, I.proper_ideal) → (ideal_chain S hS hc).proper_ideal := by
+        intro h hU;
+        let ⟨_, ⟨I, IS, hI⟩, hIu⟩ := is_unit_ideal.mp hU;
+        rw [←hI] at hIu;
+        exact absurd (is_unit_ideal.mpr hIu) (h I IS)
+        
   end Ideal
 
   namespace QuotientRing
