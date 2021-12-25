@@ -15,15 +15,15 @@ namespace M4R
     subset := Function.fibre gh.hom 0
     has_zero := gh.preserve_zero
     add_closed := by
-      intro _ _ x0 y0; simp [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_add, x0, y0, gb.add_zero]
+      intro _ _ x0 y0; simp only [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_add, x0, y0, gb.add_zero]
     neg_closed := by
-      intro x x0; simp [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_neg, x0, gb.neg_zero]
+      intro x x0; simp only [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_neg, x0, gb.neg_zero]
 
   namespace GHomomorphism
 
     theorem hom_inj [ga : Group α] [gb : Group β] (gh : GHomomorphism α β) :
       Function.injective gh.hom ↔ kernel gh = SubGroup.Trivial α := by
-        simp [kernel, Function.fibre];
+        simp only [kernel, Function.fibre];
         apply Iff.intro;
           { intro inj; apply (SubGroup.trivialExt (kernel gh)).mpr;
              intro x; have h := @inj x 0; rw [gh.preserve_zero] at h; exact fun x => h x }
@@ -35,9 +35,9 @@ namespace M4R
     protected theorem comp [Group α] [Group β] [Group γ] (hbc : GHomomorphism β γ)
       (hab : GHomomorphism α β) : GHomomorphism α γ where
       hom           := Function.comp hbc.hom hab.hom
-      preserve_zero := by simp [Function.comp]; rw [hab.preserve_zero, hbc.preserve_zero]
-      preserve_add  := by intro a b; simp [Function.comp]; rw [hab.preserve_add, hbc.preserve_add]
-      preserve_neg  := by intro a; simp [Function.comp]; rw [hab.preserve_neg, hbc.preserve_neg]
+      preserve_zero := by simp only [Function.comp]; rw [hab.preserve_zero, hbc.preserve_zero]
+      preserve_add  := by intro a b; simp only [Function.comp]; rw [hab.preserve_add, hbc.preserve_add]
+      preserve_neg  := by intro a; simp only [Function.comp]; rw [hab.preserve_neg, hbc.preserve_neg]
 
     instance GHomImageSubGroup [Group α] [Group β] (gh : GHomomorphism α β) : SubGroup β where
       subset     := Function.image gh.hom
@@ -54,9 +54,9 @@ namespace M4R
     protected theorem comp [Group α] [Group β] [Group γ] (hbc : GIsomorphism β γ) (hab : GIsomorphism α β) :
       GIsomorphism α γ where
       hom           := hbc.hom ∘ hab.hom
-      preserve_zero := by simp [Function.comp]; rw [hab.preserve_zero, hbc.preserve_zero]
-      preserve_add  := by intro a b; simp [Function.comp]; rw [hab.preserve_add, hbc.preserve_add]
-      preserve_neg  := by intro a; simp [Function.comp]; rw [hab.preserve_neg, hbc.preserve_neg]
+      preserve_zero := by simp only [Function.comp]; rw [hab.preserve_zero, hbc.preserve_zero]
+      preserve_add  := by intro a b; simp only [Function.comp]; rw [hab.preserve_add, hbc.preserve_add]
+      preserve_neg  := by intro a; simp only [Function.comp]; rw [hab.preserve_neg, hbc.preserve_neg]
       bij           := by have := Function.bijective.comp hbc.bij hab.bij; exact this
 
     instance IdentityGIsomorphism [Group α] : GIsomorphism α α where

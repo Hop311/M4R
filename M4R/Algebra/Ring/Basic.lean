@@ -55,7 +55,7 @@ namespace M4R
       
     theorem pow_nat_succ [Ring α] (a : α) (x : Nat) : a ^ (Nat.succ x) = a^x * a :=
       match x with
-      | Nat.zero => by simp [HPow.hPow, Pow.pow, Ring.pow_nat, one_mul]
+      | Nat.zero => by simp only [HPow.hPow, Pow.pow, Ring.pow_nat, one_mul]
       | Nat.succ k  => rfl
 
     theorem pow_nat_one [Ring α] (n : Nat) : (1 : α)^n = 1 := by
@@ -72,8 +72,8 @@ namespace M4R
     
     theorem pow_nat_mul_distrib [Ring α] (a b : α) (m : Nat) : (a * b)^m = a^m * b^m := by
       induction m with
-      | zero      => simp [pow_nat_0, mul_one]
-      | succ k ih => simp [pow_nat_succ, ←mul_assoc, ih, mul_comm]
+      | zero      => simp only [Nat.zero_eq, pow_nat_0, mul_one]
+      | succ k ih => simp only [pow_nat_succ, ←mul_assoc, ih, mul_comm]
 
     theorem pow_nat_comp [Ring α] (a : α) (m n : Nat) : (a^m)^n = a^(m*n) := by 
       induction m with

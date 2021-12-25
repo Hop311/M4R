@@ -39,15 +39,15 @@ namespace M4R
       notsubset (a b : γ) := ¬(a ⊆ b)
 
     @[simp] theorem ext [Mem α γ] (a b : γ) : a ⊆ b ∧ b ⊆ a ↔ ∀ x : α, x ∈ a ↔ x ∈ b :=
-      Iff.intro (fun ⟨ab, ba⟩ x => ⟨@ab x, @ba x⟩) (fun h => And.intro
-        (fun x => (h x).mp) (fun x => (h x).mpr))
+      ⟨fun ⟨ab, ba⟩ x => ⟨@ab x, @ba x⟩, fun h =>
+        ⟨fun x => (h x).mp, fun x => (h x).mpr⟩⟩
 
-    @[simp] theorem toSuperset [Mem α γ] (a b : γ) (x : α) : x ∈ a ∧ a ⊆ b → x ∈ b := by
-      intro ⟨xa, ab⟩; exact @ab x xa
+    @[simp] theorem toSuperset [Mem α γ] (a b : γ) (x : α) : x ∈ a → a ⊆ b → x ∈ b :=
+      fun xa ab => @ab x xa
 
-    @[simp] theorem toProperSubset [Mem α γ] (a b : γ) : a ⊊ b → a ⊆ b := fun x => x.left
+    @[simp] theorem toProperSubset [Mem α γ] (a b : γ) : a ⊊ b → a ⊆ b := And.left
 
-    @[simp] protected theorem refl [Mem α γ] (a : γ) : a ⊆ a := fun _ xa => xa
+    @[simp] protected theorem refl [Mem α γ] (a : γ) : a ⊆ a := fun _ => id
 
     @[simp] protected theorem trans [Mem α γ] {a b c : γ} : a ⊆ b → b ⊆ c → a ⊆ c := fun ab bc x xa => bc (ab xa)
 

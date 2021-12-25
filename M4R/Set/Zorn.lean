@@ -42,24 +42,24 @@ namespace M4R
       super_chain r c (succ_chain r c) := by
         have ⟨_, h'⟩: Chain r c ∧ super_chain r c (choose h) := by
           exact @choose_spec _ (fun c' => Chain r c ∧ super_chain r c c') _
-        simp [succ_chain, dif_pos h, h']
+        simp only [succ_chain, dif_pos h, h']
       
     theorem chain_succ {c : Set α} (hc : Chain r c) : Chain r (succ_chain r c) :=
       if h : ∃c', Chain r c ∧ super_chain r c c' then
         (succ_spec r h).left
       else
-        by simp [succ_chain, dif_neg h]; exact hc
+        by simp only [succ_chain, dif_neg h]; exact hc
 
     theorem super_of_not_max {c : Set α} (hc₁ : Chain r c) (hc₂ : ¬ is_max_chain r c) :
       super_chain r c (succ_chain r c) := by
-        simp [is_max_chain, not_and_iff_or_not, iff_not_not] at hc₂;
+        simp only [is_max_chain, not_and_iff_or_not, iff_not_not] at hc₂;
         exact Or.elim hc₂ (fun _ => by contradiction) (fun ⟨c', hc'⟩ => succ_spec r ⟨c', hc₁, hc'⟩)
 
     theorem succ_increasing {c : Set α} : c ⊆ succ_chain r c :=
       if h : ∃c', Chain r c ∧ super_chain r c c' then
         (succ_spec r h).right.left
       else
-        by simp [succ_chain, dif_neg h];
+        by simp only [succ_chain, dif_neg h, Subset.refl];
 
     /-- Set of sets reachable from `∅` using `succ_chain` and `⋃₀`. -/
     inductive chain_closure : Set α → Prop
@@ -99,7 +99,7 @@ namespace M4R
         case union s hs ih =>
           apply Or.imp_left (fun h' => Set.subset.antisymm h' h)
           apply byContradiction;
-          simp [not_or_iff_and_not, Set.SoSUnion.subset_iff, not_forall];
+          simp [not_or_iff_and_not, Set.SoSUnion.subset_iff, not_forall, and_imp];
           intro c₃ hc₃ h₁ h₂;
           have := chain_closure_succ_total_aux r hc₁ (hs c₃ hc₃) (ih _ hc₃);
           cases this with

@@ -45,7 +45,7 @@ namespace M4R
   @[simp] theorem exists_imp_distrib {p : α → Prop} : ((∃ x, p x) → b) ↔ ∀ x, p x → b :=
     ⟨fun h x hpx => h ⟨x, hpx⟩, fun h ⟨x, hpx⟩ => h x hpx⟩
 
-  @[simp] theorem and_imp : (a ∧ b → c) ↔ (a → b → c) :=
+  theorem and_imp : (a ∧ b → c) ↔ (a → b → c) :=
     Iff.intro (fun h ha hb => h ⟨ha, hb⟩) (fun h ⟨ha, hb⟩ => h ha hb)
 
   open Classical
@@ -63,7 +63,7 @@ namespace M4R
 
   @[simp] theorem of_not_not : ¬ ¬ p → p := Decidable.of_not_not
   
-  @[simp] theorem iff_not_not : ¬ ¬ p ↔ p := ⟨of_not_not, fun _ _ => by contradiction⟩
+  theorem iff_not_not : ¬ ¬ p ↔ p := ⟨of_not_not, fun _ _ => by contradiction⟩
 
   theorem not_imp_symm (h : ¬a → b) (hb : ¬b) : a := byContradiction (hb ∘ h)
 

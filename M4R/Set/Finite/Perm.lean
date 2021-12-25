@@ -6,11 +6,11 @@ import M4R.Function
 namespace M4R
 
   namespace List
-  
+
     theorem filterMap_Eq_map (f : α → β) : List.filterMap (some ∘ f) = List.map f := by
       apply funext; intro l;
       induction l with
-      | nil => simp [List.filterMap, List.map];
+      | nil => simp only [List.filterMap, List.map];
       | cons _ _ ih => simp [List.filterMap, List.map]; exact ih
 
   end List
@@ -174,14 +174,14 @@ namespace M4R
     theorem filterMap (f : α → Option β) {l₁ l₂ : List α} (p : l₁ ~ l₂) :
       List.filterMap f l₁ ~ List.filterMap f l₂ := by
         induction p with
-        | nil => simp [List.filterMap]; exact Perm.nil
+        | nil => simp only [List.filterMap]; exact Perm.nil
         | cons x p ih =>
-          simp [List.filterMap]
+          simp only [List.filterMap]
           cases f x with
           | none => exact ih
           | some a => exact cons a ih;
         | swap x y l =>
-          simp [List.filterMap]
+          simp only [List.filterMap]
           cases f x with
           | none =>
             cases f y with

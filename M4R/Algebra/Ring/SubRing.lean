@@ -19,7 +19,7 @@ namespace M4R
     protected def image [NonCommutativeRing α] (s : SubRing α) (a : α) (p : a ∈ s.subset) : ↑s.subset := ⟨a, p⟩
     protected theorem image_eq [NonCommutativeRing α] (s : SubRing α) (a b : ↑s.subset) :
       a = b ↔ Set.inclusion a = Set.inclusion b :=
-        ⟨congrArg Set.inclusion, Set.elementExt a b⟩
+        ⟨congrArg Set.inclusion, Set.elementExt⟩
         
     instance SubRingRing [NonCommutativeRing α] (s : SubRing α) : NonCommutativeRing ↑s.subset where
       toAbelianGroup := AbelianGroup.SubGroupAbelian s.toSubGroup

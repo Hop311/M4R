@@ -1,4 +1,5 @@
 import M4R.Algebra.Ring.RMorphism
+import M4R.Set
 
 namespace M4R
   open Group
@@ -15,7 +16,6 @@ namespace M4R
   namespace Ideal
     instance IdealMem [Ring α] : Mem α (Ideal α) where mem := fun x I => x ∈ I.subset
 
-
     theorem mul_closed' [Ring α] (I : Ideal α) : ∀ {a : α} (b : α), a ∈ I → a * b ∈ I := by
       intro a b as; rw [mul_comm]; exact I.mul_closed b as
     theorem neg_closed [Ring α] (I : Ideal α) : ∀ {a : α}, a ∈ I → -a ∈ I := by
@@ -24,7 +24,7 @@ namespace M4R
     protected def image [Ring α] (I : Ideal α) (a : α) (p : a ∈ I) : ↑I.subset := ⟨a, p⟩
     protected theorem image_eq [Ring α] (I : Ideal α) (a b : ↑I.subset) :
       a = b ↔ Set.inclusion a = Set.inclusion b :=
-        ⟨congrArg Set.inclusion, Set.elementExt a b⟩
+        ⟨congrArg Set.inclusion, Set.elementExt⟩
 
     instance ZeroIdeal [Ring α] : Ideal α where
       subset := Set.SingletonSet.mk 0
@@ -42,10 +42,10 @@ namespace M4R
       zero := ⟨0, I.has_zero⟩
       add := fun ⟨x, xs⟩ ⟨y, ys⟩ => ⟨x + y, I.add_closed xs ys⟩
       neg := fun ⟨x, xs⟩ => ⟨-x, I.neg_closed xs⟩
-      add_zero  := by intro ⟨a, _⟩; simp [Ideal.image_eq]; exact r.add_zero a
-      add_assoc := by intro ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩; simp [Ideal.image_eq]; exact r.add_assoc a b c
-      add_neg   := by intro ⟨a, _⟩; simp [Ideal.image_eq]; exact r.add_neg a
-      add_comm  := by intro ⟨a, _⟩ ⟨b, _⟩; simp [Ideal.image_eq]; exact r.add_comm a b
+      add_zero  := by intro ⟨a, _⟩; simp only [Ideal.image_eq]; exact r.add_zero a
+      add_assoc := by intro ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩; simp only [Ideal.image_eq]; exact r.add_assoc a b c
+      add_neg   := by intro ⟨a, _⟩; simp only [Ideal.image_eq]; exact r.add_neg a
+      add_comm  := by intro ⟨a, _⟩ ⟨b, _⟩; simp only [Ideal.image_eq]; exact r.add_comm a b
     
     protected def equivalent [Ring α] (I J: Ideal α) : Prop := I.subset = J.subset
     protected theorem ext [Ring α] (I J : Ideal α) : Ideal.equivalent I J ↔ I = J := by
@@ -54,9 +54,9 @@ namespace M4R
         apply Iff.intro;
         { intro eq; rw [Ideal.mk.injEq]; exact eq }
         { simp [Ideal.equivalent]; exact id }
-    protected theorem antisymm [Ring α] (I J : Ideal α) : I = J ↔ I ⊆ J ∧ J ⊆ I := by
-      rw [←Ideal.ext]; simp [Ideal.equivalent]; rw [←Set.ext]; simp [Set.equivalent];
-      exact ⟨fun h x => h x, fun h x => h x⟩;
+    protected theorem antisymm [Ring α] {I J : Ideal α} (h₁ : I ⊆ J) (h₂ : J ⊆ I) : I = J := by
+      rw [←Ideal.ext]; simp only [Ideal.equivalent]; rw [←Set.ext]; simp only [Set.equivalent];
+      exact fun x => ⟨fun h => h₁ h, fun h => h₂ h⟩
 
     protected def add [Ring α] (I J : Ideal α) : Ideal α where
       subset := {x | ∃ i : I.subset, ∃ j : J.subset, i.val + j.val = x }
@@ -103,15 +103,15 @@ namespace M4R
                     intro x xp; let ⟨b, ab⟩ := xp; rw [←ab]; exact I.mul_closed' b aI⟩
                     
     theorem in_unit_ideal [Ring α] : ∀ I : Ideal α, I ⊆ UnitIdeal α := by
-      intro; simp [Subset.subset]; intros; trivial
+      intro; simp only [Subset.subset]; intros; trivial
     theorem principal_in [Ring α] (I : Ideal α) : ∀ a, a ∈ I → principal a ⊆ I := by
       intro _ aI _ ⟨y, ayx⟩; rw [←ayx]; exact mul_closed' _ _ aI;
     theorem unit_principal [Ring α] : ∀ u, isUnit u → (principal u) = UnitIdeal α := by
-      intro u hu; rw [Ideal.antisymm]; exact ⟨in_unit_ideal _, fun y _ => unit_divides u y hu⟩;
+      intro u hu; exact Ideal.antisymm (in_unit_ideal _) (fun y _ => unit_divides u y hu);
 
-    theorem is_unit_ideal [Ring α] (I : Ideal α) : I = UnitIdeal α ↔ 1 ∈ I := by
-      apply Iff.intro (fun h => by rw [h]; trivial); intro h; rw [Ideal.antisymm I (UnitIdeal α)];
-      exact ⟨in_unit_ideal I, by rw [←unit_principal (1 : α) isUnit_1]; exact principal_in I 1 h⟩;
+    theorem is_unit_ideal [Ring α] {I : Ideal α} : I = UnitIdeal α ↔ 1 ∈ I := by
+      apply Iff.intro (fun h => by rw [h]; trivial); intro h;
+      exact Ideal.antisymm (in_unit_ideal I) (by rw [←unit_principal (1 : α) isUnit_1]; exact principal_in I 1 h);
 
   end Ideal
 
@@ -120,7 +120,7 @@ namespace M4R
     def QuotientRelation [Ring α] (I : Ideal α) (a b : α) : Prop := -a + b ∈ I
 
     theorem QuotientRelation.refl [Ring α] (I : Ideal α) (a : α) : QuotientRelation I a a := by
-      simp [QuotientRelation]; rw [neg_add]; exact I.has_zero;
+      simp only [QuotientRelation]; rw [neg_add]; exact I.has_zero
 
     def QuotClass [Ring α] (I : Ideal α) : Type _ :=
       Quot (QuotientRelation I)
@@ -128,20 +128,20 @@ namespace M4R
     def QuotAdd [Ring α] (I : Ideal α) : QuotClass I → QuotClass I → QuotClass I :=
       Function.Quotient.map₂ (QuotientRelation I) (QuotientRelation I) (QuotientRelation I)
         (QuotientRelation.refl I) (QuotientRelation.refl I) (fun x y => x + y) (fun a₁ a₂ b₁ b₂ ha hb => by
-          simp [QuotientRelation] at *;
+          simp only [QuotientRelation] at *
           rw [neg_add_distrib, add_comm (-b₁), add_assoc, ←add_assoc (-b₁), add_comm (-b₁), add_assoc, ←add_assoc];
           exact I.add_closed ha hb)
 
     def QuotNeg [Ring α] (I : Ideal α) : QuotClass I → QuotClass I :=
       Function.Quotient.map (QuotientRelation I) (QuotientRelation I) (fun x => -x)
         (fun x y hxy => by
-          simp [QuotientRelation] at *; rw [←neg_add_distrib, add_comm]; exact I.neg_closed hxy)
+          simp only [QuotientRelation] at *; rw [←neg_add_distrib, add_comm]; exact I.neg_closed hxy)
 
     def QuotMul [Ring α] (I : Ideal α) : QuotClass I → QuotClass I → QuotClass I := by
       apply Function.Quotient.map₂ (QuotientRelation I) (QuotientRelation I) (QuotientRelation I)
         (QuotientRelation.refl I) (QuotientRelation.refl I) (fun x y => x * y) (fun a₁ a₂ b₁ b₂ ha hb => by
-          simp [QuotientRelation] at *;
-          have := I.add_closed (I.mul_closed b₁ ha) (I.mul_closed a₂ hb);
+          simp only [QuotientRelation] at *
+          have := I.add_closed (I.mul_closed b₁ ha) (I.mul_closed a₂ hb)
           rw [mul_distrib_left, mul_distrib_left, mul_neg, mul_comm, mul_comm b₁, add_assoc, ←add_assoc (a₂ * b₁),
             mul_neg, add_neg, zero_add] at this; exact this)
 
@@ -152,34 +152,34 @@ namespace M4R
       neg := QuotNeg I
       mul := QuotMul I
       add_zero := by
-        apply Quot.ind; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Quot.ind; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [add_zero, neg_add]; exact I.has_zero
       add_assoc := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [add_assoc, neg_add]; exact I.has_zero
       add_neg := by
-        apply Quot.ind; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Quot.ind; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [add_neg, neg_add]; exact I.has_zero
       add_comm := by
-        apply Function.Quotient.ind₂; intro a _; apply Quot.sound; simp [QuotientRelation];
+        apply Function.Quotient.ind₂; intro a _; apply Quot.sound; simp only [QuotientRelation]
         rw [add_comm a, neg_add]; exact I.has_zero
       mul_one := by
-        apply Quot.ind; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Quot.ind; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [mul_one, neg_add]; exact I.has_zero
       one_mul := by
-        apply Quot.ind; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Quot.ind; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [one_mul, neg_add]; exact I.has_zero
       mul_assoc := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [mul_assoc, neg_add]; exact I.has_zero
       mul_distrib_left := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [mul_distrib_left, neg_add]; exact I.has_zero
       mul_distrib_right := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [mul_distrib_right, neg_add]; exact I.has_zero
       mul_comm := by
-        apply Function.Quotient.ind₂; intros; apply Quot.sound; simp [QuotientRelation];
+        apply Function.Quotient.ind₂; intros; apply Quot.sound; simp only [QuotientRelation]
         rw [mul_comm, neg_add]; exact I.has_zero
 
   end QuotientRing

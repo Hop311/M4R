@@ -18,7 +18,7 @@ namespace M4R
     instance ListSizeOf : SizeOf (List α) where sizeOf := List.sizeOf
 
     @[simp] theorem sizeOf_cons (a : α) (as : List α) : sizeOf (a::as) = (sizeOf as).succ := by
-      simp [sizeOf, List.sizeOf]; rw [←List.length_eq_lenghtTR, List.length_cons]
+      simp only [sizeOf, List.sizeOf]; rw [←List.length_eq_lenghtTR, List.length_cons]
 
     protected def nodup : List α → Prop := Pairwise (fun x y => x ≠ y)
 
@@ -39,7 +39,7 @@ namespace M4R
       Or.inr
 
     @[simp] theorem eq_or_mem_of_mem_cons {a y : α} {l : List α} : a ∈ y::l → a = y ∨ a ∈ l := by
-      simp [Mem.mem, List.mem]; exact id
+      simp only [Mem.mem, List.mem]; exact id
 
     theorem memSplit {l : List α} (h : a ∈ l) : ∃ s t : List α, l = s ++ a :: t := by
       induction l with 
@@ -89,7 +89,7 @@ namespace M4R
       Pairwise r l₁ ∧ Pairwise r l₂ ∧ ∀ x ∈ l₁, ∀ y ∈ l₂, r x y := by
       induction l₁ with
       | nil =>
-        apply Iff.intro; intro prl; apply And.intro Pairwise.nil; simp [nil] at prl;
+        apply Iff.intro; intro prl; apply And.intro Pairwise.nil; simp only [nil] at prl;
         apply And.intro prl; exact (fun x _ _ _ => by have := List.notMemNil x; contradiction)
         exact (fun x => x.right.left)
       | cons x l₁ IH =>
@@ -139,7 +139,7 @@ namespace M4R
 
     theorem map {r : α → α → Prop} (f : β → α) : ∀ {l : List β},
       Pairwise r (l.map f) ↔ Pairwise (fun a b : β => r (f a) (f b)) l
-    | []     => by simp [List.map, Pairwise.nil]
+    | []     => by simp only [List.map, Pairwise.nil]
     | b::l => by
       have : (∀ a b', b' ∈ l → f b' = a → r (f b) a) ↔ ∀ (b' : β), b' ∈ l → r (f b) (f b') := by
         apply Iff.intro (fun h x xl => h (f x) x xl rfl);

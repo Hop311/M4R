@@ -45,5 +45,7 @@ namespace M4R
     def SoSIntersection (s : Set (Set α)) : Set α := {x | ∀ ss ∈ s, x ∈ ss}
     prefix:110 "⋂₀" => SoSIntersection
 
+    def toSetSet (s : Set α) (f : α → Set β) : Set (Set β) := {b | ∃ a ∈ s, f a = b}
+
   end Set
 end M4R

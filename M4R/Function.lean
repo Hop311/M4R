@@ -59,7 +59,7 @@ namespace M4R
       { intro surj; apply Set.subset.antisymm;
         { exact Set.subset.subUniversal _; }
         { intro y _; exact surj y } }
-      intro heq y; simp [image, Set.Universal] at heq; rw [congrFun heq y]; trivial
+      intro heq y; simp only [image, Set.Universal] at heq; rw [congrFun heq y]; trivial
 
     namespace Quotient
 
