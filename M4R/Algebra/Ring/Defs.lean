@@ -2,34 +2,34 @@ import M4R.Algebra.Group
 
 namespace M4R
 
-  class NonCommutativeRing (α : Type _) extends AbelianGroup α, One α, Mul α where
+  class NCRing (α : Type _) extends AbelianGroup α, One α, Mul α where
     mul_one           : ∀ a : α, a * 1 = a
     one_mul           : ∀ a : α, 1 * a = a
     mul_assoc         : ∀ a b c : α, (a * b) * c = a * (b * c)
     mul_distrib_left  : ∀ a b c : α, a * (b + c) = a * b + a * c
     mul_distrib_right : ∀ a b c : α, (a + b) * c = a * c + b * c
 
-  class NonTrivialNonCommutativeRing (α : Type _) extends NonCommutativeRing α where
+  class NonTrivialNCRing (α : Type _) extends NCRing α where
     one_neq_zero : (1 : α) ≠ 0
 
-  class Ring (α : Type _) extends NonCommutativeRing α where
+  class Ring (α : Type _) extends NCRing α where
     mul_comm         : ∀ a b : α, a * b = b * a
 
-  class NonTrivialRing (α : Type _) extends Ring α, NonTrivialNonCommutativeRing α
+  class NonTrivialRing (α : Type _) extends Ring α, NonTrivialNCRing α
 
-  structure SubRing (α : Type _) [NonCommutativeRing α] extends SubGroup α where
+  structure SubRing (α : Type _) [NCRing α] extends SubGroup α where
       has_one    : 1 ∈ subset
       mul_closed : ∀ a b, a ∈ subset → b ∈ subset → a * b ∈ subset
 
   namespace Ring
-    protected def ofNat [NonCommutativeRing α] (n : Nat) : α :=
+    protected def ofNat [NCRing α] (n : Nat) : α :=
       match n with
       | Nat.zero   => 0
       | Nat.succ m => match m with
         | Nat.zero => 1
         | _        => (Ring.ofNat m) + 1
     @[defaultInstance high]
-    instance RingOfNat [NonCommutativeRing α] (n : Nat) : OfNat α n where ofNat := Ring.ofNat n
+    instance RingOfNat [NCRing α] (n : Nat) : OfNat α n where ofNat := Ring.ofNat n
     
     protected def pow_nat [Ring α] (a : α) (n : Nat) : α :=
       match n with
@@ -54,4 +54,11 @@ namespace M4R
     def irreducible [Ring α] (a : α) : Prop := nonZeroNonUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
 
   end Ring
+  
+  class NCField (α : Type _) extends NonTrivialNCRing α where
+    inv     : ∀ {a : α}, a ≠ 0 → α
+    mul_inv : ∀ {a : α}, (h : a ≠ 0) → a * (inv h) = 1
+    inv_mul : ∀ {a : α}, (h : a ≠ 0) → (inv h) * a = 1
+
+  class Field (α : Type _) extends NCField α, Ring α
 end M4R

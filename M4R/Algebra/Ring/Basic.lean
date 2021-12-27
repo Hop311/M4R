@@ -1,21 +1,23 @@
 import M4R.Algebra.Ring.Defs
 
 namespace M4R
-  namespace Ring
+  namespace NCRing
     open Group
-    open AbelianGroup
-    open NonCommutativeRing
 
-
-    theorem mul_zero [NonCommutativeRing α] (a : α) : a * 0 = 0 := by
+    theorem mul_zero [NCRing α] (a : α) : a * 0 = 0 := by
       rw [←add_right_cancel _ _ (a * 0), zero_add, ←mul_distrib_left, zero_add]
-    theorem zero_mul [NonCommutativeRing α] (a : α) : 0 * a = 0 := by
+    theorem zero_mul [NCRing α] (a : α) : 0 * a = 0 := by
       rw [←add_right_cancel _ _ (0 * a), zero_add, ←mul_distrib_right, zero_add]
 
-    theorem neg_mul [NonCommutativeRing α] (a b : α) : -a * b = -(a * b) := by
+    theorem neg_mul [NCRing α] (a b : α) : -a * b = -(a * b) := by
       rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_right, neg_add, zero_mul]
-    theorem mul_neg [NonCommutativeRing α] (a b : α) : a * -b = -(a * b) := by
+    theorem mul_neg [NCRing α] (a b : α) : a * -b = -(a * b) := by
       rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_left, neg_add, mul_zero]
+
+  end NCRing
+
+  namespace Ring
+    open NCRing
 
     theorem divides_self [Ring α] (a : α) : a ÷ a := ⟨1, mul_one a⟩
     theorem divides_zero [Ring α] (a : α) : a ÷ 0 := ⟨0, mul_zero a⟩
@@ -81,4 +83,36 @@ namespace M4R
       | succ k ih => rw [pow_nat_succ, Nat.succ_mul, pow_nat_mul_distrib, ih, pow_nat_add_distrib]
 
   end Ring
+
+  namespace NCField
+    open NCRing
+    open NonTrivialNCRing
+
+    instance toNonTrivialRing (α : Type _) [Field α] : NonTrivialRing α where
+      one_neq_zero := Field.toNCField.one_neq_zero
+
+    theorem inv_nonzero [NCField α] : ∀ {a : α}, (h : a ≠ 0) → inv h ≠ 0 := by
+      intro a h hi;
+      have := mul_inv h
+      rw [hi, mul_zero] at this
+      exact one_neq_zero this.symm
+
+    theorem mul_right_cancel [NCField α] {a b c : α} (h : c ≠ 0) : a * c = b * c ↔ a = b :=
+      ⟨fun hab => by rw [←mul_one a, ←mul_one b, ←mul_inv h, ←mul_assoc, ←mul_assoc, hab],
+        fun hab => by rw [hab]⟩
+
+    theorem inv_inv [NCField α] : ∀ {a : α}, (h : a ≠ 0) → inv (inv_nonzero h) = a :=
+      fun h => by rw [←mul_right_cancel (inv_nonzero h), inv_mul, mul_inv]
+
+    theorem integral [NCField α] : ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0 := by
+      intro a b ha hb hab;
+      rw [←zero_mul b, mul_right_cancel hb] at hab
+      exact ha hab
+
+    theorem inv_of_mul [NCField α] {a b : α} (ha : a ≠ 0) (hb : b ≠ 0) :
+      inv (integral ha hb) = (inv hb) * (inv ha) := by
+        rw [←mul_right_cancel ha, mul_assoc, inv_mul, mul_one, ←mul_right_cancel hb, inv_mul, mul_assoc]
+        exact inv_mul (integral ha hb)
+
+  end NCField
 end M4R

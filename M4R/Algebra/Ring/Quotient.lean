@@ -4,7 +4,7 @@ import M4R.Set
 namespace M4R
   open Group
   open AbelianGroup
-  open NonCommutativeRing
+  open NCRing
   open Ring
 
   structure Ideal (α : Type _) [Ring α] where
@@ -180,7 +180,7 @@ namespace M4R
           rw [mul_distrib_left, mul_distrib_left, mul_neg, mul_comm, mul_comm b₁, add_assoc, ←add_assoc (a₂ * b₁),
             mul_neg, add_neg, zero_add] at this; exact this)
 
-    instance QuotientRing (α : Type _) [Ring α] (I : Ideal α) : Ring (QuotClass I) where
+    instance QuotientRing {α : Type _} [Ring α] (I : Ideal α) : Ring (QuotClass I) where
       zero := Quot.mk (QuotientRelation I) 0
       one := Quot.mk (QuotientRelation I) 1
       add := QuotAdd I
