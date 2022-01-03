@@ -1,6 +1,34 @@
 import M4R.Algebra.Ring.Defs
 
 namespace M4R
+  section
+    open NonTrivialNCRing
+    open NonTrivialRing
+    open NCField
+
+    def Ring.is_NonTrivial (α : Type _) [Ring α] : Prop := (1 : α) ≠ 0
+    instance Ring.is_NonTrivial.toNonTrivialRing [Ring α] (h : is_NonTrivial α) : NonTrivialRing α where
+      one_neq_zero := h
+    theorem NonTrivialRing.to_is_NonTrivial [NonTrivialRing α] : Ring.is_NonTrivial α := one_neq_zero
+
+    def Ring.is_Field (α : Type _) [Ring α] : Prop := is_NonTrivial α ∧ ∀ {a : α}, (h : a ≠ 0) → ∃ b, a * b = 1
+    noncomputable instance Ring.is_Field.toFIeld [Ring α] (h : is_Field α) : Field α where
+      one_neq_zero := h.left
+      mul_comm := mul_comm
+      inv := fun ha => Classical.choose (h.right ha)
+      mul_inv := fun ha => Classical.choose_spec (h.right ha)
+      inv_mul := fun ha => by rw [mul_comm]; exact Classical.choose_spec (h.right ha)
+    theorem Field.to_is_Field [Field α] : Ring.is_Field α :=
+      ⟨one_neq_zero, fun ha => ⟨inv ha, mul_inv ha⟩⟩
+
+    def Ring.is_IntegralDomain (α : Type _) [Ring α] : Prop := is_NonTrivial α ∧ ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0
+    instance Ring.is_IntegralDomain.toIntegralDomain [Ring α] (h : is_IntegralDomain α) : IntegralDomain α where
+      one_neq_zero := h.left
+      mul_comm := mul_comm
+      integral := h.right
+    theorem IntegralDomain.to_is_IntegralDomain [i : IntegralDomain α] : Ring.is_IntegralDomain α :=
+      ⟨i.one_neq_zero, i.integral⟩
+  end
   namespace NCRing
     open Group
 
@@ -115,4 +143,21 @@ namespace M4R
         exact inv_mul (integral ha hb)
 
   end NCField
+
+  open NonTrivialNCRing
+  open NonTrivialRing
+  open NCField
+
+  instance IntegralDomain.toNonTrivialRing (α : Type _) [IntegralDomain α] : NonTrivialRing α where
+      one_neq_zero := IntegralDomain.toNCIntegralDomain.one_neq_zero
+
+  instance NCField.toNCIntegralDomain (α : Type _) [NCField α] : NCIntegralDomain α where
+    integral := NCField.integral
+
+  def Field.to_is_IntegralDomain (α : Type _) [Field α] : Ring.is_IntegralDomain α :=
+    ⟨one_neq_zero, integral⟩
+
+  instance Field.toIntegralDomain (α : Type _) [Field α] : IntegralDomain α :=
+    (to_is_IntegralDomain α).toIntegralDomain
+
 end M4R

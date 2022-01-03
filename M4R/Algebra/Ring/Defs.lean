@@ -61,4 +61,10 @@ namespace M4R
     inv_mul : ∀ {a : α}, (h : a ≠ 0) → (inv h) * a = 1
 
   class Field (α : Type _) extends NCField α, Ring α
+
+  class NCIntegralDomain (α : Type _) extends NonTrivialNCRing α where
+    integral : ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0
+  
+  class IntegralDomain (α : Type _) extends NCIntegralDomain α, Ring α
+
 end M4R

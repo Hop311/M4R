@@ -48,7 +48,7 @@ namespace M4R
       add_comm  := by intro ⟨a, _⟩ ⟨b, _⟩; simp only [Ideal.image_eq]; exact r.add_comm a b
     
     protected def equivalent [Ring α] (I J: Ideal α) : Prop := I.subset = J.subset
-    protected theorem ext [Ring α] (I J : Ideal α) : Ideal.equivalent I J ↔ I = J := by
+    protected theorem ext [Ring α] {I J : Ideal α} : Ideal.equivalent I J ↔ I = J := by
       match I, J with
       | ⟨_, _, _, _⟩, ⟨_, _, _, _⟩ =>
         apply Iff.intro;
@@ -59,20 +59,30 @@ namespace M4R
       exact fun x => ⟨fun h => h₁ h, fun h => h₂ h⟩
 
     protected def add [Ring α] (I J : Ideal α) : Ideal α where
-      subset := {x | ∃ i : I.subset, ∃ j : J.subset, i.val + j.val = x }
-      has_zero := ⟨⟨0, I.has_zero⟩, ⟨0, J.has_zero⟩, show 0 + 0 = 0 by rw [add_zero 0]⟩
-      add_closed := fun ⟨ia, ⟨ja, ija⟩⟩ ⟨ib, ⟨jb, ijb⟩⟩ => ⟨
-          ⟨ia.val+ib.val, I.add_closed ia.property ib.property⟩,
-          ⟨ja.val+jb.val, J.add_closed ja.property jb.property⟩, by
-          rw [add_assoc, add_comm ib.val, add_assoc, add_comm jb.val, ←add_assoc, ija, ijb]
+      subset := {x | ∃ i ∈ I, ∃ j ∈ J, i + j = x }
+      has_zero := ⟨0, I.has_zero, 0, J.has_zero, show 0 + 0 = 0 by rw [add_zero 0]⟩
+      add_closed := fun ⟨ia, hia, ja, hja, hija⟩ ⟨ib, hib, jb, hjb, hijb⟩ =>
+        ⟨
+          ia + ib, I.add_closed hia hib,
+          ja + jb, J.add_closed hja hjb,
+          by rw [add_assoc, add_comm ib, add_assoc, add_comm jb, ←add_assoc, hija, hijb]
         ⟩
-      mul_closed := fun a b ⟨ia, ⟨ja, ija⟩⟩ => ⟨
-          ⟨a*ia.val, I.mul_closed a ia.property⟩,
-          ⟨a*ja.val, J.mul_closed a ja.property⟩,
-          by rw [←mul_distrib_left, ija]
+      mul_closed := fun a b ⟨i, hi, j, hj, hij⟩ =>
+        ⟨
+          a*i, I.mul_closed a hi,
+          a*j, J.mul_closed a hj,
+          by rw [←mul_distrib_left, hij]
         ⟩
     instance IdealAdd [Ring α] : Add (Ideal α) where add := Ideal.add
-    
+
+    protected theorem add.subset [Ring α] (I J : Ideal α) : I ⊆ I + J := fun x hx => ⟨x, hx, 0, J.has_zero, add_zero x⟩
+  
+    protected theorem add.comm [Ring α] (I J : Ideal α) : I + J = J + I :=
+      have : ∀ {K L : Ideal α}, K + L ⊆ L + K := by
+        intro K L x ⟨i, hi, j, hj, hij⟩;
+        exact ⟨j, hj, i, hi, by rw [add_comm]; exact hij⟩
+      Ideal.antisymm this this
+
     def coprime [Ring α] (I J : Ideal α) : Prop := I + J = UnitIdeal α
 
     def principal [r : Ring α] (a : α) : Ideal α where
@@ -84,14 +94,18 @@ namespace M4R
     def is_principal [Ring α] (I : Ideal α) : Prop :=
       ∃ a, a ∈ I ∧ ∀ x, x ∈ I → a ÷ x
 
-    def is_prime [Ring α] (I : Ideal α) : Prop :=
-      ∀ r s, r * s ∈ I → r ∈ I ∨ s ∈ I
-
-    def is_maximal [Ring α] (I : Ideal α) : Prop :=
-      ∀ J : Ideal α, I ⊆ J → J = I ∨ J = UnitIdeal α
-
     def proper_ideal [Ring α] (I : Ideal α) : Prop :=
       I ≠ UnitIdeal α
+
+    def is_prime [Ring α] (I : Ideal α) : Prop :=
+      I.proper_ideal ∧ ∀ r s, r * s ∈ I → r ∈ I ∨ s ∈ I
+
+    def is_maximal [Ring α] (I : Ideal α) : Prop :=
+      I.proper_ideal ∧ ∀ {J : Ideal α}, I ⊆ J → J = I ∨ J = UnitIdeal α
+
+    theorem maximal_neq [Ring α] {I : Ideal α} (h : I.is_maximal) : ∀ {J : Ideal α}, I ⊊ J → J = UnitIdeal α := by
+      intro J ⟨hIJ, x, hxI, hxJ⟩;
+      apply (h.right hIJ).resolve_left fun heq => by rw [heq] at hxJ; exact hxI hxJ
 
     theorem generator_in_principal [Ring α] (a : α) : a ∈ principal a := ⟨1, mul_one a⟩
     theorem principal_principal [Ring α] (a : α) : is_principal (principal a) :=
@@ -99,7 +113,7 @@ namespace M4R
 
     theorem principal_of_is_principal [Ring α] (I : Ideal α) (h : is_principal I) : ∃ a, I = principal a := by
       let ⟨a, ⟨aI, ha⟩⟩ := h;
-      exact ⟨a, by apply (Ideal.ext _ _).mp; apply Set.subset.antisymm ha;
+      exact ⟨a, by apply Ideal.ext.mp; apply Set.subset.antisymm ha;
                     intro x xp; let ⟨b, ab⟩ := xp; rw [←ab]; exact I.mul_closed' b aI⟩
                     
     theorem in_unit_ideal [Ring α] : ∀ I : Ideal α, I ⊆ UnitIdeal α := by
@@ -147,75 +161,193 @@ namespace M4R
         let ⟨_, ⟨I, IS, hI⟩, hIu⟩ := is_unit_ideal.mp hU;
         rw [←hI] at hIu;
         exact absurd (is_unit_ideal.mpr hIu) (h I IS)
-        
+
   end Ideal
 
   namespace QuotientRing
 
-    def QuotientRelation [Ring α] (I : Ideal α) (a b : α) : Prop := -a + b ∈ I
+    def QRel [Ring α] (I : Ideal α) (a b : α) : Prop := -a + b ∈ I
+    theorem QRel.refl [Ring α] (I : Ideal α) (a : α) : QRel I a a := by
+      simp only [QRel]; rw [neg_add]; exact I.has_zero
+    theorem QRel.symm [Ring α] (I : Ideal α) {a b : α} : QRel I a b → QRel I b a := by
+      simp only [QRel]; intro h;
+      rw [←neg_neg a, ←neg_add_distrib];
+      exact I.neg_closed h
+    theorem QRel.trans [Ring α] (I : Ideal α) {a b c : α} : QRel I a b → QRel I b c → QRel I a c := by
+      simp only [QRel]; intro h₁ h₂;
+      have := I.add_closed h₁ h₂
+      rw [add_assoc, ←add_assoc b, add_neg, zero_add] at this;
+      exact this
 
-    theorem QuotientRelation.refl [Ring α] (I : Ideal α) (a : α) : QuotientRelation I a a := by
-      simp only [QuotientRelation]; rw [neg_add]; exact I.has_zero
+    instance QEquivalence [Ring α] (I : Ideal α) : Equivalence (QRel I) where
+      refl  := QRel.refl I
+      symm  := QRel.symm I
+      trans := QRel.trans I
 
-    def QuotClass [Ring α] (I : Ideal α) : Type _ :=
-      Quot (QuotientRelation I)
+    instance QSetoid [Ring α] (I : Ideal α) : Setoid α where
+      r := QRel I
+      iseqv := QEquivalence I
 
-    def QuotAdd [Ring α] (I : Ideal α) : QuotClass I → QuotClass I → QuotClass I :=
-      Function.Quotient.map₂ (QuotientRelation I) (QuotientRelation I) (QuotientRelation I)
-        (QuotientRelation.refl I) (QuotientRelation.refl I) (fun x y => x + y) (fun a₁ a₂ b₁ b₂ ha hb => by
-          simp only [QuotientRelation] at *
+    def QClass [Ring α] (I : Ideal α) : Type _ := Quotient (QSetoid I)
+
+    def toQuotient [Ring α] (I : Ideal α) (a : α) : QClass I := @Quotient.mk α (QSetoid I) a
+
+    def QuotAdd [Ring α] (I : Ideal α) : QClass I → QClass I → QClass I :=
+      Function.Quotient.map₂ (QRel I) (QRel I) (QRel I)
+        (QRel.refl I) (QRel.refl I) (fun x y => x + y) (fun a₁ a₂ b₁ b₂ ha hb => by
+          simp only [QRel] at *
           rw [neg_add_distrib, add_comm (-b₁), add_assoc, ←add_assoc (-b₁), add_comm (-b₁), add_assoc, ←add_assoc];
           exact I.add_closed ha hb)
 
-    def QuotNeg [Ring α] (I : Ideal α) : QuotClass I → QuotClass I :=
-      Function.Quotient.map (QuotientRelation I) (QuotientRelation I) (fun x => -x)
+    def QuotNeg [Ring α] (I : Ideal α) : QClass I → QClass I :=
+      Function.Quotient.map (QRel I) (QRel I) (fun x => -x)
         (fun x y hxy => by
-          simp only [QuotientRelation] at *; rw [←neg_add_distrib, add_comm]; exact I.neg_closed hxy)
+          simp only [QRel] at *; rw [←neg_add_distrib, add_comm]; exact I.neg_closed hxy)
 
-    def QuotMul [Ring α] (I : Ideal α) : QuotClass I → QuotClass I → QuotClass I := by
-      apply Function.Quotient.map₂ (QuotientRelation I) (QuotientRelation I) (QuotientRelation I)
-        (QuotientRelation.refl I) (QuotientRelation.refl I) (fun x y => x * y) (fun a₁ a₂ b₁ b₂ ha hb => by
-          simp only [QuotientRelation] at *
+    def QuotMul [Ring α] (I : Ideal α) : QClass I → QClass I → QClass I := by
+      apply Function.Quotient.map₂ (QRel I) (QRel I) (QRel I)
+        (QRel.refl I) (QRel.refl I) (fun x y => x * y) (fun a₁ a₂ b₁ b₂ ha hb => by
+          simp only [QRel] at *
           have := I.add_closed (I.mul_closed b₁ ha) (I.mul_closed a₂ hb)
           rw [mul_distrib_left, mul_distrib_left, mul_neg, mul_comm, mul_comm b₁, add_assoc, ←add_assoc (a₂ * b₁),
             mul_neg, add_neg, zero_add] at this; exact this)
 
-    instance QuotientRing {α : Type _} [Ring α] (I : Ideal α) : Ring (QuotClass I) where
-      zero := Quot.mk (QuotientRelation I) 0
-      one := Quot.mk (QuotientRelation I) 1
+    instance QuotientRing {α : Type _} [Ring α] (I : Ideal α) : Ring (QClass I) where
+      zero := toQuotient I 0
+      one := toQuotient I 1
       add := QuotAdd I
       neg := QuotNeg I
       mul := QuotMul I
       add_zero := by
-        apply Quot.ind; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
         rw [add_zero, neg_add]; exact I.has_zero
       add_assoc := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
         rw [add_assoc, neg_add]; exact I.has_zero
       add_neg := by
-        apply Quot.ind; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
         rw [add_neg, neg_add]; exact I.has_zero
       add_comm := by
-        apply Function.Quotient.ind₂; intro a _; apply Quot.sound; simp only [QuotientRelation]
+        apply Function.Quotient.ind₂; intro a _; apply Quot.sound; simp only [QRel]
         rw [add_comm a, neg_add]; exact I.has_zero
       mul_one := by
-        apply Quot.ind; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
         rw [mul_one, neg_add]; exact I.has_zero
       one_mul := by
-        apply Quot.ind; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
         rw [one_mul, neg_add]; exact I.has_zero
       mul_assoc := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
         rw [mul_assoc, neg_add]; exact I.has_zero
       mul_distrib_left := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
         rw [mul_distrib_left, neg_add]; exact I.has_zero
       mul_distrib_right := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
         rw [mul_distrib_right, neg_add]; exact I.has_zero
       mul_comm := by
-        apply Function.Quotient.ind₂; intros; apply Quot.sound; simp only [QuotientRelation]
+        apply Function.Quotient.ind₂; intros; apply Quot.sound; simp only [QRel]
         rw [mul_comm, neg_add]; exact I.has_zero
 
+    theorem non_zero [Ring α] {I : Ideal α} {a : α} : toQuotient I a ≠ 0 ↔ a ∉ I :=
+      ⟨by intro hI ha; apply hI; apply Quot.sound; simp only [Setoid.r, QRel]; rw [add_zero]; exact I.neg_closed ha,
+      by
+        intro ha hI; apply ha; have := @Quotient.exact α (QSetoid I) _ _ hI
+        simp only [HasEquiv.Equiv, Setoid.r, QRel] at this; rw [add_zero] at this; rw [←neg_neg a]
+        exact I.neg_closed this⟩
+
   end QuotientRing
+
+  namespace Ideal
+    open QuotientRing
+
+    instance ProperIdealNonTrivialRing [Ring α] {I : Ideal α} (hI : I.proper_ideal) : NonTrivialRing (QClass I) where
+      one_neq_zero := by
+        intro h10;
+        have := @Quotient.exact α (QSetoid I) 0 1 h10.symm;
+        simp only [HasEquiv.Equiv, Setoid.r, QRel] at this
+        rw [neg_zero, zero_add] at this
+        exact hI (Ideal.is_unit_ideal.mpr this)
+
+    theorem NonTrivialRingProperIdeal [Ring α] {I : Ideal α} (h : is_NonTrivial (QClass I)) : I.proper_ideal := by
+      intro hu;
+      have : (1 : QClass I) = (0 : QClass I) := by
+        apply Eq.symm; apply Quot.sound; simp only [Setoid.r, QRel]
+        rw [neg_zero, zero_add]; exact Ideal.is_unit_ideal.mp hu
+      exact h this
+
+    theorem maximal_has_inverses [Ring α] {I : Ideal α} (hI : I.is_maximal) :
+      ∀ {a : α}, toQuotient I a ≠ 0 → ∃ r : α, (toQuotient I a) * (toQuotient I r) = 1 := by
+        intro a ha;
+        have : I ⊊ I + (principal a) :=
+          ⟨Ideal.add.subset I (principal a), a, non_zero.mp ha, 0, I.has_zero, a, ⟨1, mul_one a⟩, zero_add a⟩
+        have ⟨i, hi, j, ⟨r, hj⟩, hij⟩ :=
+          is_unit_ideal.mp (maximal_neq hI this)
+        exact ⟨r, Quot.sound (by
+            simp only [QRel]
+            rw [hj, add_comm, ←sub_right.mp hij]
+            exact hi)⟩
+    theorem maximal_has_inverses' [Ring α] {I : Ideal α} (hI : I.is_maximal) :
+      ∀ {a : QClass I}, a ≠ 0 → ∃ r : QClass I, a * r = 1 :=
+        @Quotient.ind α (QSetoid I) (fun (a : QClass I) => a ≠ 0 → ∃ r : QClass I, a * r = 1) (fun _ ha =>
+          have ⟨r, hr⟩ := maximal_has_inverses hI ha
+          ⟨toQuotient I r, hr⟩)
+    noncomputable def maximal_inv [Ring α] {I : Ideal α} (hI : I.is_maximal) : {a : QClass I} → a ≠ 0 → QClass I :=
+      fun ha => Classical.choose (maximal_has_inverses' hI ha)
+
+    noncomputable instance MaximalField [Ring α] {I : Ideal α} (hI : I.is_maximal) : Field (QClass I) where
+      one_neq_zero := (ProperIdealNonTrivialRing hI.left).one_neq_zero
+      mul_comm := by
+        apply Function.Quotient.ind₂; intros; apply Quot.sound; simp only [QRel]
+        rw [mul_comm, neg_add]; exact I.has_zero
+      inv := maximal_inv hI
+      mul_inv := fun ha => Classical.choose_spec (maximal_has_inverses' hI ha)
+      inv_mul := fun ha => by
+        rw [mul_comm];
+        exact Classical.choose_spec (maximal_has_inverses' hI ha)
+
+    theorem FieldMaximal [Ring α] {I : Ideal α} (h : is_Field (QClass I)) : I.is_maximal := by
+      simp only [is_maximal, is_Field] at *
+      exact ⟨NonTrivialRingProperIdeal h.left, by
+        intro J hIJ;
+        cases Classical.em (I = J) with
+        | inl heq => exact Or.inl heq.symm 
+        | inr hneq =>
+          apply Or.inr; apply is_unit_ideal.mpr;
+          let ⟨x, xJ, nxI⟩ := Classical.choice (Set.minus.nonempty 
+            (Set.subset.neq_proper hIJ (by intro h'; exact hneq (Ideal.ext.mp h'))))
+          let ⟨b, hb⟩ := h.right (non_zero.mpr nxI)
+          exact @Quotient.ind α (QSetoid I) (fun (c : QClass I) => c = b → 1 ∈ J) (fun b' hb' => by
+            rw [←hb'] at hb;
+            have := @Quotient.exact α (QSetoid I) _ _ hb
+            simp only [HasEquiv.Equiv, Setoid.r, QRel] at this
+            have := J.add_closed (J.mul_closed b' xJ) (hIJ this)
+            rw [mul_comm, ←add_assoc, add_neg, zero_add] at this
+            exact this) b rfl⟩
+
+    instance PrimeIntegralDomain [Ring α] {I : Ideal α} (hI : I.is_prime) : IntegralDomain (QClass I) where
+      one_neq_zero := (ProperIdealNonTrivialRing hI.left).one_neq_zero
+      mul_comm := by
+        apply Function.Quotient.ind₂; intro a b
+        apply Quot.sound; simp [QRel]
+        rw [mul_comm, neg_add]
+        exact I.has_zero
+      integral := @Function.Quotient.ind₂ α α (QRel I) (QRel I)
+          (fun (a b : QClass I) => a ≠ 0 → b ≠ 0 → a * b ≠ 0)
+          (fun a b ha hb => non_zero.mpr fun hab =>
+            Or.elim (hI.right a b hab) (non_zero.mp ha) (non_zero.mp hb))
+
+    theorem IntegralDomainPrime [Ring α] {I : Ideal α} (h : is_IntegralDomain (QClass I)) : I.is_prime :=
+      ⟨NonTrivialRingProperIdeal h.left, by
+        simp [is_IntegralDomain] at h
+        intro r s hrs
+        apply Classical.byContradiction
+        intro h'
+        simp only [not_or_iff_and_not] at h'
+        exact non_zero.mp (h.right (non_zero.mpr h'.left) (non_zero.mpr h'.right)) hrs⟩
+
+    theorem maximal_is_prime [Ring α] {I : Ideal α} (h : I.is_maximal) : I.is_prime :=
+      IntegralDomainPrime (MaximalField h).to_is_IntegralDomain
+
+  end Ideal
 end M4R

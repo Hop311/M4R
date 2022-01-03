@@ -33,13 +33,24 @@ namespace M4R
           { intro hiff; apply funext; intro a; exact propext (hiff a) }
           { intro heq a; rw [heq]; exact Iff.refl (s₂ a) }
 
+    protected theorem nonempty {s : Set α} : s ≠ Set.Empty ↔ Nonempty s :=
+      ⟨fun h =>
+        have : ∃ x, x ∈ s := Classical.byContradiction fun hn =>
+          h (Set.ext.mp fun x =>
+            ⟨fun xs => hn ⟨x, xs⟩, by intros; contradiction⟩)
+        Nonempty.intro (Classical.indefiniteDescription s this),
+      fun h₁ h₂ => by
+        have ⟨x, xs⟩ := Classical.choice h₁
+        rw [h₂] at xs
+        contradiction⟩
+
     namespace subset
 
       protected theorem refl (s : Set α) : s ⊆ s := by
         intro _ as; exact as
         
       protected theorem antisymmIff {a b : Set α} : a = b ↔ a ⊆ b ∧ b ⊆ a := by
-        rw [Subset.ext a b, ←Set.ext]; simp only [Set.equivalent]; exact Iff.refl _
+        rw [Subset.ext a b, ←Set.ext]; exact Iff.refl _
       
       protected theorem antisymm {a b : Set α} (hab : a ⊆ b) (hba : b ⊆ a) : a = b :=
         Set.subset.antisymmIff.mpr ⟨hab, hba⟩
@@ -49,6 +60,12 @@ namespace M4R
 
       theorem proper_neq {a b : Set α} : a ⊊ b → a ≠ b :=
         fun ⟨_, x, nxa, xb⟩ ab => nxa ((Set.ext.mpr ab x).mpr xb)
+
+      theorem neq_proper {a b : Set α} : a ⊆ b → a ≠ b → a ⊊ b :=
+        fun h₁ h₂ => ⟨h₁, Classical.byContradiction fun h' => by
+            have := not_exists.mp h'
+            simp only [not_and_iff_or_not, iff_not_not] at this
+            apply h₂; apply Set.ext.mp fun x => ⟨@h₁ x, (this x).neg_resolve_right⟩⟩
 
       protected theorem insert (s : Set α) (a : α) : s ⊆ s.insert a :=
         fun _ => Or.inr
@@ -73,6 +90,25 @@ namespace M4R
         exact Set.subset.antisymm (this s₁ s₂) (this s₂ s₁)
 
     end intersection
+
+    namespace minus
+
+      theorem nonempty {s₁ s₂ : Set α} (h : s₁ ⊊ s₂) : Nonempty ↑(s₂ ∖ s₁) :=
+        let ⟨x, nxs₁, xs₂⟩ := h.right
+        ⟨x, xs₂, nxs₁⟩
+
+      theorem proper {s₁ s₂ : Set α} (h₁ : s₁ ⊆ s₂) (h₂ : Nonempty ↑(s₂ ∖ s₁)) : s₁ ⊊ s₂ :=
+        ⟨h₁, let ⟨x, xs₂, nxs₁⟩ := Classical.choice h₂
+          ⟨x, nxs₁, xs₂⟩⟩
+
+    end minus
+
+    namespace complement
+
+      theorem comp_comp (s : Set α) : sᶜᶜ = s :=
+        Set.ext.mp (fun  x => iff_not_not)
+
+    end complement
 
     namespace disjoint
 

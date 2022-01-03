@@ -28,6 +28,10 @@ namespace M4R
         rw [← add_zero a, ← add_zero b, ← add_neg c, ← add_assoc a, ← add_assoc b]
         exact this (a+c) (b+c) (-c) hacbc
 
+    theorem sub_right [Group α] {a b c : α} : a + c = b ↔ a = b + -c :=
+      ⟨by intro h; rw [←h, add_assoc, add_neg, add_zero],
+      by intro h; rw [h, add_assoc, neg_add, add_zero]⟩
+
     theorem neg_neg [Group α] (a : α) : - - a = a := by
       rw [←add_right_cancel _ _ (-a), neg_add, add_neg]
       

@@ -3,21 +3,6 @@ import M4R.Set
 
 namespace M4R
 
-    class NCIntegralDomain (α : Type _) extends NonTrivialNCRing α where
-      integral : ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0
-  
-    class IntegralDomain (α : Type _) extends NCIntegralDomain α, Ring α
-
-    instance IntegralDomain.toNonTrivialRing (α : Type _) [IntegralDomain α] : NonTrivialRing α where
-      one_neq_zero := IntegralDomain.toNCIntegralDomain.one_neq_zero
-
-    instance NCField.toNCIntegralDomain (α : Type _) [NCField α] : NCIntegralDomain α where
-      integral := NCField.integral
-
-    instance Field.toIntegralDomain (α : Type _) [Field α] : IntegralDomain α where
-      integral := NCField.integral
-      mul_comm := Field.mul_comm
-
     -- UnorderedList.prod not yet defined
     /-class UFD (α : Type _) extends IntegralDomain α where
       factors : α → UnorderedList α

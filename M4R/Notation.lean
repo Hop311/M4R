@@ -8,6 +8,7 @@ namespace M4R
   declare_syntax_cat binderterm -- notation for `a` or `a : A` or `a ∈ S`
   syntax ident : binderterm
   syntax ident " ∈ " term : binderterm
+  syntax ident " ∉ " term : binderterm
 
   syntax "∀ " binderterm ", " term : term
   syntax "∃ " binderterm ", " term : term
@@ -17,6 +18,10 @@ namespace M4R
   | `(∀ $x:ident ∈ $s, $p) => `(∀ $x:ident, $x ∈ $s → $p)
   -- ∃ x ∈ s, p := ∃ x, x ∈ s ∧ p
   | `(∃ $x:ident ∈ $s, $p) => `(∃ $x:ident, $x ∈ $s ∧ $p)
+  -- ∀ x ∉ s, p := ∀ x, x ∉ s → p
+  | `(∀ $x:ident ∉ $s, $p) => `(∀ $x:ident, $x ∉ $s → $p)
+  -- ∃ x ∉ s, p := ∃ x, x ∉ s ∧ p
+  | `(∃ $x:ident ∉ $s, $p) => `(∃ $x:ident, $x ∉ $s ∧ $p)
 
   class Subset (α : Type u) where
     subset : α → α → Prop
