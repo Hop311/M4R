@@ -16,8 +16,9 @@ namespace M4R
   namespace Ideal
     instance IdealMem [Ring α] : Mem α (Ideal α) where mem := fun x I => x ∈ I.subset
 
-    theorem mul_closed' [Ring α] (I : Ideal α) : ∀ {a : α} (b : α), a ∈ I → a * b ∈ I := by
-      intro a b as; rw [mul_comm]; exact I.mul_closed b as
+    theorem mul_closed' [Ring α] (I : Ideal α) : ∀ {a : α},  a ∈ I → (b : α) → a * b ∈ I := by
+      intro a as b; rw [mul_comm]; exact I.mul_closed b as
+
     theorem neg_closed [Ring α] (I : Ideal α) : ∀ {a : α}, a ∈ I → -a ∈ I := by
       intro a as; rw [←mul_one a, ←mul_neg, mul_comm]; exact I.mul_closed (-1) as
 
@@ -75,13 +76,18 @@ namespace M4R
         ⟩
     instance IdealAdd [Ring α] : Add (Ideal α) where add := Ideal.add
 
-    protected theorem add.subset [Ring α] (I J : Ideal α) : I ⊆ I + J := fun x hx => ⟨x, hx, 0, J.has_zero, add_zero x⟩
-  
     protected theorem add.comm [Ring α] (I J : Ideal α) : I + J = J + I :=
       have : ∀ {K L : Ideal α}, K + L ⊆ L + K := by
         intro K L x ⟨i, hi, j, hj, hij⟩;
         exact ⟨j, hj, i, hi, by rw [add_comm]; exact hij⟩
       Ideal.antisymm this this
+
+    protected theorem add.subset [Ring α] (I J : Ideal α) : I ⊆ I + J :=
+      fun x hx => ⟨x, hx, 0, J.has_zero, add_zero x⟩
+    protected theorem add.of_subset [Ring α] {I J : Ideal α} (h : I ⊆ J) : I + J = J := by
+      apply Ideal.antisymm
+      intro x ⟨i, iI, j, jJ, hij⟩; rw [←hij]; exact J.add_closed (h iI) jJ
+      rw [Ideal.add.comm]; exact Ideal.add.subset J I
 
     def coprime [Ring α] (I J : Ideal α) : Prop := I + J = UnitIdeal α
 
@@ -114,12 +120,12 @@ namespace M4R
     theorem principal_of_is_principal [Ring α] (I : Ideal α) (h : is_principal I) : ∃ a, I = principal a := by
       let ⟨a, ⟨aI, ha⟩⟩ := h;
       exact ⟨a, by apply Ideal.ext.mp; apply Set.subset.antisymm ha;
-                    intro x xp; let ⟨b, ab⟩ := xp; rw [←ab]; exact I.mul_closed' b aI⟩
-                    
+                    intro x xp; let ⟨b, ab⟩ := xp; rw [←ab]; exact I.mul_closed' aI b⟩
+
     theorem in_unit_ideal [Ring α] : ∀ I : Ideal α, I ⊆ UnitIdeal α := by
       intro; simp only [Subset.subset]; intros; trivial
-    theorem principal_in [Ring α] (I : Ideal α) : ∀ a, a ∈ I → principal a ⊆ I := by
-      intro _ aI _ ⟨y, ayx⟩; rw [←ayx]; exact mul_closed' _ _ aI;
+    theorem principal_in [Ring α] (I : Ideal α) : ∀ a ∈ I, principal a ⊆ I := by
+      intro _ aI _ ⟨y, ayx⟩; rw [←ayx]; exact mul_closed' _ aI _;
     theorem unit_principal [Ring α] : ∀ u, isUnit u → (principal u) = UnitIdeal α := by
       intro u hu; exact Ideal.antisymm (in_unit_ideal _) (fun y _ => unit_divides u y hu);
 
@@ -161,6 +167,13 @@ namespace M4R
         let ⟨_, ⟨I, IS, hI⟩, hIu⟩ := is_unit_ideal.mp hU;
         rw [←hI] at hIu;
         exact absurd (is_unit_ideal.mpr hIu) (h I IS)
+
+    theorem ideal_chain_disjoint [Ring α] (S : Set (Ideal α)) (hS : Nonempty S) (hc : Zorn.Chain Subset.subset S) (S' : Set α) :
+      (∀ I ∈ S, Set.disjoint I.subset S') → (Set.disjoint (ideal_chain S hS hc).subset S') := by
+        intro h
+        apply Set.disjoint.elementwise.mpr
+        intro x ⟨y, ⟨J, JS, hJy⟩, xy⟩; rw [←hJy] at xy
+        exact Set.disjoint.elementwise.mp (h J JS) x xy
 
   end Ideal
 

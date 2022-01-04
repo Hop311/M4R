@@ -1,60 +1,73 @@
 import M4R.Algebra
 
 namespace M4R
+  open Group
+  open NCRing
+  open Ring
 
   variable {A : Type _} [Ring A] {I : Ideal A}
 
-  def super_ideals (I : Ideal A) : Set (Ideal A) := {J | I ⊆ J ∧ J.proper_ideal}
-  def subtype_subset : super_ideals I → super_ideals I → Prop := fun (x y : super_ideals I) => x.val ⊆ y.val
-  local infix:50 " ⊆ " => subtype_subset
-  def subtype_set {s : Set α} (ss : Set ↑s) : Set α := {x | ∃ y ∈ ss, y.val = x}
-
-  theorem t1_1 : I.proper_ideal → ∃ J : Ideal A, I ⊆ J ∧ J.is_maximal := by
-    intro hI;
-    have : ∀ c : Set ↑(super_ideals I), Zorn.Chain subtype_subset c → ∃ ub : super_ideals I, ∀ a ∈ c, a ⊆ ub := by
-      intro c hc;
-      have hcc : Zorn.Chain Subset.subset (subtype_set c) := by
-        intro X ⟨sX, hX₁, hX₂⟩ Y ⟨sY, hY₁, hY₂⟩ hXY
-        rw [←hX₂, ←hY₂]; rw [←hX₂, ←hY₂] at hXY
-        exact hc sX hX₁ sY hY₁ (by intro hs; apply hXY; rw [hs])
-      cases Classical.em (Nonempty (subtype_set c)) with
+  theorem t1_1 (hI : I.proper_ideal) : ∃ J : Ideal A, I ⊆ J ∧ J.is_maximal :=
+    let ⟨m, hm₁, hm₂⟩ := Ideal.ideal_zorn {J | I ⊆ J ∧ J.proper_ideal} (by
+      intro c cs hc
+      cases Classical.em (Nonempty c) with
       | inl h =>
-        have hub₁ := fun (a : Ideal A) (ha : a ∈ subtype_set c) =>
-          Ideal.ideal_chain_subset (subtype_set c) ha hcc
-        have hub₂ := Ideal.ideal_chain_proper (subtype_set c) h hcc (fun I ⟨⟨I', ⟨_, hI'⟩⟩, _, hII'⟩ =>
-          by rw [←hII']; exact hI');
-        exact
-          ⟨
-            ⟨
-              Ideal.ideal_chain (subtype_set c) h hcc,
-              ⟨
-                let ⟨⟨J, hJ⟩, _⟩ := Classical.exists_true_of_nonempty h
-                let ⟨⟨J', hIJ'⟩, _, hJJ'⟩ := hJ
-                Subset.trans (by rw [←hJJ']; exact hIJ'.left) (hub₁ J hJ),
-                Ideal.ideal_chain_proper (subtype_set c) h hcc (fun I ⟨⟨I', ⟨_, hI'⟩⟩, _, hII'⟩ =>
-                  by rw [←hII']; exact hI')
-              ⟩
-            ⟩,
-            fun J hJ => hub₁ J.val ⟨J, hJ, rfl⟩
-          ⟩
-      | inr h =>
-        exact ⟨⟨I, Subset.refl _, hI⟩, fun I hI => absurd ⟨I.val, I, hI, rfl⟩ h⟩
-    have ⟨J, hJ⟩ := Zorn.lemma_eq subtype_subset this Subset.trans (fun hab hbc => Set.elementExt (Ideal.antisymm hab hbc))
-    exact ⟨J, J.property.left, fun J' hJ' => by
-      cases Classical.em (J'.proper_ideal) with
-      | inl h =>
-        exact Or.inl (by rw [←hJ ⟨J', Subset.trans J.property.left hJ', h⟩ hJ'])
-      | inr h =>
-        exact Or.inr (of_not_not h)⟩
+        have hub₁ := fun (a : Ideal A) (ha : a ∈ c) => Ideal.ideal_chain_subset c ha hc
+        have hub₂ := Ideal.ideal_chain_proper c h hc (fun J Jc => (cs Jc).right)
+        exact ⟨Ideal.ideal_chain c h hc, ⟨let ⟨J, Jc⟩ := Classical.choice h
+          Subset.trans (cs Jc).left (hub₁ J Jc), hub₂⟩, hub₁⟩
+      | inr h => exact ⟨I, ⟨Subset.refl _, hI⟩, fun a ac => absurd ⟨a, ac⟩ h⟩)
+    ⟨m, hm₁.left, ⟨hm₁.right, by
+      intro J mJ
+      cases Classical.em (J.proper_ideal) with
+      | inl h => exact Or.inl (hm₂ J ⟨Subset.trans hm₁.left mJ, h⟩ mJ)
+      | inr h => exact Or.inr (of_not_not h)
+    ⟩⟩
 
-  structure MultiplicativeSet (α : Type _) [Ring α] where
-    subset : Set α
+  structure MultiplicativeSet (A : Type _) [Ring A] where
+    subset : Set A
     has_one : 1 ∈ subset
-    mul_closed : ∀ {a b : α}, a ∈ subset → b ∈ subset → a * b ∈ subset
-  instance MultiplicativeSet.MultiplicativeSetMem [Ring α] : Mem α (MultiplicativeSet α) where mem := fun x I => x ∈ I.subset
+    mul_closed : ∀ {a b : A}, a ∈ subset → b ∈ subset → a * b ∈ subset
+  instance MultiplicativeSet.MultiplicativeSetMem : Mem A (MultiplicativeSet A) where mem := fun x I => x ∈ I.subset
 
-  theorem t1_2 : ∀ (S : MultiplicativeSet A), Set.disjoint I.subset S.subset →
+  theorem MultiplicativeSet.disjoint_ideal_proper {S : MultiplicativeSet A} (hIS : Set.disjoint I.subset S.subset) : I.proper_ideal :=
+    fun h =>
+      have : 1 ∉ I := Set.disjoint.elementwise.mp (hIS.comm) 1 S.has_one
+      absurd (Ideal.is_unit_ideal.mp h) this
+
+  theorem t1_2 (S : MultiplicativeSet A) (hIS : Set.disjoint I.subset S.subset) :
     ∃ J : Ideal A, I ⊆ J ∧ Set.disjoint J.subset S.subset ∧ J.is_prime :=
-      sorry
+      let ⟨m, hm₁, hm₂⟩ := Ideal.ideal_zorn {J | I ⊆ J ∧ Set.disjoint J.subset S.subset} (by
+        intro c cs hc
+        cases Classical.em (Nonempty c) with
+        | inl h =>
+          have hub₁ := fun (a : Ideal A) (ha : a ∈ c) => Ideal.ideal_chain_subset c ha hc
+          have hub₂ := Ideal.ideal_chain_disjoint c h hc S.subset (fun J Jc => (cs Jc).right)
+          exact ⟨Ideal.ideal_chain c h hc, ⟨let ⟨J, Jc⟩ := Classical.choice h
+            Subset.trans (cs Jc).left (hub₁ J Jc), hub₂⟩, hub₁⟩
+        | inr h => exact ⟨I, ⟨Subset.refl _, hIS⟩, fun a ac => absurd ⟨a, ac⟩ h⟩)
+      ⟨m, hm₁.left, hm₁.right, S.disjoint_ideal_proper hm₁.right, by
+        intro r s hrs; apply Classical.byContradiction; rw [not_or_iff_and_not]; intro ⟨nrm, nsm⟩
+        have : ∀ {x}, x ∉ m → ¬Set.disjoint (m + Ideal.principal x).subset S.subset := by
+          intro x xnm h; apply xnm
+          have := hm₂ (m + Ideal.principal x) ⟨Subset.trans hm₁.left (Ideal.add.subset m (Ideal.principal x)), h⟩
+            (Ideal.add.subset m (Ideal.principal x))
+          rw [←this]; exact ⟨0, m.has_zero, x, Ideal.generator_in_principal x, zero_add x⟩
+
+        have ⟨r', ⟨r'i, r'im, r'j, ⟨r'', hr''⟩, hr'ij⟩, r'S⟩ := Classical.choice (Set.nonempty.mp (this nrm))
+        have ⟨s', ⟨s'i, s'im, s'j, ⟨s'', hs''⟩, hs'ij⟩, s'S⟩ := Classical.choice (Set.nonempty.mp (this nsm))
+
+        have h₁ := S.mul_closed r'S s'S
+        rw [←hr'ij, ←hs'ij, ←hr'', ←hs'', mul_distrib_left, mul_distrib_right, mul_distrib_right, ←add_assoc] at h₁
+        have h₂ : r'i * s'i + r * r'' * s'i + r'i * (s * s'') + r * r'' * (s * s'') ∈ m + Ideal.principal (r * s) :=
+          ⟨r'i * s'i + r * r'' * s'i + r'i * (s * s''), m.add_closed (m.add_closed (m.mul_closed _ s'im)
+            (m.mul_closed _ s'im)) (m.mul_closed' r'im _),
+            r * r'' * (s * s''), ⟨r'' * s'', by
+              rw [mul_assoc, ←mul_assoc s, mul_comm s,mul_assoc, ←mul_assoc r]⟩, rfl⟩
+        have h₃ : m + Ideal.principal (r * s) = m := by
+          rw [Ideal.add.comm]; exact Ideal.add.of_subset (Ideal.principal_in m _ hrs)
+        rw [h₃] at h₂
+
+        exact Set.nonempty.mpr (⟨_, h₂, h₁⟩ : Nonempty ↑(m.subset ∩ S.subset)) hm₁.right⟩
 
 end M4R
