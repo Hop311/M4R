@@ -70,18 +70,22 @@ namespace M4R
     theorem unit_divides [Ring α] : ∀ a b : α, isUnit a → a ÷ b := by
       intro a b ⟨c, ac⟩; exact ⟨c * b, by rw [←mul_assoc, ac, one_mul];⟩
 
+    def unit_set (α : Type _) [Ring α] : Set α := {x | isUnit x}
 
-    /-def unit_set (α : Type _) [Ring α] : Set α := {x | isUnit x}
-    instance UnitGroup [Ring α] : Group ↑(unit_set α) where
+    noncomputable def unit_inv [Ring α] {a : α} (h : isUnit a) : α :=
+      Classical.choose h
+    theorem mul_unit_inv [Ring α] {a : α} (h : isUnit a) : a * unit_inv h = 1 :=
+      Classical.choose_spec h
+    theorem unit_inv_mul [Ring α] {a : α} (h : isUnit a) : unit_inv h * a = 1 := by
+      rw [mul_comm]; exact mul_unit_inv h
+
+    noncomputable instance UnitGroup [Ring α] : Group ↑(unit_set α) where
       zero := ⟨1, ⟨1, by rw [mul_one]⟩⟩
       add := fun a b => ⟨a.val * b.val, unit_mul a.property b.property⟩
-      neg := fun ⟨x, xs⟩ => by
-        let ⟨y, xy⟩ := Classical.indefiniteDescription (fun c => x * c = 1) xs;
-        exact ⟨y, ⟨x, by rw [mul_comm]; exact xy⟩⟩
-      add_zero := by intro a; apply Set.ext; exact mul_one a.val;
-      add_assoc := by intro a b c; apply Set.ext; exact mul_assoc a.val b.val c.val
-      add_neg := by
-        intro a; apply Set.ext; simp [Set.inclusion, HAdd.hAdd, Add.add, Neg.neg];-/
+      neg := fun ⟨x, xs⟩ => ⟨unit_inv xs, x, unit_inv_mul xs⟩
+      add_zero := fun ⟨a, _⟩ => Set.elementExt (mul_one a)
+      add_assoc := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (mul_assoc a b c)
+      add_neg := fun ⟨a, as⟩ => Set.elementExt (mul_unit_inv as)
       
     theorem pow_nat_succ [Ring α] (a : α) (x : Nat) : a ^ (Nat.succ x) = a^x * a :=
       match x with

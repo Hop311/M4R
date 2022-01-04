@@ -40,10 +40,18 @@ namespace M4R
 
     def disjoint (s₁ s₂ : Set α) : Prop := s₁ ∩ s₂ = Set.Empty
 
+    class SUnion (α : Type u) where
+      sUnion : Set α → α
+    prefix:110 "⋃₀" => SUnion.sUnion
+
+    class SIntersection (α : Type u) where
+      sIntersection : Set α → α
+    prefix:110 "⋂₀" => SIntersection.sIntersection
+
     def SoSUnion (s : Set (Set α)) : Set α := {x | ∃ ss ∈ s, x ∈ ss}
-    prefix:110 "⋃₀" => SoSUnion
+    instance SetSUnion : SUnion (Set α) where sUnion := SoSUnion
     def SoSIntersection (s : Set (Set α)) : Set α := {x | ∀ ss ∈ s, x ∈ ss}
-    prefix:110 "⋂₀" => SoSIntersection
+    instance SetSIntersection : SIntersection (Set α) where sIntersection := SoSIntersection
 
     def toSetSet (s : Set α) (f : α → Set β) : Set (Set β) := {b | ∃ a ∈ s, f a = b}
 

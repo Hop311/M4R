@@ -123,5 +123,23 @@ namespace M4R
       apply Iff.intro (fun h => by rw [h]; trivial); intro h;
       exact Ideal.antisymm (in_unit_ideal I) (by rw [←unit_principal (1 : α) isUnit_1]; exact principal_in I 1 h);
 
+    protected theorem intersection [Ring α] (I J : Ideal α) : Ideal α where
+      subset := I.subset ∩ J.subset
+      has_zero := ⟨I.has_zero, J.has_zero⟩
+      add_closed := fun as bs => ⟨I.add_closed as.left bs.left, J.add_closed as.right bs.right⟩
+      mul_closed := fun a _ bs => ⟨I.mul_closed a bs.left, J.mul_closed a bs.right⟩
+    noncomputable instance IdealIntersection [Ring α] : Intersection (Ideal α) where intersection := Ideal.intersection
+
+    protected theorem sIntersection [Ring α] (S : Set (Ideal α)) : Ideal α where
+      subset := ⋂₀ S.toSetSet Ideal.subset
+      has_zero := by intro s ⟨I, IS, hIs⟩; rw [←hIs]; exact I.has_zero
+      add_closed := by
+        intro a b ha hb s ⟨I, IS, hIs⟩; rw [←hIs]; exact I.add_closed
+          (by rw [hIs]; exact ha s ⟨I, IS, hIs⟩)
+          (by rw [hIs]; exact hb s ⟨I, IS, hIs⟩)
+      mul_closed := by
+        intro a b hb s ⟨I, IS, hIs⟩; rw [←hIs]; exact I.mul_closed a (by rw [hIs]; exact hb s ⟨I, IS, hIs⟩)
+    noncomputable instance IdealSIntersection [Ring α] : Set.SIntersection (Ideal α) where sIntersection := Ideal.sIntersection
+
   end Ideal
 end M4R
