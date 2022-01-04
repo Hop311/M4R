@@ -1,4 +1,4 @@
-import M4R.Algebra.Ring.Basic
+import M4R.Algebra.Ring.SubRing
 
 namespace M4R
 
@@ -8,7 +8,7 @@ namespace M4R
     preserve_one  : hom 1 = 1
     preserve_add  : ∀ a b, hom (a + b) = hom a + hom b
     preserve_neg  : ∀ a, hom (-a) = -hom a
-    preserve_mul  : ∀ a b, hom a * hom b = hom (a * b)
+    preserve_mul  : ∀ a b, hom (a * b) = hom a * hom b
 
   structure RIsomorphism (α : Type _) (β : Type _) [Ring α] [Ring β] extends RHomomorphism α β where
     bij : Function.bijective hom
@@ -21,6 +21,17 @@ namespace M4R
       preserve_add  := rh.preserve_add
       preserve_neg  := rh.preserve_neg
   
+    def GHomomorphismSubRing [Ring α] [Ring β] (rh : RHomomorphism α β) (S : SubRing α): SubRing β where
+      subset := {x | ∃ y ∈ S, rh.hom y = x}
+      has_zero := ⟨0, S.has_zero, rh.preserve_zero⟩
+      has_one := ⟨1, S.has_one, rh.preserve_one⟩
+      add_closed := fun a ⟨a', a'S, ha⟩ b ⟨b', b'S, hb⟩ =>
+        ⟨a' + b', S.add_closed _ a'S _ b'S, by rw [←ha, ←hb]; exact rh.preserve_add a' b'⟩
+      neg_closed := fun a ⟨a', a'S, ha⟩ =>
+        ⟨-a', S.neg_closed _ a'S, by rw [←ha]; exact rh.preserve_neg a'⟩
+      mul_closed := by exact fun a ⟨a', a'S, ha⟩ b ⟨b', b'S, hb⟩ =>
+        ⟨a' * b', S.mul_closed _ a'S _ b'S, by rw [←ha, ←hb]; exact rh.preserve_mul a' b'⟩
+
   end RHomomorphism
   namespace RIsomorphism
 

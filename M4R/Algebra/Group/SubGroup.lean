@@ -17,7 +17,7 @@ namespace M4R
     def Trivial (α : Type _) [Group α] : SubGroup α where
       subset     := {x | x = 0}
       has_zero   := by trivial
-      add_closed := by intro _ _ a0 b0; rw [a0, b0, add_zero]; trivial
+      add_closed := by intro _ a0 _ b0; rw [a0, b0, add_zero]; trivial
       neg_closed := by intro a a0; rw[a0, neg_zero]; trivial
 
     protected theorem ext [Group α] (s₁ s₂ : SubGroup α) : s₁.subset = s₂.subset ↔ s₁ = s₂ :=
@@ -37,7 +37,7 @@ namespace M4R
     
     instance SubGroupGroup [Group α] (s : SubGroup α) : Group ↑s.subset where
       zero := ⟨0, s.has_zero⟩
-      add := fun x y => ⟨x.val + y.val, s.add_closed x.val y.val x.property y.property⟩
+      add := fun x y => ⟨x.val + y.val, s.add_closed x.val x.property y.val y.property⟩
       neg := fun x => ⟨-x.val, s.neg_closed x.val x.property⟩
       add_zero := by
         intro a; rw [SubGroup.image_eq]; exact add_zero a.val

@@ -13,8 +13,9 @@ namespace M4R
   structure SubGroup (α : Type _) [Group α] where
       subset     : Set α
       has_zero   : 0 ∈ subset
-      add_closed : ∀ a b, a ∈ subset → b ∈ subset → a + b ∈ subset
-      neg_closed : ∀ a, a ∈ subset → -a ∈ subset
+      add_closed : ∀ a ∈ subset, ∀ b ∈ subset,  a + b ∈ subset
+      neg_closed : ∀ a ∈ subset, -a ∈ subset
+  instance SubGroupMem [Group α] : Mem α (SubGroup α) where mem := fun x S => x ∈ S.subset
   
   namespace Group
 

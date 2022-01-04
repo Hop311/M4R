@@ -15,7 +15,7 @@ namespace M4R
     subset := Function.fibre gh.hom 0
     has_zero := gh.preserve_zero
     add_closed := by
-      intro _ _ x0 y0; simp only [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_add, x0, y0, gb.add_zero]
+      intro _ x0 _ y0; simp only [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_add, x0, y0, gb.add_zero]
     neg_closed := by
       intro x x0; simp only [Mem.mem, Set.mem, Function.fibre]; rw [gh.preserve_neg, x0, gb.neg_zero]
 
@@ -43,7 +43,7 @@ namespace M4R
       subset     := Function.image gh.hom
       has_zero   := ⟨0, gh.preserve_zero⟩
       add_closed := by
-        intro _ _ ⟨a, hax⟩ ⟨b, hby⟩; rw [←hax, ←hby]; exact ⟨a+b, gh.preserve_add a b⟩
+        intro _ ⟨a, hax⟩ _ ⟨b, hby⟩; rw [←hax, ←hby]; exact ⟨a+b, gh.preserve_add a b⟩
       neg_closed := by
         intro x ⟨a, hax⟩; rw [←hax]; exact ⟨-a, gh.preserve_neg a⟩
 

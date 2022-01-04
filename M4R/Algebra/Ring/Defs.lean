@@ -17,9 +17,13 @@ namespace M4R
 
   class NonTrivialRing (α : Type _) extends Ring α, NonTrivialNCRing α
 
-  structure SubRing (α : Type _) [NCRing α] extends SubGroup α where
+  structure NCSubRing (α : Type _) [NCRing α] extends SubGroup α where
       has_one    : 1 ∈ subset
-      mul_closed : ∀ a b, a ∈ subset → b ∈ subset → a * b ∈ subset
+      mul_closed : ∀ a ∈ subset, ∀ b ∈ subset, a * b ∈ subset
+  instance NCSubRingMem [NCRing α] : Mem α (NCSubRing α) where mem := fun x S => x ∈ S.subset
+  
+  structure SubRing (α : Type _) [Ring α] extends NCSubRing α
+  instance SubRingMem [Ring α] : Mem α (SubRing α) where mem := fun x S => x ∈ S.subset
 
   namespace Ring
     protected def ofNat [NCRing α] (n : Nat) : α :=
