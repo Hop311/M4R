@@ -1,4 +1,5 @@
 import M4R.Function
+import M4R.Numbers
 
 namespace M4R
 
@@ -45,6 +46,12 @@ namespace M4R
       add_zero := by intro a; rw [Singleton.single a]; rfl
       add_assoc := by intro a b c; rw [Singleton.single a, Singleton.single b, Singleton.single c]; rfl
       add_neg := by intro a; rfl
+
+    instance IntAbelianGroup : AbelianGroup Int where
+      add_zero := Int.add_zero
+      add_neg := Int.add_neg
+      add_assoc := Int.add_assoc
+      add_comm := Int.add_comm
 
   end Group
 end M4R

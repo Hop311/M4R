@@ -57,6 +57,16 @@ namespace M4R
     def nonZeroNonUnit [Ring α] (a : α) : Prop := a ≠ 0 ∧ ¬isUnit a
     def irreducible [Ring α] (a : α) : Prop := nonZeroNonUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
 
+    instance IntNonTrivialRing : NonTrivialRing Int where
+      one := 1
+      one_neq_zero := by simp
+      mul_one := Int.mul_one
+      one_mul := Int.one_mul
+      mul_assoc := Int.mul_assoc
+      mul_distrib_left := Int.mul_distrib_left
+      mul_distrib_right := Int.mul_distrib_right
+      mul_comm := Int.mul_comm
+
   end Ring
   
   class NCField (α : Type _) extends NonTrivialNCRing α where

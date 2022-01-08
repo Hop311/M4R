@@ -38,6 +38,9 @@ namespace M4R
     theorem neg_add_distrib [Group α] (a b : α) : -(a + b) = -b + -a := by
       rw [←add_right_cancel _ _ (a + b), neg_add, add_assoc, ←add_assoc (-a), neg_add, zero_add, neg_add]
 
+    theorem neg_inj [g : Group α] : Function.injective g.neg := by
+      intro x y h; rw [←neg_neg x, ←neg_neg y]; exact congrArg g.neg h
+
 /-
   ### Natural multiplication
 -/
@@ -89,7 +92,7 @@ namespace M4R
 
     theorem mul_int_comp [Group α] (a : α) (m n : Int) : (m * n)*a = m*(n*a) :=
       match m, n with
-      | Int.ofNat p  , Int.ofNat q   => mul_nat_comp a p q
+      | Int.ofNat p  , Int.ofNat q   => sorry--mul_nat_comp a p q
       | Int.ofNat p  , Int.negSucc q => sorry
       | Int.negSucc p, Int.ofNat q   => sorry
       | Int.negSucc p, Int.negSucc q => sorry
