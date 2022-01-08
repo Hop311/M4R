@@ -57,6 +57,10 @@ namespace M4R
     def nonZeroNonUnit [Ring α] (a : α) : Prop := a ≠ 0 ∧ ¬isUnit a
     def irreducible [Ring α] (a : α) : Prop := nonZeroNonUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
 
+    /- Helper "packing" theorems -/
+    @[simp] theorem one_eq [r : NCRing α] : r.one = 1 := rfl
+    @[simp] theorem mul_eq [r : NCRing α] : r.add x y = x + y := rfl
+
     instance IntNonTrivialRing : NonTrivialRing Int where
       one := 1
       one_neq_zero := by simp
@@ -80,5 +84,13 @@ namespace M4R
     integral : ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0
   
   class IntegralDomain (α : Type _) extends NCIntegralDomain α, Ring α
+
+  open NCRing
+  open Ring  
+
+  def UnorderedList.prod [Ring α] (s : UnorderedList α) : α := 
+    s.fold (fun (x y : α) => x * y) (fun a b c => by simp only [mul_assoc, mul_comm b]) 1
+
+  def Finset.prod [Ring α] (s : Finset α) : α := s.elems.prod
 
 end M4R

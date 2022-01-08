@@ -107,4 +107,13 @@ namespace M4R
     ringeq : α → α → Prop
   infix:55 " ≗ " => RingEq.ringeq -- \=o -> ≗
 
+  syntax "∑ " ident " in " term ", " term : term
+  syntax "∏ " ident " in " term ", " term : term
+
+   macro_rules
+  -- ∑ x in s, f := (s.map f).sum
+  | `(∑ $x:ident in $s, $f) => `( (($s).map fun $x => $f).sum )
+  -- ∏ x in s, f := (s.map f).prod
+  | `(∏ $x:ident in $s, $f) => `( (($s).map fun $x => $f).prod )
+
 end M4R

@@ -1,8 +1,10 @@
 import M4R.Algebra.Group.SubGroup
+import M4R.Set
 
 namespace M4R
+  open Group
+
   namespace AbelianGroup
-    open Group
 
     theorem mul_nat_comm [AbelianGroup α] (a b : α) (n : Nat) : n*(a + b) = n*a + n*b :=
     match n with
@@ -20,6 +22,14 @@ namespace M4R
     instance SubGroupAbelian [AbelianGroup α] (s : SubGroup α) : AbelianGroup ↑s.subset where
       toGroup := s.SubGroupGroup
       add_comm := by intro a b; rw [SubGroup.image_eq]; exact add_comm a.val b.val
-     
+    
   end AbelianGroup
+  
+  open AbelianGroup
+
+  def UnorderedList.sum [AbelianGroup α] (s : UnorderedList α) : α := 
+    s.fold (fun (x y : α) => x + y) (fun a b c => by simp only [add_assoc, add_comm b]) 0
+
+  def Finset.sum [AbelianGroup α] (s : Finset α) : α := s.elems.sum
+
 end M4R

@@ -14,6 +14,7 @@ namespace M4R
     notfinite : Fintype α → false
 
   namespace Finset
+    instance FinsetCoe : Coe (Finset α) (UnorderedList α) where coe := Finset.elems
   
     instance FinsetMem : Mem α (Finset α) where mem := fun x f => x ∈ f.elems
 
@@ -27,8 +28,15 @@ namespace M4R
       match f₁, f₂ with
       | ⟨_, _⟩, ⟨_, _⟩ => by rw [Finset.mk.injEq]; exact id
     
-    protected def Empty : Finset α := ⟨UnorderedList.Empty α, Pairwise.nil⟩
+    protected def Empty : Finset α := ⟨UnorderedList.Empty, Pairwise.nil⟩
     protected def Universal [Fintype α] : Finset α := Fintype.elems
+
+    protected def map (f : α → β) (s : Finset α) : UnorderedList β := s.elems.map f
+    protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=
+      ⟨s.elems.map f, s.elems.nodup_map hf s.nodup⟩
+
+    protected def fold (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂) :
+      (init : α) → Finset β → α := fun init s => UnorderedList.fold f hcomm init s.elems
 
   end Finset
   

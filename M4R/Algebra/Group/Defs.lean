@@ -35,6 +35,12 @@ namespace M4R
       | Int.negSucc m => -(Nat.succ m * a)
     instance GroupHMulInt [Group α] : HMul Int α α where hMul := Group.mul_int
 
+    /- Helper "packing" theorems -/
+    @[simp] theorem zero_eq [g : Group α] : g.zero = 0 := rfl
+    @[simp] theorem add_eq  [g : Group α] : g.add x y = x + y := rfl
+    @[simp] theorem sub_eq  [g : Group α] : g.sub x y = x - y := rfl
+    @[simp] theorem neg_eq  [g : Group α] : g.neg x = - x := rfl
+
 /-
   ### Instances
 -/
