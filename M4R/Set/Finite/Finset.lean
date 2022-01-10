@@ -24,12 +24,17 @@ namespace M4R
 
     protected def toSet (f : Finset α) : Set α := Set.toSet f
 
-    protected def ext (f₁ f₂ : Finset α) : f₁.elems = f₂.elems → f₁ = f₂ :=
+    protected theorem ext (f₁ f₂ : Finset α) : f₁.elems = f₂.elems → f₁ = f₂ :=
       match f₁, f₂ with
       | ⟨_, _⟩, ⟨_, _⟩ => by rw [Finset.mk.injEq]; exact id
     
-    protected def Empty : Finset α := ⟨UnorderedList.Empty, Pairwise.nil⟩
+    protected def Empty : Finset α := ⟨∅, Pairwise.nil⟩
     protected def Universal [Fintype α] : Finset α := Fintype.elems
+
+    instance EmptyFinsetEmptyCollection : EmptyCollection (Finset α) where
+      emptyCollection := Finset.Empty
+
+    protected def singleton (a : α) : Finset α := ⟨UnorderedList.singleton a, Pairwise.singleton _ a⟩
 
     protected def map (f : α → β) (s : Finset α) : UnorderedList β := s.elems.map f
     protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=

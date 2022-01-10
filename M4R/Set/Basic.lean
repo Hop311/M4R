@@ -33,7 +33,7 @@ namespace M4R
           { intro hiff; apply funext; intro a; exact propext (hiff a) }
           { intro heq a; rw [heq]; exact Iff.refl (s₂ a) }
 
-    protected theorem nonempty {s : Set α} : s ≠ Set.Empty ↔ Nonempty s :=
+    protected theorem nonempty {s : Set α} : s ≠ ∅ ↔ Nonempty s :=
       ⟨fun h =>
         have : ∃ x, x ∈ s := Classical.byContradiction fun hn =>
           h (Set.ext.mp fun x =>

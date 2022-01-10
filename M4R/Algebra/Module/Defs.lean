@@ -23,16 +23,16 @@ namespace M4R
     mul_distrib_right := by intro s t ⟨x, _⟩; simp only [Ideal.image_eq]; exact r.mul_distrib_right s t x
     
   instance RHomomorphismModule (R : Type _) (S : Type _) [iR : Ring R] [iS : Ring S] (rh : RHomomorphism R S) : Module R S where
-    hMul := fun r s => (rh.hom r) * s
+    hMul := fun r s => (rh r) * s
     one_mul := by intro x; have := iS.one_mul x; simp only [HMul.hMul] at *; rw [rh.preserve_one]; exact this
     mul_assoc := by
-      intro r s x; have := iS.mul_assoc (rh.hom r) (rh.hom s) x;
-      rw [rh.preserve_mul] at this; simp only [HMul.hMul] at *; exact this
+      intro r s x; have := iS.mul_assoc (rh r) (rh s) x;
+      rw [←rh.preserve_mul] at this; simp only [HMul.hMul] at *; exact this
     mul_distrib_left := by
-      intro r x y; have := iS.mul_distrib_left (rh.hom r) x y;
+      intro r x y; have := iS.mul_distrib_left (rh r) x y;
       simp only [HMul.hMul] at *; exact this
     mul_distrib_right := by
-      intro r s x; have := iS.mul_distrib_right (rh.hom r) (rh.hom s) x;
+      intro r s x; have := iS.mul_distrib_right (rh r) (rh s) x;
       rw [←rh.preserve_add] at this; simp only [HMul.hMul] at *; exact this
 
 end M4R

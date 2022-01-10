@@ -38,7 +38,10 @@ namespace M4R
     protected def Empty : Set α := fun _ => False
     protected def Universal : Set α := fun _ => True
 
-    def disjoint (s₁ s₂ : Set α) : Prop := s₁ ∩ s₂ = Set.Empty
+    instance EmptySetEmptyCollection : EmptyCollection (Set α) where
+      emptyCollection := Set.Empty
+
+    def disjoint (s₁ s₂ : Set α) : Prop := s₁ ∩ s₂ = ∅
 
     class SUnion (α : Type u) where
       sUnion : Set α → α

@@ -236,15 +236,15 @@ namespace M4R
     protected def length (s : UnorderedList α) : Nat :=
       Quot.liftOn s List.length (fun _ _ => Perm.lengthEq)
 
-    protected def map (f : α → β) (s : UnorderedList α) : UnorderedList β := by
-      apply Quot.liftOn s (fun l : List α => List.to_UnorderedList (l.map f))
-        (fun l₁ l₂ p => Quot.sound (p.map f))
-
     protected def cons (a : α) (s : UnorderedList α) : UnorderedList α :=
       Quot.liftOn s (fun l => List.to_UnorderedList (a::l)) (fun _ _ p => Quot.sound (p.cons a))
 
     protected def Empty {α : Type _} : UnorderedList α := List.to_UnorderedList []
-    instance UnorderedListZero : Zero (UnorderedList α) where zero := UnorderedList.Empty
+    instance EmptyUnorderedListEmptyCollection : EmptyCollection (UnorderedList α) where
+      emptyCollection := UnorderedList.Empty
+    instance UnorderedListZero : Zero (UnorderedList α) where zero := ∅
+
+    protected def singleton (a : α) : UnorderedList α := ↑[a]
 
     protected def append (s t : UnorderedList α) : UnorderedList α :=
       Quotient.liftOn₂ s t (fun l₁ l₂ => (l₁ ++ l₂ : List α).to_UnorderedList)
@@ -261,13 +261,28 @@ namespace M4R
         @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (a : UnorderedList α) => a + 0 = a) s
           (fun l => Quot.sound (by simp; exact Perm.refl _))
 
+      theorem cons (a : α) (s : UnorderedList α) : s.cons a = [a] + s := rfl
+      theorem cons' (a : α) (s : UnorderedList α) : s.cons a = s + [a] := by rw [comm, cons]
+
     end append
 
+    protected theorem cons' (a : α) (l : List α) : Quotient.mk (a :: l) = (↑l : UnorderedList α).cons a := rfl
+
+    protected def map (f : α → β) (s : UnorderedList α) : UnorderedList β :=
+      Quot.liftOn s (fun l : List α => ↑(l.map f))
+        (fun l₁ l₂ p => Quot.sound (p.map f))
+    
+    namespace map
+
+      @[simp] theorem singleton (f : α → β) (a : α) : (UnorderedList.singleton a).map f = UnorderedList.singleton (f a) := rfl
+
+    end map
+
     theorem nodup_map_on {f : α → β} {s : UnorderedList α} (H : ∀ x ∈ s, ∀ y ∈ s, f x = f y → x = y) :
-      nodup s → nodup (s.map f) := by
-        apply @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+      nodup s → nodup (s.map f) :=
+        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
           (∀ (x : α), x ∈ l → ∀ (y : α), y ∈ l → f x = f y → x = y) → nodup l → nodup (l.map f))
-            s (fun _ => List.nodup_map_on) H;
+            s (fun _ => List.nodup_map_on) H
 
     theorem nodup_map {f : α → β} {s : UnorderedList α} (hf : Function.injective f) :
       nodup s → nodup (s.map f) :=
@@ -275,7 +290,7 @@ namespace M4R
 
     def fold (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂) :
       (init : α) → UnorderedList β → α := fun init s =>
-        Quot.liftOn s (fun l => l.foldl f init) fun _ _ p => by
+        Quot.liftOn s (List.foldl f init) fun _ _ p => by
           induction p generalizing init with
           | nil => rfl
           | cons x _ h => exact h (f init x)
@@ -285,7 +300,9 @@ namespace M4R
     namespace fold
       variable (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
       
-      theorem empty (init : α) : fold f hcomm init UnorderedList.Empty = init := rfl
+      @[simp] theorem empty (init : α) : fold f hcomm init ∅ = init := rfl
+
+      @[simp] theorem singleton (init : α) (b : β) : fold f hcomm init (UnorderedList.singleton b) = f init b := rfl
 
       theorem cons (init : α) (x : β) (s : UnorderedList β) :
         fold f hcomm init (s.cons x) = fold f hcomm (f init x) s :=
@@ -297,6 +314,10 @@ namespace M4R
           @Quotient.inductionOn₂ (List β) (List β) (Perm.PermSetoid β) (Perm.PermSetoid β)
             (fun (a b : UnorderedList β) => fold f hcomm init (a + b) = fold f hcomm (fold f hcomm init a) b) s t
             (fun a b => List.foldl_append f _ a b)
+
+      theorem cons' (init : α) (x : β) (s : UnorderedList β) :
+        fold f hcomm init (s.cons x) = f (fold f hcomm init s) x := by
+          rw [cons, ←singleton f hcomm _ x, ←singleton f hcomm _ x, ←append, ←append, append.comm]
 
     end fold
   end UnorderedList

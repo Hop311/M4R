@@ -11,6 +11,9 @@ namespace M4R
   structure GIsomorphism (α : Type _) (β : Type _) [Group α] [Group β] extends GHomomorphism α β where
     bij : Function.bijective hom
 
+  instance GHomomorphismFun [Group α] [Group β] : CoeFun (GHomomorphism α β) (fun _ => α → β) where
+    coe := GHomomorphism.hom
+
   def GHomomorphism.kernel [Group α] [gb : Group β] (gh : GHomomorphism α β) : SubGroup α where
     subset := Function.fibre gh.hom 0
     has_zero := gh.preserve_zero
@@ -28,7 +31,7 @@ namespace M4R
           { intro inj; apply (SubGroup.trivialExt (kernel gh)).mpr;
              intro x; have h := @inj x 0; rw [gh.preserve_zero] at h; exact fun x => h x }
           { intro kertriv x y ghxy; rw [←ga.add_right_cancel _ _ (-y), ga.add_neg];
-            rw [←gb.add_right_cancel _ _ (gh.hom (-y)), gh.preserve_neg, gb.add_neg,
+            rw [←gb.add_right_cancel _ _ (gh (-y)), gh.preserve_neg, gb.add_neg,
               ←gh.preserve_neg, ←gh.preserve_add] at ghxy;
             exact (SubGroup.trivialExt (kernel gh)).mp kertriv (x + -y) ghxy }
 

@@ -17,13 +17,10 @@ namespace M4R
 
   class NonTrivialRing (α : Type _) extends Ring α, NonTrivialNCRing α
 
-  structure NCSubRing (α : Type _) [NCRing α] extends SubGroup α where
+  structure SubRing (α : Type _) [NCRing α] extends SubGroup α where
       has_one    : 1 ∈ subset
       mul_closed : ∀ a ∈ subset, ∀ b ∈ subset, a * b ∈ subset
-  instance NCSubRingMem [NCRing α] : Mem α (NCSubRing α) where mem := fun x S => x ∈ S.subset
-  
-  structure SubRing (α : Type _) [Ring α] extends NCSubRing α
-  instance SubRingMem [Ring α] : Mem α (SubRing α) where mem := fun x S => x ∈ S.subset
+  instance SubRingMem [NCRing α] : Mem α (SubRing α) where mem := fun x S => x ∈ S.subset
 
   namespace Ring
     protected def ofNat [NCRing α] (n : Nat) : α :=
@@ -57,12 +54,7 @@ namespace M4R
     def nonZeroNonUnit [Ring α] (a : α) : Prop := a ≠ 0 ∧ ¬isUnit a
     def irreducible [Ring α] (a : α) : Prop := nonZeroNonUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
 
-    /- Helper "packing" theorems -/
-    @[simp] theorem one_eq [r : NCRing α] : r.one = 1 := rfl
-    @[simp] theorem mul_eq [r : NCRing α] : r.add x y = x + y := rfl
-
     instance IntNonTrivialRing : NonTrivialRing Int where
-      one := 1
       one_neq_zero := by simp
       mul_one := Int.mul_one
       one_mul := Int.one_mul
@@ -89,8 +81,11 @@ namespace M4R
   open Ring  
 
   def UnorderedList.prod [Ring α] (s : UnorderedList α) : α := 
-    s.fold (fun (x y : α) => x * y) (fun a b c => by simp only [mul_assoc, mul_comm b]) 1
+    s.fold (· * ·) (fun a b c => by simp only [mul_assoc, mul_comm b]) 1
+  def UnorderedList.map_prod [Ring β] (s : UnorderedList α) (f : α → β) : β :=
+    (s.map f).prod
 
   def Finset.prod [Ring α] (s : Finset α) : α := s.elems.prod
+  def Finset.map_prod [Ring β] (s : Finset α) (f : α → β) : β := s.elems.map_prod f
 
 end M4R

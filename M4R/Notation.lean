@@ -92,12 +92,18 @@ namespace M4R
 
   class Zero (α : Type _) where
     zero : α
-  class One (α : Type _) where
-    one : α
+  class One  (α : Type _) where
+    one  : α
   instance Nat0 [Zero α] : OfNat α (nat_lit 0) where
     ofNat := Zero.zero
-  instance Nat1 [One α] : OfNat α (nat_lit 1) where
+  instance Nat1 [One  α] : OfNat α (nat_lit 1) where
     ofNat := One.one
+  instance InhabitedZero [Zero α] : Inhabited α where default := 0
+  instance InhabitedOne  [One α]  : Inhabited α where default := 1
+  instance NatZero : Zero Nat where zero := 0
+  instance NatOne  : One  Nat where one  := 1
+  instance IntZero : Zero Int where zero := 0
+  instance IntOne  : One  Int where one  := 1
     
   class Divides (α : Type u) where
     divides : α → α → Prop
@@ -107,13 +113,32 @@ namespace M4R
     ringeq : α → α → Prop
   infix:55 " ≗ " => RingEq.ringeq -- \=o -> ≗
 
+  syntax "∑ " term : term
+  syntax "∏ " term : term
+  syntax "∑ " term " in " term : term
+  syntax "∏ " term " in " term : term
   syntax "∑ " ident " in " term ", " term : term
   syntax "∏ " ident " in " term ", " term : term
 
    macro_rules
-  -- ∑ x in s, f := (s.map f).sum
-  | `(∑ $x:ident in $s, $f) => `( (($s).map fun $x => $f).sum )
-  -- ∏ x in s, f := (s.map f).prod
-  | `(∏ $x:ident in $s, $f) => `( (($s).map fun $x => $f).prod )
+  -- ∑ s = s.sum
+  | `(∑ $s) => `( ($s).sum )
+  -- ∏ s := s.prod
+  | `(∏ $s) => `( ($s).prod )
+  -- ∑ f in s = s.map_sum f
+  | `(∑ $f in $s) => `( ($s).map_sum $f )
+  -- ∏ f in s := s.map_prod f
+  | `(∏ $f in $s) => `( ($s).map_prod $f )
+  -- ∑ x in s, f := s.map_sum fun x => f
+  | `(∑ $x:ident in $s, $f) => `( ($s).map_sum fun $x => $f )
+  -- ∏ x in s, f := s.map_prod fun x => f
+  | `(∏ $x:ident in $s, $f) => `( ($s).map_prod fun $x => $f )
 
+  @[simp] theorem zero_eq [z : Zero α] : z.zero    = 0     := rfl
+  @[simp] theorem one_eq  [o : One  α] : o.one     = 1     := rfl
+  @[simp] theorem neg_eq  [n : Neg  α] : n.neg x   = - x   := rfl
+  @[simp] theorem add_eq  [a : HAdd α β γ] : a.hAdd x y = x + y := rfl
+  @[simp] theorem sub_eq  [s : HSub α β γ] : s.hSub x y = x - y := rfl
+  @[simp] theorem mul_eq  [m : HMul α β γ] : m.hMul x y = x * y := rfl
+  
 end M4R

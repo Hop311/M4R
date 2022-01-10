@@ -90,6 +90,11 @@ end List
 
 namespace M4R
 
+  /-
+      range n => [0, ..., n-1]
+      e.g. : range 0 => [], range 1 => [0], range 2 => [0, 1], range 3 => [0, 1, 2]
+  -/
+
   namespace UnorderedList
     
     def range (n : Nat) : UnorderedList Nat := List.range n
