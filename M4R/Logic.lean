@@ -75,3 +75,6 @@ namespace M4R
     fun ⟨x, hn⟩ hA => hn (hA x)⟩
 
 end M4R
+
+@[simp] theorem Quotient.eq [r : Setoid α] {x y : α} : Quotient.mk x = Quotient.mk y ↔ x ≈ y :=
+  ⟨Quotient.exact, Quotient.sound⟩

@@ -40,6 +40,11 @@ namespace M4R
       toGroup := Monoid.toGroup h
       add_comm := CommMonoid.add_comm
 
+    theorem add_right_comm [CommMonoid α] (a b c : α) : a + b + c = a + c + b := by
+      rw [Monoid.add_assoc, add_comm b, ←Monoid.add_assoc]
+    theorem add_left_comm [CommMonoid α] (a b c : α) : a + (b + c) = b + (a + c) := by
+      rw [←Monoid.add_assoc, add_comm a, Monoid.add_assoc]
+  
   end CommMonoid
 
   namespace SubMonoid

@@ -82,9 +82,20 @@ namespace M4R
       (H : ∀ a b : α, r a b → s (f a) (f b)) {l : List α}
       (p : Pairwise r l) : Pairwise s (l.map f) := (map f).2 (p.imp H)
 
+    theorem pairwise_of_sublist {r : α → α → Prop} {l₁ l₂ : List α} : l₁ <+ l₂ → Pairwise r l₂ → Pairwise r l₁
+    | List.Sublist.nil, h => h
+    | List.Sublist.cons l₁ l₂ a s, Pairwise.cons i n => pairwise_of_sublist s n
+    | List.Sublist.cons' l₁ l₂ a s, Pairwise.cons i n  =>
+      (pairwise_of_sublist s n).cons fun a ha => i a (s.subset ha)
+
   end Pairwise
 end M4R
-  
+
+open M4R
+
 theorem List.nodup_map_on {f : α → β} {l : List α} (H : ∀ x ∈ l, ∀ y ∈ l, f x = f y → x = y)
   (d : List.nodup l) : List.nodup (l.map f) :=
-    M4R.Pairwise.map_of_pairwise f (fun a b ⟨ma, mb, n⟩ e => n (H a ma b mb e)) (M4R.Pairwise.and_mem.mp d)
+    Pairwise.map_of_pairwise f (fun a b ⟨ma, mb, n⟩ e => n (H a ma b mb e)) (Pairwise.and_mem.mp d)
+
+theorem List.nodup_of_sublist {l₁ l₂ : List α} : l₁ <+ l₂ → l₂.nodup → l₁.nodup :=
+  Pairwise.pairwise_of_sublist

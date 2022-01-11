@@ -47,7 +47,7 @@ namespace M4R
                   (fun xa => Or.inr (Or.inr xa))))
           (fun _ _ x₁₂ x₂₃ x₁ => x₂₃ (x₁₂ x₁))
 
-    theorem memIff {a : α} {l₁ l₂ : List α} (p : l₁ ~ l₂) : a ∈ l₁ ↔ a ∈ l₂ :=
+    theorem mem_iff {l₁ l₂ : List α} (p : l₁ ~ l₂) (a : α) : a ∈ l₁ ↔ a ∈ l₂ :=
       Iff.intro (fun x => p.subset x) (fun x => p.symm.subset x)
     
     theorem append_right {l₁ l₂ : List α} (t : List α) (p : l₁ ~ l₂) : l₁++t ~ l₂++t :=
@@ -79,16 +79,16 @@ namespace M4R
       | []     => by simp; exact Perm.refl l₂
       | (a::t) => ((append_comm t l₂).cons a).trans (middle a l₂ t).symm
 
-    theorem lengthEq {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.length = l₂.length :=
+    theorem length_eq {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.length = l₂.length :=
       @Perm.recOn α (fun (a b : List α) _ => a.length = b.length) l₁ l₂ p rfl
         (fun _ _ _ _ h => by simp[h])
         (fun _ _ _ => by simp)
         (fun _ _ r₁₂ r₂₃ => Eq.trans r₁₂ r₂₃)
 
-    theorem eqNil {l : List α} (p : l ~ []) : l = [] :=
-      List.eqNilOfLengthEqZero p.lengthEq
-    theorem nilEq {l : List α} (p : [] ~ l) : l = [] :=
-      eqNil p.symm
+    theorem eq_nil {l : List α} (p : l ~ []) : l = [] :=
+      List.eq_nil_of_length_eq_zero p.length_eq
+    theorem nil_eq {l : List α} (p : [] ~ l) : l = [] :=
+      eq_nil p.symm
 
     theorem inductionOn (motive : List α → List α → Prop) {l₁ l₂ : List α} (p : l₁ ~ l₂)
       (h₁ : motive [] [])
@@ -106,7 +106,7 @@ namespace M4R
         l₁'++a::r₁' = t₁ → l₂'++a::r₂' = t₂ → l₁'++r₁' ~ l₂'++r₂') p
       { intro l₁ _ r₁ _ e₁ _
         have h₀ := List.notMemNil a; rw [←e₁] at h₀
-        have : a ∈ l₁ ++ a :: r₁ := by apply (memIff (middle a l₁ r₁)).mpr; apply Or.inl; rfl
+        have : a ∈ l₁ ++ a :: r₁ := by apply (mem_iff (middle a l₁ r₁) _).mpr; apply Or.inl; rfl
         contradiction }
       { intro _ _ _ p₁₂ ih l₁ l₂ _ _ e₁ e₂;
         match l₁, l₂ with
@@ -154,11 +154,11 @@ namespace M4R
               apply cons; exact ih e₁.right.right e₂.right.right }
       { intro _ t₂ _ p₁₂ p₂₃ ih₁ ih₂ l₁ _ r₁ _ e₁ e₃;
           rw [←e₁] at p₁₂; rw [←e₃] at p₂₃;
-          have : a ∈ t₂ := p₁₂.subset (by apply (memIff (middle a l₁ r₁)).mpr; apply Or.inl; rfl)
-          let ⟨l₂, r₂, e₂⟩ := List.memSplit this;
+          have : a ∈ t₂ := p₁₂.subset (by apply (mem_iff (middle a l₁ r₁) _).mpr; apply Or.inl; rfl)
+          let ⟨l₂, r₂, e₂⟩ := List.mem_split this;
           exact trans (ih₁ e₁ e₂.symm) (ih₂ e₂.symm e₃) }
 
-    theorem consInv {a : α} {l₁ l₂ : List α} : a::l₁ ~ a::l₂ → l₁ ~ l₂ :=
+    theorem cons_inv {a : α} {l₁ l₂ : List α} : a::l₁ ~ a::l₂ → l₁ ~ l₂ :=
       @invCore _ _ [] [] _ _
 
     theorem pairwiseIff {r : α → α → Prop} (h : ∀ a b, r a b → r b a) :
@@ -166,16 +166,16 @@ namespace M4R
       have : ∀ {l₁ l₂}, l₁ ~ l₂ → Pairwise r l₁ → Pairwise r l₂ := by
         intro l₁ l₂ p₁₂ pwl₁;
         induction pwl₁ generalizing l₂ with
-        | nil => rw [p₁₂.nilEq]; constructor
+        | nil => rw [p₁₂.nil_eq]; constructor
         | @cons a l₃ hl₃ pwl₃ ih =>
-          let ⟨s, t, e⟩ := List.memSplit (p₁₂.subset (List.mem_cons_self a l₃));
+          let ⟨s, t, e⟩ := List.mem_split (p₁₂.subset (List.mem_cons_self a l₃));
           rw [e, Pairwise.middle, Pairwise.consIff]; rw [e] at p₁₂;
-          have p' : l₃ ~ s ++ t := (p₁₂.trans (middle _ _ _)).consInv;
-          exact And.intro (fun x xst => hl₃ x ((memIff p').mpr xst)) (ih p')
+          have p' : l₃ ~ s ++ t := (p₁₂.trans (middle _ _ _)).cons_inv;
+          exact And.intro (fun x xst => hl₃ x ((mem_iff p' _).mpr xst)) (ih p')
           exact h
       exact fun _ _ p => ⟨this p, this p.symm⟩
 
-    theorem nodupIff {l₁ l₂ : List α} : l₁ ~ l₂ → (List.nodup l₁ ↔ List.nodup l₂) :=
+    theorem nodupIff {l₁ l₂ : List α} : l₁ ~ l₂ → (l₁.nodup ↔ l₂.nodup) :=
       pairwiseIff (@Ne.symm α)
 
     theorem sizeOf_Eq_sizeOf {l₁ l₂ : List α} (h : l₁ ~ l₂) :
@@ -211,114 +211,108 @@ namespace M4R
     theorem map (f : α → β) {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.map f ~ l₂.map f := by
       rw [←List.filterMap_Eq_map f]; exact filterMap (some ∘ f) p
 
-  end Perm
+    theorem exists_perm_sublist {l₁ l₂ l₂' : List α} (s : l₁ <+ l₂) (p : l₂ ~ l₂') :
+      ∃ l₁', l₁' ~ l₁ ∧ l₁' <+ l₂' := by
+        induction p generalizing l₁ with
+        | nil => exact ⟨[], List.Sublist.eq_nil_of_sublist_nil s ▸ Perm.refl _, List.Sublist.nil_sublist _⟩
+        | cons x p ih =>
+          cases s with
+          | cons _ _ _ s => let ⟨l, pl, hl⟩ := ih s; exact ⟨l, pl, hl.cons _ _ x⟩
+          | cons' l₁ _ _ s => let ⟨l, pl, hl⟩ := ih s; exact ⟨x::l, pl.cons x, hl.cons' _ _ x⟩
+        | swap x y l₂ =>
+          cases s with
+          | cons _ _ _ s =>
+            cases s with
+            | cons _ _ _ s => exact ⟨l₁, Perm.refl _, (s.cons _ _ y).cons _ _ x⟩
+            | cons' l₁ _ _ s => exact ⟨x::l₁, Perm.refl _, (s.cons _ _ y).cons' _ _ x⟩
+          | cons' l₁ _ _ s =>
+            cases s with
+            | cons _ _ _ s => exact ⟨y::l₁, Perm.refl _, (s.cons' _ _ y).cons _ _ x⟩
+            | cons' l₁ _ _ s => exact ⟨x::y::l₁, Perm.swap _ _ _, (s.cons' _ _ y).cons' _ _ x⟩
+        | trans p₁ p₂ ih₁ ih₂ => let ⟨l, pl, hl⟩ := ih₁ s; let ⟨m, pm, hm⟩ := ih₂ hl; exact ⟨m, pm.trans pl, hm⟩
 
-  def UnorderedList (α : Type u) : Type u := Quotient (Perm.PermSetoid α)
+    def Subperm (l₁ l₂ : List α) : Prop := ∃ l, l ~ l₁ ∧ l <+ l₂
+    infix:50 " <+~ " => Subperm
+  end Perm
 end M4R
 
-def List.to_UnorderedList (l : List α) : M4R.UnorderedList α := Quotient.mk l
+protected theorem List.Sublist.subperm {l₁ l₂ : List α} (s : l₁ <+ l₂) : l₁ <+~ l₂ :=
+  ⟨l₁, M4R.Perm.refl _, s⟩
 
 namespace M4R
-  namespace UnorderedList
-    instance UnorderedListCoe : Coe (List α) (UnorderedList α) where coe := List.to_UnorderedList
+  namespace Perm
+    protected theorem subperm {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁ <+~ l₂ :=
+      ⟨l₂, p.symm, List.Sublist.refl _⟩
 
-    protected def mem (a : α) (s : UnorderedList α) : Prop :=
-      Quot.liftOn s (fun l => a ∈ l) (fun l₁ l₂ (p : l₁ ~ l₂) => propext (p.memIff))
-    instance UnorderedListMem : Mem α (UnorderedList α) where mem := UnorderedList.mem
-  
-    def nodup (s : UnorderedList α) : Prop :=
-      Quot.liftOn s List.nodup (fun l₁ l₂ p => propext p.nodupIff)
+    theorem subperm_left {l l₁ l₂ : List α} (p : l₁ ~ l₂) : l <+~ l₁ ↔ l <+~ l₂ := by
+      have : ∀ {l₁ l₂ : List α}, l₁ ~ l₂ → l <+~ l₁ → l <+~ l₂ := fun p ⟨u, pu, su⟩ =>
+        let ⟨v, pv, sv⟩ := exists_perm_sublist su p
+        ⟨v, pv.trans pu, sv⟩
+      exact ⟨this p, this p.symm⟩
 
-    protected def sizeOf [SizeOf α] (s : UnorderedList α) : Nat :=
-      Quot.liftOn s sizeOf (fun _ _ => Perm.sizeOf_Eq_sizeOf)
-    instance UnorderedListSizeOf : SizeOf (UnorderedList α) where sizeOf := UnorderedList.sizeOf
+    theorem subperm_right {l₁ l₂ l : List α} (p : l₁ ~ l₂) : l₁ <+~ l ↔ l₂ <+~ l :=
+      ⟨fun ⟨u, pu, su⟩ => ⟨u, pu.trans p, su⟩,
+        fun ⟨u, pu, su⟩ => ⟨u, pu.trans p.symm, su⟩⟩
 
-    protected def length (s : UnorderedList α) : Nat :=
-      Quot.liftOn s List.length (fun _ _ => Perm.lengthEq)
+    namespace Subperm
+      theorem nil_subperm {l : List α} : [] <+~ l :=
+        ⟨[], Perm.nil, by simp⟩
 
-    protected def cons (a : α) (s : UnorderedList α) : UnorderedList α :=
-      Quot.liftOn s (fun l => List.to_UnorderedList (a::l)) (fun _ _ p => Quot.sound (p.cons a))
+      protected theorem refl (l : List α) : l <+~ l := (Perm.refl _).subperm
 
-    protected def Empty {α : Type _} : UnorderedList α := List.to_UnorderedList []
-    instance EmptyUnorderedListEmptyCollection : EmptyCollection (UnorderedList α) where
-      emptyCollection := UnorderedList.Empty
-    instance UnorderedListZero : Zero (UnorderedList α) where zero := ∅
+      protected theorem trans {l₁ l₂ l₃ : List α} : l₁ <+~ l₂ → l₂ <+~ l₃ → l₁ <+~ l₃
+      | s, ⟨l₂', p₂, s₂⟩ =>
+        let ⟨l₁', p₁, s₁⟩ := p₂.subperm_left.mpr s
+        ⟨l₁', p₁, s₁.trans s₂⟩
 
-    protected def singleton (a : α) : UnorderedList α := ↑[a]
+      theorem length_le {l₁ l₂ : List α} : l₁ <+~ l₂ → l₁.length ≤ l₂.length
+      | ⟨l, p, s⟩ => p.length_eq ▸ s.length_le_of_sublist
 
-    protected def append (s t : UnorderedList α) : UnorderedList α :=
-      Quotient.liftOn₂ s t (fun l₁ l₂ => (l₁ ++ l₂ : List α).to_UnorderedList)
-        fun v₁ v₂ w₁ w₂ p₁ p₂ => Quot.sound (p₁.append p₂)
+      theorem perm_of_length_le {l₁ l₂ : List α} : l₁ <+~ l₂ → l₂.length ≤ l₁.length → l₁ ~ l₂
+      | ⟨l, p, s⟩, h =>
+        have := List.Sublist.eq_of_sublist_of_length_le s (p.symm.length_eq ▸ h)
+        this ▸ p.symm
 
-    namespace append
-      instance UnorderedListAdd : Add (UnorderedList α) where add := UnorderedList.append
+      theorem antisymm {l₁ l₂ : List α} (h₁ : l₁ <+~ l₂) (h₂ : l₂ <+~ l₁) : l₁ ~ l₂ :=
+        h₁.perm_of_length_le h₂.length_le
 
-      theorem comm (s t : UnorderedList α) : s + t = t + s := 
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
-          (fun (l₁ l₂ : UnorderedList α) => l₁ + l₂ = l₂ + l₁) s t (fun _ _ => Quot.sound (Perm.append_comm _ _))
+      theorem cons_subperm_of_mem {a : α} {l₁ l₂ : List α} (d₁ : l₁.nodup) (h₁ : a ∉ l₁) (h₂ : a ∈ l₂)
+        (s : l₁ <+~ l₂) : a :: l₁ <+~ l₂ := by
+          let ⟨l, p, s⟩ := s
+          induction s generalizing l₁ with
+          | nil => cases h₂
+          | cons r₁ r₂  b s' ih =>
+            cases h₂ with
+            | inl e => rw [e]; exact ⟨b::r₁, p.cons b, s'.cons' _ _ _⟩
+            | inr m => let ⟨t, p', s'⟩ := ih d₁ h₁ m ⟨r₁, p, s'⟩ p; exact ⟨t, p', s'.cons _ _ _⟩
+          | cons' r₁ r₂ b s' ih =>
+            have bm : b ∈ l₁ := p.subset (List.mem_cons_self _ _)
+            have am : a ∈ r₂ := h₂.resolve_left (fun e => h₁ (e.symm ▸ bm))
+            cases List.mem_split bm with
+            | intro t₁ t₂ =>
+              let ⟨t₂, h⟩ := t₂; rw [h];
+              have st : t₁ ++ t₂ <+ l₁ := by
+                rw [h]; exact (List.Sublist.append_sublist_append_left t₁).mpr
+                  (List.Sublist.cons t₂ t₂ b (List.Sublist.refl t₂))
+              have rt : r₁ ~ t₁ ++ t₂ := cons_inv (p.trans (by rw [h]; exact Perm.middle _ _ _))
+              let ⟨t, p', s'⟩ := ih (List.nodup_of_sublist st d₁) (fun h' => absurd (st.subset h') h₁) am
+                ⟨r₁, rt, s'⟩ rt
+              exact ⟨b::t, (p'.cons b).trans ((swap _ _ _).trans ((Perm.middle _ _ _).symm.cons a)), s'.cons' _ _ _⟩
 
-      theorem add_zero (s : UnorderedList α) : s + 0 = s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (a : UnorderedList α) => a + 0 = a) s
-          (fun l => Quot.sound (by simp; exact Perm.refl _))
+      theorem subperm_of_subset_nodup {l₁ l₂ : List α} (d : l₁.nodup) (H : l₁ ⊆ l₂) : l₁ <+~ l₂ := by
+        induction d with
+        | nil => exact ⟨[], Perm.nil, List.Sublist.nil_sublist _⟩
+        | cons h d IH =>
+          let ⟨H₁, H₂⟩ := List.forall_mem_cons.mp H
+          exact cons_subperm_of_mem d (by intro h'; apply h _ h'; rfl) H₁ (IH H₂)
 
-      theorem cons (a : α) (s : UnorderedList α) : s.cons a = [a] + s := rfl
-      theorem cons' (a : α) (s : UnorderedList α) : s.cons a = s + [a] := by rw [comm, cons]
+    end Subperm
 
-    end append
+    protected theorem ext {l₁ l₂ : List α} (d₁ : l₁.nodup) (d₂ : l₂.nodup) : l₁ ~ l₂ ↔ ∀a, a ∈ l₁ ↔ a ∈ l₂ :=
+      ⟨fun p a => p.mem_iff _, fun H =>
+        Subperm.antisymm
+          (Subperm.subperm_of_subset_nodup d₁ (fun a => (H a).mp))
+          (Subperm.subperm_of_subset_nodup d₂ (fun a => (H a).mpr))⟩
 
-    protected theorem cons' (a : α) (l : List α) : Quotient.mk (a :: l) = (↑l : UnorderedList α).cons a := rfl
-
-    protected def map (f : α → β) (s : UnorderedList α) : UnorderedList β :=
-      Quot.liftOn s (fun l : List α => ↑(l.map f))
-        (fun l₁ l₂ p => Quot.sound (p.map f))
-    
-    namespace map
-
-      @[simp] theorem singleton (f : α → β) (a : α) : (UnorderedList.singleton a).map f = UnorderedList.singleton (f a) := rfl
-
-    end map
-
-    theorem nodup_map_on {f : α → β} {s : UnorderedList α} (H : ∀ x ∈ s, ∀ y ∈ s, f x = f y → x = y) :
-      nodup s → nodup (s.map f) :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
-          (∀ (x : α), x ∈ l → ∀ (y : α), y ∈ l → f x = f y → x = y) → nodup l → nodup (l.map f))
-            s (fun _ => List.nodup_map_on) H
-
-    theorem nodup_map {f : α → β} {s : UnorderedList α} (hf : Function.injective f) :
-      nodup s → nodup (s.map f) :=
-        nodup_map_on (fun x _ y _ h => hf h)
-
-    def fold (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂) :
-      (init : α) → UnorderedList β → α := fun init s =>
-        Quot.liftOn s (List.foldl f init) fun _ _ p => by
-          induction p generalizing init with
-          | nil => rfl
-          | cons x _ h => exact h (f init x)
-          | swap x y _ => simp only [List.foldl]; rw [hcomm init x y]
-          | trans _ _ h₁₂ h₂₃ => exact Eq.trans (h₁₂ init) (h₂₃ init)
-
-    namespace fold
-      variable (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
-      
-      @[simp] theorem empty (init : α) : fold f hcomm init ∅ = init := rfl
-
-      @[simp] theorem singleton (init : α) (b : β) : fold f hcomm init (UnorderedList.singleton b) = f init b := rfl
-
-      theorem cons (init : α) (x : β) (s : UnorderedList β) :
-        fold f hcomm init (s.cons x) = fold f hcomm (f init x) s :=
-          @Quotient.inductionOn (List β) (Perm.PermSetoid β) (fun (ms : UnorderedList β) =>
-            fold f hcomm init (ms.cons x) = fold f hcomm (f init x) ms) s (fun l => rfl)
-        
-      theorem append (init : α) (s t : UnorderedList β) :
-        fold f hcomm init (s + t) = fold f hcomm (fold f hcomm init s) t :=
-          @Quotient.inductionOn₂ (List β) (List β) (Perm.PermSetoid β) (Perm.PermSetoid β)
-            (fun (a b : UnorderedList β) => fold f hcomm init (a + b) = fold f hcomm (fold f hcomm init a) b) s t
-            (fun a b => List.foldl_append f _ a b)
-
-      theorem cons' (init : α) (x : β) (s : UnorderedList β) :
-        fold f hcomm init (s.cons x) = f (fold f hcomm init s) x := by
-          rw [cons, ←singleton f hcomm _ x, ←singleton f hcomm _ x, ←append, ←append, append.comm]
-
-    end fold
-  end UnorderedList
+  end Perm
 end M4R
