@@ -91,7 +91,7 @@ namespace Nat
     Nat.lt_of_add_lt_add_right this
 
   theorem lt_of_sub_eq_succ {m n l : Nat} (H : m - n = succ l) : n < m :=
-    gt_of_not_le (mt (@sub_eq_zero_of_le m n) (by intro h; rw [h] at H; contradiction))
+    gt_of_not_le (mt (@sub_eq_zero_of_le m n) (fun h => by rw [h] at H; contradiction))
 
   theorem sub_eq_iff_eq_add {a b c : Nat} (ab : b ≤ a) : a - b = c ↔ a = c + b :=
     ⟨fun h => by rw [←h, sub_add_cancel ab], fun h => by rw [h, add_sub_cancel]⟩

@@ -1,44 +1,64 @@
-import M4R.Algebra.Group.Basic
+import M4R.Algebra.Group.Group
 
 namespace M4R
+  open Monoid
+  open CommMonoid
   open Group
   open AbelianGroup
-  
-  namespace SubGroup
 
-    def Self (α : Type _) [Group α] : SubGroup α where
+  namespace SubMonoid
+
+    def Self (α : Type _) [Monoid α] : SubMonoid α where
       subset   := Set.Universal
       has_zero := trivial
       add_closed := by intros; trivial
+
+    def Trivial (α : Type _) [Monoid α] : SubMonoid α where
+      subset     := {x | x = 0}
+      has_zero   := by trivial
+      add_closed := fun _ a0 _ b0 => by rw [a0, b0, add_zero]; trivial
+
+    protected theorem ext [Monoid α] (s₁ s₂ : SubMonoid α) : s₁.subset = s₂.subset ↔ s₁ = s₂ :=
+      ⟨match s₁, s₂ with | ⟨_, _, _⟩, ⟨_, _, _⟩ => by rw [SubMonoid.mk.injEq]; exact id,
+      fun h => by rw [h]⟩
+
+    protected instance toMonoid [Monoid α] (s : SubMonoid α) : Monoid ↑s.subset where
+      zero := ⟨0, s.has_zero⟩
+      add := fun ⟨x, hx⟩ ⟨y, hy⟩ => ⟨x + y, s.add_closed x hx y hy⟩
+      add_zero := fun ⟨a, _⟩ => Set.elementExt (add_zero a)
+      zero_add := fun ⟨a, _⟩ => Set.elementExt (zero_add a)
+      add_assoc := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (add_assoc a b c)
+
+    protected instance toCommMonoid [CommMonoid α] (s : SubMonoid α) : CommMonoid ↑s.subset where
+      add_comm := fun ⟨a, _⟩ ⟨b, _⟩ => Set.elementExt (add_comm a b)
+  
+  end SubMonoid
+
+  namespace SubGroup
+
+    def Self (α : Type _) [Group α] : SubGroup α where
+      toSubMonoid := SubMonoid.Self α
       neg_closed := by intros; trivial
 
     def Trivial (α : Type _) [Group α] : SubGroup α where
-      subset     := {x | x = 0}
-      has_zero   := by trivial
-      add_closed := by intro _ a0 _ b0; rw [a0, b0, add_zero]; trivial
-      neg_closed := by intro a a0; rw[a0, neg_zero]; trivial
+      toSubMonoid := SubMonoid.Trivial α
+      neg_closed := fun a a0 => by rw[a0, neg_zero]; trivial
 
     protected theorem ext [Group α] (s₁ s₂ : SubGroup α) : s₁.subset = s₂.subset ↔ s₁ = s₂ :=
-      ⟨match s₁, s₂ with
-      | ⟨_, _, _, _⟩, ⟨_, _, _, _⟩ => by rw [SubGroup.mk.injEq]; exact id,
-      by intro h; rw [h]⟩
+      ⟨match s₁, s₂ with | ⟨_, _⟩, ⟨_, _⟩ => by rw [SubGroup.mk.injEq]; exact (SubMonoid.ext _ _).mp,
+      fun h => by rw [h]⟩
 
     theorem trivialExt [Group α] (s : SubGroup α) : s = Trivial α ↔ (∀ x ∈ s.subset, x = 0) := by
-      rw [←(SubGroup.ext s (Trivial α))]; exact ⟨fun hs => by rw [hs]; exact (fun _ xs => xs),
-        fun hx => by rw [←Set.ext]; exact (fun x => ⟨fun xs => hx x xs,
-          fun x0 => by rw [x0]; exact s.has_zero⟩)⟩
+      rw [←(SubGroup.ext s (Trivial α))]; exact ⟨fun hs => by rw [hs]; exact (fun _ => id),
+        fun hx => by rw [←Set.ext]; exact fun x => ⟨hx x,
+          fun x0 => by rw [x0]; exact s.has_zero⟩⟩
     
     protected instance toGroup [Group α] (s : SubGroup α) : Group ↑s.subset where
-      zero := ⟨0, s.has_zero⟩
-      add := fun ⟨x, hx⟩ ⟨y, hy⟩ => ⟨x + y, s.add_closed x hx y hy⟩
       neg := fun ⟨x, hx⟩ => ⟨-x, s.neg_closed x hx⟩
-      add_zero := fun ⟨a, _⟩ => Set.elementExt (add_zero a)
-      add_assoc := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (add_assoc a b c)
       add_neg := fun ⟨a, _⟩ => Set.elementExt (add_neg a)
     
     protected instance toAbelianGroup [AbelianGroup α] (s : SubGroup α) : AbelianGroup ↑s.subset where
-      toGroup := s.toGroup
-      add_comm := fun ⟨a, _⟩ ⟨b, _⟩ => Set.elementExt (add_comm a b)
+      add_comm := s.toCommMonoid.add_comm
 
   end SubGroup
 
@@ -69,7 +89,8 @@ namespace M4R
           simp only [QuotientRelation] at *; rw [←neg_add_distrib]; apply s.neg_closed;
           rw[←zero_add y, ←neg_add (-x), add_assoc (- -x)]; exact N.normal (-x + y) hxy (-x))
 
-    protected instance toGroup (α : Type _) [N : NormalSubGroup s] : Group (QuotClass s) where
+    protected instance toGroup (α : Type _) [N : NormalSubGroup s] : Group (QuotClass s) := Group.construct
+    {
       zero := Quot.mk (QuotientRelation s) 0
       add := QuotAdd s
       neg := QuotNeg s
@@ -83,7 +104,7 @@ namespace M4R
       add_neg := by
         apply Quot.ind; intro a; apply Quot.sound; simp only [QuotientRelation];
         rw [add_neg, neg_add]; exact s.has_zero
-
+    }
     def LeftCoset (a : α) (s : Set α) : Set α := {x | -a + x ∈ s}
     def RightCoset (s : Set α) (a : α) : Set α := {x | x + -a ∈ s}
     

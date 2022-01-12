@@ -1,51 +1,53 @@
-import M4R.Algebra.Ring.Defs
+import M4R.Algebra.Ring.Semiring
 
 namespace M4R
-  section
-    open NonTrivialNCRing
-    open NonTrivialRing
-    open NCField
 
-    def Ring.is_NonTrivial (α : Type _) [Ring α] : Prop := (1 : α) ≠ 0
-    def Ring.is_NonTrivial.toNonTrivialRing [Ring α] (h : is_NonTrivial α) : NonTrivialRing α where
-      one_neq_zero := h
-    theorem NonTrivialRing.to_is_NonTrivial [NonTrivialRing α] : Ring.is_NonTrivial α := one_neq_zero
-
-    def Ring.is_Field (α : Type _) [Ring α] : Prop := is_NonTrivial α ∧ ∀ {a : α}, (h : a ≠ 0) → ∃ b, a * b = 1
-    noncomputable def Ring.is_Field.toField [Ring α] (h : is_Field α) : Field α where
-      one_neq_zero := h.left
-      mul_comm := mul_comm
-      inv := fun ha => Classical.choose (h.right ha)
-      mul_inv := fun ha => Classical.choose_spec (h.right ha)
-      inv_mul := fun ha => by rw [mul_comm]; exact Classical.choose_spec (h.right ha)
-    theorem Field.to_is_Field [Field α] : Ring.is_Field α :=
-      ⟨one_neq_zero, fun ha => ⟨inv ha, mul_inv ha⟩⟩
-
-    def Ring.is_IntegralDomain (α : Type _) [Ring α] : Prop := is_NonTrivial α ∧ ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0
-    def Ring.is_IntegralDomain.toIntegralDomain [Ring α] (h : is_IntegralDomain α) : IntegralDomain α where
-      one_neq_zero := h.left
-      mul_comm := mul_comm
-      integral := h.right
-    theorem IntegralDomain.to_is_IntegralDomain [i : IntegralDomain α] : Ring.is_IntegralDomain α :=
-      ⟨i.one_neq_zero, i.integral⟩
-  end
   namespace NCRing
     open Group
+    open NCSemiring
 
-    theorem mul_zero [NCRing α] (a : α) : a * 0 = 0 := by
-      rw [←add_right_cancel _ _ (a * 0), zero_add, ←mul_distrib_left, zero_add]
-    theorem zero_mul [NCRing α] (a : α) : 0 * a = 0 := by
-      rw [←add_right_cancel _ _ (0 * a), zero_add, ←mul_distrib_right, zero_add]
+    protected instance Product (α₁ : Type _) (α₂ : Type _) [NCRing α₁] [NCRing α₂] : NCRing (α₁ × α₂) where
+      toNeg := (Group.Product α₁ α₂).toNeg
+      add_neg := (Group.Product α₁ α₂).add_neg
 
     theorem neg_mul [NCRing α] (a b : α) : -a * b = -(a * b) := by
       rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_right, neg_add, zero_mul]
     theorem mul_neg [NCRing α] (a b : α) : a * -b = -(a * b) := by
       rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_left, neg_add, mul_zero]
 
+    protected class constructor_ncr (α : Type _) extends AbelianGroup.constructor_ab α, One α, Mul α where
+      mul_one           : ∀ a : α, a * 1 = a
+      one_mul           : ∀ a : α, 1 * a = a
+      mul_assoc         : ∀ a b c : α, (a * b) * c = a * (b * c)
+      mul_distrib_left  : ∀ a b c : α, a * (b + c) = a * b + a * c
+      mul_distrib_right : ∀ a b c : α, (a + b) * c = a * c + b * c
+
+    protected instance construct {α : Type _} (c : NCRing.constructor_ncr α) : NCRing α where
+      toNCSemiring := NCSemiring.construct
+        {
+          mul_one           := c.mul_one
+          one_mul           := c.one_mul
+          mul_assoc         := c.mul_assoc
+          mul_distrib_left  := c.mul_distrib_left
+          mul_distrib_right := c.mul_distrib_right
+          mul_zero          := fun a => by
+            rw [←(AbelianGroup.construct c.toconstructor_ab).add_right_cancel _ _ (a * 0),
+              ←c.mul_distrib_left, c.add_zero, (AbelianGroup.construct c.toconstructor_ab).zero_add]
+          zero_mul          := fun a => by
+            rw [←(AbelianGroup.construct c.toconstructor_ab).add_right_cancel _ _ (0 * a),
+              ←c.mul_distrib_right, c.add_zero, (AbelianGroup.construct c.toconstructor_ab).zero_add]
+        }
+      toNeg := (AbelianGroup.construct c.toconstructor_ab).toNeg
+      add_neg := (AbelianGroup.construct c.toconstructor_ab).add_neg
+
   end NCRing
 
   namespace Ring
-    open NCRing
+    open NCSemiring
+
+    protected instance Product (α₁ : Type _) (α₂ : Type _) [Ring α₁] [Ring α₂] : Ring (α₁ × α₂) where
+      toNCRing := NCRing.Product α₁ α₂
+      mul_comm := (Semiring.Product α₁ α₂).mul_comm
 
     theorem divides_self [Ring α] (a : α) : a ÷ a := ⟨1, mul_one a⟩
     theorem divides_zero [Ring α] (a : α) : a ÷ 0 := ⟨0, mul_zero a⟩
@@ -79,17 +81,19 @@ namespace M4R
     theorem unit_inv_mul [Ring α] {a : α} (h : isUnit a) : unit_inv h * a = 1 := by
       rw [mul_comm]; exact mul_unit_inv h
 
-    noncomputable instance UnitGroup [Ring α] : Group ↑(unit_set α) where
+    noncomputable instance UnitGroup [Ring α] : Group ↑(unit_set α) := Group.construct
+    {  
       zero := ⟨1, ⟨1, by rw [mul_one]⟩⟩
       add := fun a b => ⟨a.val * b.val, unit_mul a.property b.property⟩
       neg := fun ⟨x, xs⟩ => ⟨unit_inv xs, x, unit_inv_mul xs⟩
       add_zero := fun ⟨a, _⟩ => Set.elementExt (mul_one a)
       add_assoc := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (mul_assoc a b c)
       add_neg := fun ⟨a, as⟩ => Set.elementExt (mul_unit_inv as)
-      
+    }
+
     theorem pow_nat_succ [Ring α] (a : α) (x : Nat) : a ^ (Nat.succ x) = a^x * a :=
       match x with
-      | Nat.zero => by simp only [HPow.hPow, Pow.pow, Ring.pow_nat, one_mul]
+      | Nat.zero => by simp only [HPow.hPow, Pow.pow, NCSemiring.pow_nat, one_mul]
       | Nat.succ k  => rfl
 
     theorem pow_nat_one [Ring α] (n : Nat) : (1 : α)^n = 1 := by
@@ -114,53 +118,37 @@ namespace M4R
       | zero => rw [Nat.zero_mul, pow_nat_0, pow_nat_one]
       | succ k ih => rw [pow_nat_succ, Nat.succ_mul, pow_nat_mul_distrib, ih, pow_nat_add_distrib]
 
+    protected class constructor_r (α : Type _) extends AbelianGroup.constructor_ab α, One α, Mul α where
+      mul_one           : ∀ a : α, a * 1 = a
+      mul_assoc         : ∀ a b c : α, (a * b) * c = a * (b * c)
+      mul_distrib_left  : ∀ a b c : α, a * (b + c) = a * b + a * c
+      mul_comm          : ∀ a b : α, a * b = b * a
+
+    protected instance construct {α : Type _} (c : Ring.constructor_r α) : Ring α where
+      toNCRing := NCRing.construct
+        {
+          mul_one           := c.mul_one
+          one_mul           := fun a => by rw [c.mul_comm]; exact c.mul_one a
+          mul_assoc         := c.mul_assoc
+          mul_distrib_left  := c.mul_distrib_left
+          mul_distrib_right := fun a b _ => by rw [c.mul_comm, c.mul_comm a, c.mul_comm b]; exact c.mul_distrib_left _ _ _
+        }
+      mul_comm := c.mul_comm
+
   end Ring
 
-  namespace NCField
-    open NCRing
-    open NonTrivialNCRing
-
-    instance toNonTrivialRing (α : Type _) [Field α] : NonTrivialRing α where
-      one_neq_zero := Field.toNCField.one_neq_zero
-
-    theorem inv_nonzero [NCField α] : ∀ {a : α}, (h : a ≠ 0) → inv h ≠ 0 := by
-      intro a h hi;
-      have := mul_inv h
-      rw [hi, mul_zero] at this
-      exact one_neq_zero this.symm
-
-    theorem mul_right_cancel [NCField α] {a b c : α} (h : c ≠ 0) : a * c = b * c ↔ a = b :=
-      ⟨fun hab => by rw [←mul_one a, ←mul_one b, ←mul_inv h, ←mul_assoc, ←mul_assoc, hab],
-        fun hab => by rw [hab]⟩
-
-    theorem inv_inv [NCField α] : ∀ {a : α}, (h : a ≠ 0) → inv (inv_nonzero h) = a :=
-      fun h => by rw [←mul_right_cancel (inv_nonzero h), inv_mul, mul_inv]
-
-    theorem integral [NCField α] : ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0 := by
-      intro a b ha hb hab;
-      rw [←zero_mul b, mul_right_cancel hb] at hab
-      exact ha hab
-
-    theorem inv_of_mul [NCField α] {a b : α} (ha : a ≠ 0) (hb : b ≠ 0) :
-      inv (integral ha hb) = (inv hb) * (inv ha) := by
-        rw [←mul_right_cancel ha, mul_assoc, inv_mul, mul_one, ←mul_right_cancel hb, inv_mul, mul_assoc]
-        exact inv_mul (integral ha hb)
-
-  end NCField
-
-  open NonTrivialRing
-  open NCField
-
-  instance IntegralDomain.toNonTrivialRing (α : Type _) [IntegralDomain α] : NonTrivialRing α where
-      one_neq_zero := IntegralDomain.toNCIntegralDomain.one_neq_zero
-
-  instance NCField.toNCIntegralDomain (α : Type _) [NCField α] : NCIntegralDomain α where
-    integral := NCField.integral
-
-  def Field.to_is_IntegralDomain (α : Type _) [Field α] : Ring.is_IntegralDomain α :=
-    ⟨one_neq_zero, integral⟩
-
-  instance Field.toIntegralDomain (α : Type _) [Field α] : IntegralDomain α :=
-    (to_is_IntegralDomain α).toIntegralDomain
+  instance IntRing : NonTrivialRing Int where
+    toRing := Ring.construct
+      {
+        add_zero          := Int.add_zero
+        add_assoc         := Int.add_assoc
+        add_neg           := Int.add_neg
+        add_comm          := Int.add_comm
+        mul_one           := Int.mul_one
+        mul_assoc         := Int.mul_assoc
+        mul_distrib_left  := Int.mul_distrib_left
+        mul_comm          := Int.mul_comm
+      }
+    one_neq_zero := by simp
 
 end M4R

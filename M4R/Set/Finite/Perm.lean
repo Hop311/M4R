@@ -304,7 +304,7 @@ namespace M4R
         | nil => exact ⟨[], Perm.nil, List.Sublist.nil_sublist _⟩
         | cons h d IH =>
           let ⟨H₁, H₂⟩ := List.forall_mem_cons.mp H
-          exact cons_subperm_of_mem d (by intro h'; apply h _ h'; rfl) H₁ (IH H₂)
+          exact cons_subperm_of_mem d (fun h' => by apply h _ h'; rfl) H₁ (IH H₂)
 
     end Subperm
 

@@ -1,9 +1,9 @@
 import M4R.Algebra
 
 namespace M4R
-  open Group
-  open NCRing
-  open Ring
+  open Monoid
+  open NCSemiring
+  open Semiring
 
   variable {A : Type _} [Ring A] {I : Ideal A}
 
@@ -63,7 +63,7 @@ namespace M4R
           ⟨r'i * s'i + r * r'' * s'i + r'i * (s * s''), m.add_closed (m.add_closed (m.mul_closed _ s'im)
             (m.mul_closed _ s'im)) (m.mul_closed' r'im _),
             r * r'' * (s * s''), ⟨r'' * s'', by
-              rw [mul_assoc, ←mul_assoc s, mul_comm s,mul_assoc, ←mul_assoc r]⟩, rfl⟩
+              rw [mul_assoc, ←mul_assoc s, mul_comm s, mul_assoc, ←mul_assoc r]⟩, rfl⟩
         have h₃ : m + Ideal.principal (r * s) = m := by
           rw [Ideal.add.comm]; exact Ideal.add.of_subset (Ideal.principal_in m _ hrs)
         rw [h₃] at h₂

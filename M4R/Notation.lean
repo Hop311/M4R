@@ -35,29 +35,6 @@ namespace M4R
      notsubset : α → α → Prop
   infix:50 " ⊈ " => NotSubset.notsubset
 
-  namespace Subset
-    instance MemSubset [Mem α γ] : Subset γ where
-      subset (a b : γ) := ∀ ⦃x : α⦄, x ∈ a → x ∈ b
-    instance MemProperSubset [Mem α γ] : ProperSubset γ where
-      propersubset (a b : γ) := (a ⊆ b) ∧ ∃ x : α, x ∉ a ∧ x ∈ b
-    instance MemNotSubset [Mem α γ] : NotSubset γ where
-      notsubset (a b : γ) := ¬(a ⊆ b)
-
-    @[simp] theorem ext [Mem α γ] (a b : γ) : a ⊆ b ∧ b ⊆ a ↔ ∀ x : α, x ∈ a ↔ x ∈ b :=
-      ⟨fun ⟨ab, ba⟩ x => ⟨@ab x, @ba x⟩, fun h =>
-        ⟨fun x => (h x).mp, fun x => (h x).mpr⟩⟩
-
-    @[simp] theorem toSuperset [Mem α γ] (a b : γ) (x : α) : x ∈ a → a ⊆ b → x ∈ b :=
-      fun xa ab => @ab x xa
-
-    @[simp] theorem toProperSubset [Mem α γ] (a b : γ) : a ⊊ b → a ⊆ b := And.left
-
-    @[simp] protected theorem refl [Mem α γ] (a : γ) : a ⊆ a := fun _ => id
-
-    @[simp] protected theorem trans [Mem α γ] {a b c : γ} : a ⊆ b → b ⊆ c → a ⊆ c := fun ab bc x xa => bc (ab xa)
-
-  end Subset
-
   class Union (α : Type u) where
     union : α → α → α
   infixl:65 " ∪ " => Union.union
@@ -137,8 +114,11 @@ namespace M4R
   @[simp] theorem zero_eq [z : Zero α] : z.zero    = 0     := rfl
   @[simp] theorem one_eq  [o : One  α] : o.one     = 1     := rfl
   @[simp] theorem neg_eq  [n : Neg  α] : n.neg x   = - x   := rfl
-  @[simp] theorem add_eq  [a : HAdd α β γ] : a.hAdd x y = x + y := rfl
-  @[simp] theorem sub_eq  [s : HSub α β γ] : s.hSub x y = x - y := rfl
-  @[simp] theorem mul_eq  [m : HMul α β γ] : m.hMul x y = x * y := rfl
+  @[simp] theorem hadd_eq  [a : HAdd α β γ] : a.hAdd x y = x + y := rfl
+  @[simp] theorem hsub_eq  [s : HSub α β γ] : s.hSub x y = x - y := rfl
+  @[simp] theorem hmul_eq  [m : HMul α β γ] : m.hMul x y = x * y := rfl
+  @[simp] theorem add_eq  [a : Add α] : a.add x y = x + y := rfl
+  @[simp] theorem sub_eq  [s : Sub α] : s.sub x y = x - y := rfl
+  @[simp] theorem mul_eq  [m : Mul α] : m.mul x y = x * y := rfl
   
 end M4R

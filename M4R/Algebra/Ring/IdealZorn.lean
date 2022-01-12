@@ -1,4 +1,4 @@
-import M4R.Algebra.Ring.Quotient
+import M4R.Algebra.Ring.Ideal
 
 namespace M4R
   namespace Ideal
@@ -17,7 +17,7 @@ namespace M4R
             intro x xc y yc hxy;
             let ⟨a, ac, hax⟩ := xc
             let ⟨b, bc, hbx⟩ := yc
-            have := hc a ac b bc (by intro hab; apply hxy; rw [←hax, ←hbx]; exact congrArg Subtype.val hab)
+            have := hc a ac b bc (fun hab => hxy (by rw [←hax, ←hbx]; exact congrArg Subtype.val hab))
             rw [←hax, ←hbx]; exact this
           have ⟨ub, ubS, hub⟩ := h (of_subtype_set c) (of_subtype_set.subset c) this
           ⟨⟨ub, ubS⟩, fun ⟨a, aS⟩ ac => hub a ⟨⟨a, aS⟩, ac, rfl⟩⟩

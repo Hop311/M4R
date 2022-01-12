@@ -50,7 +50,7 @@ namespace M4R
         intro _ as; exact as
         
       protected theorem antisymmIff {a b : Set α} : a = b ↔ a ⊆ b ∧ b ⊆ a := by
-        rw [Subset.ext a b, ←Set.ext]; exact Iff.refl _
+        rw [Subset.antisymm a b, ←Set.ext]; exact Iff.refl _
       
       protected theorem antisymm {a b : Set α} (hab : a ⊆ b) (hba : b ⊆ a) : a = b :=
         Set.subset.antisymmIff.mpr ⟨hab, hba⟩

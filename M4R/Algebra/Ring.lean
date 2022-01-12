@@ -1,9 +1,10 @@
 
 import M4R.Algebra.Ring.Defs
-import M4R.Algebra.Ring.Basic
-
 import M4R.Algebra.Ring.Semiring
+import M4R.Algebra.Ring.Ring
+import M4R.Algebra.Ring.Field
 
+import M4R.Algebra.Ring.Prod
 import M4R.Algebra.Ring.SubRing
 import M4R.Algebra.Ring.RMorphism
 import M4R.Algebra.Ring.Ideal

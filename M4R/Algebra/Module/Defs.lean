@@ -17,22 +17,22 @@ namespace M4R
 
   instance IdealModule (R : Type _) [r : Ring R] (I : Ideal R) : Module R ↑I.subset where
     hMul              := fun s ⟨t, ts⟩ => ⟨s * t, I.mul_closed s ts⟩
-    one_mul           := by intro ⟨x, _⟩; simp only [Ideal.image_eq]; exact r.one_mul x
-    mul_assoc         := by intro s t ⟨x, _⟩; simp only [Ideal.image_eq]; exact r.mul_assoc s t x
-    mul_distrib_left  := by intro s ⟨x, _⟩ ⟨y, _⟩; simp only [Ideal.image_eq]; exact r.mul_distrib_left s x y
-    mul_distrib_right := by intro s t ⟨x, _⟩; simp only [Ideal.image_eq]; exact r.mul_distrib_right s t x
+    one_mul           := fun ⟨x, _⟩ => by simp only [Ideal.image_eq]; exact r.one_mul x
+    mul_assoc         := fun s t ⟨x, _⟩ => by simp only [Ideal.image_eq]; exact r.mul_assoc s t x
+    mul_distrib_left  := fun s ⟨x, _⟩ ⟨y, _⟩ => by simp only [Ideal.image_eq]; exact r.mul_distrib_left s x y
+    mul_distrib_right := fun s t ⟨x, _⟩ => by simp only [Ideal.image_eq]; exact r.mul_distrib_right s t x
     
   instance RHomomorphismModule (R : Type _) (S : Type _) [iR : Ring R] [iS : Ring S] (rh : RHomomorphism R S) : Module R S where
     hMul := fun r s => (rh r) * s
-    one_mul := by intro x; have := iS.one_mul x; simp only [HMul.hMul] at *; rw [rh.preserve_one]; exact this
-    mul_assoc := by
-      intro r s x; have := iS.mul_assoc (rh r) (rh s) x;
+    one_mul := fun x => by have := iS.one_mul x; simp only [HMul.hMul] at *; rw [rh.preserve_one]; exact this
+    mul_assoc := fun r s x => by
+      have := iS.mul_assoc (rh r) (rh s) x;
       rw [←rh.preserve_mul] at this; simp only [HMul.hMul] at *; exact this
-    mul_distrib_left := by
-      intro r x y; have := iS.mul_distrib_left (rh r) x y;
+    mul_distrib_left := fun r x y => by
+      have := iS.mul_distrib_left (rh r) x y;
       simp only [HMul.hMul] at *; exact this
-    mul_distrib_right := by
-      intro r s x; have := iS.mul_distrib_right (rh r) (rh s) x;
+    mul_distrib_right := fun r s x => by
+      have := iS.mul_distrib_right (rh r) (rh s) x;
       rw [←rh.preserve_add] at this; simp only [HMul.hMul] at *; exact this
 
 end M4R

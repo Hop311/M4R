@@ -50,8 +50,8 @@ namespace M4R
         let ⟨x, hx⟩ := surjf y
         by rw [← hx, rfg]
           
-    theorem id_injective : @injective α α id := by intro _ _ idxy; assumption
-    theorem id_surjective : @surjective α α id := by intro y; exact ⟨y, rfl⟩
+    theorem id_injective : @injective α α id := id
+    theorem id_surjective : @surjective α α id := fun y => ⟨y, rfl⟩
     theorem id_bijective : @bijective α α id := ⟨id_injective, id_surjective⟩
 
     theorem surj_image (f : α → β) : surjective f ↔ image f = Set.Universal := by

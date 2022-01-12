@@ -142,5 +142,9 @@ namespace M4R
         (fun (s' t' : UnorderedList α) => nodup s' → nodup t' → (s' = t' ↔ ∀ a, a ∈ s' ↔ a ∈ t')) s t
         (fun l₁ l₂ h₁ h₂ => Quotient.eq.trans (Perm.ext h₁ h₂))
 
+    inductive rel {α : Type _} {β : Type _} (r : α → β → Prop) : UnorderedList α → UnorderedList β → Prop
+    | zero : rel r 0 0
+    | cons {a b as bs} : r a b → rel r as bs → rel r (as.cons a) (bs.cons b)
+
   end UnorderedList
 end M4R

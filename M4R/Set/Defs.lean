@@ -1,4 +1,4 @@
-import M4R.Notation
+import M4R.Set.MemStructure
 
 namespace M4R
 

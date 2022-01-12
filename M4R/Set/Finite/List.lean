@@ -1,4 +1,4 @@
-import M4R.Notation
+import M4R.Set.MemStructure
 import M4R.Logic
     
 namespace List

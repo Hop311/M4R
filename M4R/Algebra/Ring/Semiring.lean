@@ -1,85 +1,81 @@
 import M4R.Algebra.Ring.Defs
 
 namespace M4R
-
-  class NCSemiring (α : Type _) extends CommMonoid α, One α, Mul α where
-    mul_one           : ∀ a : α, a * 1 = a
-    one_mul           : ∀ a : α, 1 * a = a
-    mul_assoc         : ∀ a b c : α, (a * b) * c = a * (b * c)
-    mul_distrib_left  : ∀ a b c : α, a * (b + c) = a * b + a * c
-    mul_distrib_right : ∀ a b c : α, (a + b) * c = a * c + b * c
-
-  class Semiring (α : Type _) extends NCSemiring α where
-    mul_comm  : ∀ a b : α, a * b = b * a
-
-  structure SubSemiring (α : Type _) [NCSemiring α] extends SubMonoid α where
-    has_one    : 1 ∈ subset
-    mul_closed : ∀ a ∈ subset, ∀ b ∈ subset,  a * b ∈ subset
-  instance SubSemiringMem [NCSemiring α] : Mem α (SubSemiring α) where mem := fun x S => x ∈ S.subset
   
   namespace NCSemiring
 
-    protected instance ofNCRing (α : Type _) [NCRing α] : NCSemiring α where
-      toCommMonoid := CommMonoid.ofAbelianGroup α
-      mul_one := NCRing.mul_one
-      one_mul := NCRing.one_mul
-      mul_assoc := NCRing.mul_assoc
-      mul_distrib_left := NCRing.mul_distrib_left
-      mul_distrib_right := NCRing.mul_distrib_right
+    protected instance Product (α₁ : Type _) (α₂ : Type _) [NCSemiring α₁] [NCSemiring α₂] : NCSemiring (α₁ × α₂) where
+      one               := (1, 1)
+      mul               := fun (a₁, a₂) (b₁, b₂) => (a₁ * b₁, a₂ * b₂)
+      mul_one           := fun (a₁, a₂) => by simp [HMul.hMul, Mul.mul]; exact ⟨mul_one a₁, mul_one a₂⟩
+      one_mul           := fun (a₁, a₂) => by simp [HMul.hMul, Mul.mul]; exact ⟨one_mul a₁, one_mul a₂⟩
+      mul_assoc         := fun (a₁, a₂) (b₁, b₂) (c₁, c₂) => by
+        simp [HMul.hMul, Mul.mul];exact ⟨mul_assoc a₁ b₁ c₁, mul_assoc a₂ b₂ c₂⟩
+      mul_distrib_left  := fun (a₁, a₂) (b₁, b₂) (c₁, c₂) => by
+        simp [HMul.hMul, Mul.mul, HAdd.hAdd, Add.add]; exact ⟨mul_distrib_left a₁ b₁ c₁, mul_distrib_left a₂ b₂ c₂⟩
+      mul_distrib_right := fun (a₁, a₂) (b₁, b₂) (c₁, c₂) => by
+        simp [HMul.hMul, Mul.mul, HAdd.hAdd, Add.add]; exact ⟨mul_distrib_right a₁ b₁ c₁, mul_distrib_right a₂ b₂ c₂⟩
+      mul_zero          := fun (a₁, a₂) => by
+        simp [HMul.hMul, Mul.mul, Monoid.product_zero]; exact ⟨mul_zero a₁, mul_zero a₂⟩
+      zero_mul          := fun (a₁, a₂) => by
+        simp [HMul.hMul, Mul.mul, Monoid.product_zero]; exact ⟨zero_mul a₁, zero_mul a₂⟩
 
-    protected def toNCRing [s : NCSemiring α] [Neg α] (h : ∀ a : α, a + (-a) = 0) : NCRing α where
-      toAbelianGroup := CommMonoid.toAbelianGroup h
-      mul_one := NCSemiring.mul_one
-      one_mul := NCSemiring.one_mul
-      mul_assoc := NCSemiring.mul_assoc
-      mul_distrib_left := NCSemiring.mul_distrib_left
-      mul_distrib_right := NCSemiring.mul_distrib_right
+    protected class constructor_ncsr (α : Type _) extends CommMonoid.constructor_cm α, One α, Mul α where
+      mul_one           : ∀ a : α, a * 1 = a
+      one_mul           : ∀ a : α, 1 * a = a
+      mul_assoc         : ∀ a b c : α, (a * b) * c = a * (b * c)
+      mul_distrib_left  : ∀ a b c : α, a * (b + c) = a * b + a * c
+      mul_distrib_right : ∀ a b c : α, (a + b) * c = a * c + b * c
+      mul_zero          : ∀ a : α, a * 0 = 0
+      zero_mul          : ∀ a : α, 0 * a = 0
 
+    protected instance construct {α : Type _} (c : NCSemiring.constructor_ncsr α) : NCSemiring α where
+      toCommMonoid := CommMonoid.construct c.toconstructor_cm
+      mul_one           := c.mul_one
+      one_mul           := c.one_mul
+      mul_assoc         := c.mul_assoc
+      mul_distrib_left  := c.mul_distrib_left
+      mul_distrib_right := c.mul_distrib_right
+      mul_zero          := c.mul_zero
+      zero_mul          := c.zero_mul
+  
   end NCSemiring
   
   namespace Semiring
 
-    protected instance ofRing (α : Type _) [Ring α] : Semiring α where
-      toNCSemiring := NCSemiring.ofNCRing α
-      mul_comm := Ring.mul_comm
+    protected instance Product (α₁ : Type _) (α₂ : Type _) [Semiring α₁] [Semiring α₂] : Semiring (α₁ × α₂) where
+      mul_comm := fun (a₁, a₂) (b₁, b₂) => by simp [HMul.hMul, Mul.mul]; exact ⟨mul_comm a₁ b₁, mul_comm a₂ b₂⟩
 
-    protected def toRing [s : Semiring α] [Neg α] (h : ∀ a : α, s.add a (-a) = s.zero) : Ring α where
-      toNCRing := NCSemiring.toNCRing h
-      mul_comm := Semiring.mul_comm
+    protected class constructor_sr (α : Type _) extends CommMonoid.constructor_cm α, One α, Mul α where
+      mul_one           : ∀ a : α, a * 1 = a
+      mul_assoc         : ∀ a b c : α, (a * b) * c = a * (b * c)
+      mul_distrib_left  : ∀ a b c : α, a * (b + c) = a * b + a * c
+      mul_zero          : ∀ a : α, a * 0 = 0
+      mul_comm          : ∀ a b : α, a * b = b * a
 
-  end Semiring
-
-  namespace SubSemiring
-    open NCSemiring
-    open Semiring
-
-    def Self (α : Type _) [NCSemiring α] : SubSemiring α where
-      toSubMonoid := SubMonoid.Self α
-      has_one := trivial
-      mul_closed := by intros; trivial
-
-    protected instance toNCSemiring [NCSemiring α] (s : SubSemiring α) : NCSemiring ↑s.subset where
-      toCommMonoid := s.toSubMonoid.toCommMonoid
-      one := ⟨1, s.has_one⟩
-      mul := fun ⟨a, ha⟩ ⟨b, hb⟩ => ⟨a * b, s.mul_closed a ha b hb⟩
-      mul_one := fun ⟨a, _⟩ => Set.elementExt (mul_one a)
-      one_mul := fun ⟨a, _⟩ => Set.elementExt (one_mul a)
-      mul_assoc := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (mul_assoc a b c)
-      mul_distrib_left := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (mul_distrib_left a b c)
-      mul_distrib_right := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (mul_distrib_right a b c)
-
-    protected instance toSemiring [Semiring α] (s : SubSemiring α) : Semiring ↑s.subset where
-      toNCSemiring := s.toNCSemiring
-      mul_comm := fun ⟨a, _⟩ ⟨b, _⟩ => Set.elementExt (mul_comm a b)
+    protected instance construct {α : Type _} (c : Semiring.constructor_sr α) : Semiring α where
+      toCommMonoid := CommMonoid.construct c.toconstructor_cm
+      mul_one           := c.mul_one
+      one_mul           := fun a => by rw [c.mul_comm]; exact c.mul_one a
+      mul_assoc         := c.mul_assoc
+      mul_distrib_left  := c.mul_distrib_left
+      mul_distrib_right := fun a b _ => by rw [c.mul_comm, c.mul_comm a, c.mul_comm b]; exact c.mul_distrib_left _ _ _
+      mul_zero          := c.mul_zero
+      zero_mul          := fun a => by rw [c.mul_comm]; exact c.mul_zero a
+      mul_comm          := c.mul_comm
   
-  end SubSemiring
-
-  instance NatSemiring : Semiring Nat where
-    mul_one := Nat.mul_one
-    one_mul := Nat.one_mul
-    mul_assoc := Nat.mul_assoc
-    mul_distrib_left := Nat.left_distrib
-    mul_distrib_right := Nat.right_distrib
-    mul_comm := Nat.mul_comm
+  end Semiring
     
+  instance NatSemiring : Semiring Nat := Semiring.construct
+    {
+      add_zero          := Nat.add_zero
+      add_assoc         := Nat.add_assoc
+      add_comm          := Nat.add_comm
+      mul_one           := Nat.mul_one
+      mul_assoc         := Nat.mul_assoc
+      mul_distrib_left  := Nat.left_distrib
+      mul_zero          := Nat.mul_zero
+      mul_comm          := Nat.mul_comm
+    }
+
 end M4R

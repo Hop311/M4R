@@ -1,10 +1,11 @@
 import M4R.Algebra.Ring.Ideal
 
 namespace M4R
+  open Monoid
+  open CommMonoid
   open Group
-  open AbelianGroup
-  open NCRing
-  open Ring
+  open NCSemiring
+  open Semiring
 
   namespace QuotientRing
 
@@ -51,45 +52,41 @@ namespace M4R
         (QRel.refl I) (QRel.refl I) (fun x y => x * y) (fun a₁ a₂ b₁ b₂ ha hb => by
           simp only [QRel] at *
           have := I.add_closed (I.mul_closed b₁ ha) (I.mul_closed a₂ hb)
-          rw [mul_distrib_left, mul_distrib_left, mul_neg, mul_comm, mul_comm b₁, add_assoc, ←add_assoc (a₂ * b₁),
-            mul_neg, add_neg, zero_add] at this; exact this)
+          rw [mul_distrib_left, mul_distrib_left, NCRing.mul_neg, mul_comm, mul_comm b₁, add_assoc, ←add_assoc (a₂ * b₁),
+            NCRing.mul_neg, add_neg, zero_add] at this; exact this)
 
-    instance QuotientRing {α : Type _} [Ring α] (I : Ideal α) : Ring (QClass I) where
-      zero := toQuotient I 0
-      one := toQuotient I 1
-      add := QuotAdd I
-      neg := QuotNeg I
-      mul := QuotMul I
-      add_zero := by
-        apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
-        rw [add_zero, neg_add]; exact I.has_zero
-      add_assoc := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
-        rw [add_assoc, neg_add]; exact I.has_zero
-      add_neg := by
-        apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
-        rw [add_neg, neg_add]; exact I.has_zero
-      add_comm := by
-        apply Function.Quotient.ind₂; intro a _; apply Quot.sound; simp only [QRel]
-        rw [add_comm a, neg_add]; exact I.has_zero
-      mul_one := by
-        apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
-        rw [mul_one, neg_add]; exact I.has_zero
-      one_mul := by
-        apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
-        rw [one_mul, neg_add]; exact I.has_zero
-      mul_assoc := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
-        rw [mul_assoc, neg_add]; exact I.has_zero
-      mul_distrib_left := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
-        rw [mul_distrib_left, neg_add]; exact I.has_zero
-      mul_distrib_right := by
-        apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
-        rw [mul_distrib_right, neg_add]; exact I.has_zero
-      mul_comm := by
-        apply Function.Quotient.ind₂; intros; apply Quot.sound; simp only [QRel]
-        rw [mul_comm, neg_add]; exact I.has_zero
+    instance QuotientRing {α : Type _} [Ring α] (I : Ideal α) : Ring (QClass I) := Ring.construct
+      {
+        zero := toQuotient I 0
+        one := toQuotient I 1
+        add := QuotAdd I
+        neg := QuotNeg I
+        mul := QuotMul I
+        add_zero := by
+          apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
+          rw [add_zero, neg_add]; exact I.has_zero
+        add_assoc := by
+          apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
+          rw [add_assoc, neg_add]; exact I.has_zero
+        add_neg := by
+          apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
+          rw [add_neg, neg_add]; exact I.has_zero
+        add_comm := by
+          apply Function.Quotient.ind₂; intro a _; apply Quot.sound; simp only [QRel]
+          rw [add_comm a, neg_add]; exact I.has_zero
+        mul_one := by
+          apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
+          rw [mul_one, neg_add]; exact I.has_zero
+        mul_assoc := by
+          apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
+          rw [mul_assoc, neg_add]; exact I.has_zero
+        mul_distrib_left := by
+          apply Function.Quotient.ind₃; intros; apply Quot.sound; simp only [QRel]
+          rw [mul_distrib_left, neg_add]; exact I.has_zero
+        mul_comm := by
+          apply Function.Quotient.ind₂; intros; apply Quot.sound; simp only [QRel]
+          rw [mul_comm, neg_add]; exact I.has_zero
+      }
 
     theorem non_zero [Ring α] {I : Ideal α} {a : α} : toQuotient I a ≠ 0 ↔ a ∉ I :=
       ⟨by intro hI ha; apply hI; apply Quot.sound; simp only [Setoid.r, QRel]; rw [add_zero]; exact I.neg_closed ha,

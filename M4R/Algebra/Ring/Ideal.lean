@@ -1,11 +1,11 @@
-import M4R.Algebra.Ring.Basic
-import M4R.Set
+import M4R.Algebra.Ring.Ring
 
 namespace M4R
-  open Group
-  open AbelianGroup
+  open Monoid
+  open CommMonoid
+  open NCSemiring
+  open Semiring
   open NCRing
-  open Ring
 
   structure Ideal (α : Type _) [Ring α] where
     subset : Set α
@@ -30,8 +30,8 @@ namespace M4R
     instance ZeroIdeal [Ring α] : Ideal α where
       subset := Set.SingletonSet.mk 0
       has_zero := rfl
-      add_closed := by intro x y xz yz; rw [xz, yz, add_zero]; rfl
-      mul_closed := by intro _ _ h; rw [h, mul_zero]; trivial
+      add_closed := fun xz yz => by rw [xz, yz, add_zero]; rfl
+      mul_closed := fun _ _ h => by rw [h, mul_zero]; trivial
       
     instance UnitIdeal (α : Type _) [Ring α] : Ideal α where
       subset := Set.Universal
@@ -39,15 +39,17 @@ namespace M4R
       add_closed := by intros; trivial
       mul_closed := by intros; trivial
 
-    instance IdealAbelianGroup [r : Ring α] (I : Ideal α) : AbelianGroup ↑I.subset where
-      zero := ⟨0, I.has_zero⟩
-      add := fun ⟨x, xs⟩ ⟨y, ys⟩ => ⟨x + y, I.add_closed xs ys⟩
-      neg := fun ⟨x, xs⟩ => ⟨-x, I.neg_closed xs⟩
-      add_zero  := by intro ⟨a, _⟩; simp only [Ideal.image_eq]; exact r.add_zero a
-      add_assoc := by intro ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩; simp only [Ideal.image_eq]; exact r.add_assoc a b c
-      add_neg   := by intro ⟨a, _⟩; simp only [Ideal.image_eq]; exact r.add_neg a
-      add_comm  := by intro ⟨a, _⟩ ⟨b, _⟩; simp only [Ideal.image_eq]; exact r.add_comm a b
-    
+    instance IdealAbelianGroup [r : Ring α] (I : Ideal α) : AbelianGroup ↑I.subset := AbelianGroup.construct
+      {
+        zero := ⟨0, I.has_zero⟩
+        add := fun ⟨x, xs⟩ ⟨y, ys⟩ => ⟨x + y, I.add_closed xs ys⟩
+        neg := fun ⟨x, xs⟩ => ⟨-x, I.neg_closed xs⟩
+        add_zero  := fun ⟨a, _⟩ => by simp only [Ideal.image_eq]; exact r.add_zero a
+        add_assoc := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => by simp only [Ideal.image_eq]; exact r.add_assoc a b c
+        add_neg   := fun ⟨a, _⟩ => by simp only [Ideal.image_eq]; exact r.add_neg a
+        add_comm  := fun ⟨a, _⟩ ⟨b, _⟩ => by simp only [Ideal.image_eq]; exact r.add_comm a b
+      }
+
     protected def equivalent [Ring α] (I J: Ideal α) : Prop := I.subset = J.subset
     protected theorem ext [Ring α] {I J : Ideal α} : Ideal.equivalent I J ↔ I = J := by
       match I, J with
@@ -91,6 +93,8 @@ namespace M4R
 
     def coprime [Ring α] (I J : Ideal α) : Prop := I + J = UnitIdeal α
 
+    open Ring
+
     def principal [r : Ring α] (a : α) : Ideal α where
       subset := {x | a ÷ x}
       has_zero := divides_zero a;
@@ -105,7 +109,7 @@ namespace M4R
 
     theorem generator_in_principal [Ring α] (a : α) : a ∈ principal a := ⟨1, mul_one a⟩
     theorem principal_principal [Ring α] (a : α) : is_principal (principal a) :=
-      ⟨a, ⟨divides_self a, by intro _ h; exact h⟩⟩
+      ⟨a, ⟨divides_self a, fun _ => id⟩⟩
 
     theorem principal_of_is_principal [Ring α] (I : Ideal α) (h : is_principal I) : ∃ a, I = principal a := by
       let ⟨a, ⟨aI, ha⟩⟩ := h;
@@ -132,7 +136,7 @@ namespace M4R
 
     protected theorem sIntersection [Ring α] (S : Set (Ideal α)) : Ideal α where
       subset := ⋂₀ S.toSetSet Ideal.subset
-      has_zero := by intro s ⟨I, IS, hIs⟩; rw [←hIs]; exact I.has_zero
+      has_zero := fun s ⟨I, IS, hIs⟩ => by rw [←hIs]; exact I.has_zero
       add_closed := by
         intro a b ha hb s ⟨I, IS, hIs⟩; rw [←hIs]; exact I.add_closed
           (by rw [hIs]; exact ha s ⟨I, IS, hIs⟩)

@@ -1,9 +1,11 @@
+import M4R.Algebra.Ring.Field
 import M4R.Algebra.Ring.Quotient
 
 namespace M4R
   open Group
-  open AbelianGroup
-  open NCRing
+  open Monoid
+  open CommMonoid
+  open NCSemiring
   open Ring
   open QuotientRing
 
@@ -72,7 +74,7 @@ namespace M4R
         | inr hneq =>
           apply Or.inr; apply is_unit_ideal.mpr;
           let ⟨x, xJ, nxI⟩ := Classical.choice (Set.minus.nonempty 
-            (Set.subset.neq_proper hIJ (by intro h'; exact hneq (Ideal.ext.mp h'))))
+            (Set.subset.neq_proper hIJ (fun h' => hneq (Ideal.ext.mp h'))))
           let ⟨b, hb⟩ := h.right (non_zero.mpr nxI)
           exact @Quotient.ind α (QSetoid I) (fun (c : QClass I) => c = b → 1 ∈ J) (fun b' hb' => by
             rw [←hb'] at hb;
