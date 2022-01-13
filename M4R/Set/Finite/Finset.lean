@@ -148,6 +148,13 @@ namespace M4R
     noncomputable def to_finset {s : Set α} (h : finite s) : Finset α :=
       @Set.to_finset _ s h.to_fintype
 
+    @[simp] theorem mem_to_finset {s : Set α} (hs : finite s) {a : α} : a ∈ hs.to_finset ↔ a ∈ s :=
+      ⟨fun h => by let ⟨⟨x, hx⟩, _, h'⟩ := UnorderedList.map.mem_map.mp h; rw [←h']; exact hx,
+      fun h => UnorderedList.map.mem_map.mpr ⟨⟨a, h⟩, hs.to_fintype.complete _, rfl⟩⟩
+      
+    @[simp] theorem mem_to_finset_val {s : Set α} (hs : finite s) {a : α} : a ∈ hs.to_finset.elems ↔ a ∈ s :=
+      mem_to_finset hs
+
     theorem subset {s t : Set α} (ht : finite t) (h : s ⊆ t) : finite s := 
       finite.intro (@Fintype.subset _ s t ht.to_fintype h)
 
