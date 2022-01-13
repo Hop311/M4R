@@ -89,6 +89,12 @@ namespace M4R
         have : ∀ (t₁ t₂ : Set α), t₁ ∩ t₂ ⊆ t₂ ∩ t₁ :=  fun _ _ _ => And.comm
         exact Set.subset.antisymm (this s₁ s₂) (this s₂ s₁)
 
+      theorem inter_eq_self_of_subset_left {s t : Set α} (h : s ⊆ t) : s ∩ t = s :=
+        Set.ext.mp fun _ => ⟨And.left, fun h' => ⟨h', h h'⟩⟩
+
+      theorem inter_eq_self_of_subset_right {s t : Set α} (h : t ⊆ s) : s ∩ t = t := by
+        apply Set.ext.mp fun x => ⟨And.right, fun h' => ⟨h h', h'⟩⟩
+
     end intersection
 
     namespace minus

@@ -38,12 +38,22 @@ namespace List
   @[simp] theorem eq_or_mem_of_mem_cons {a y : α} {l : List α} : a ∈ y::l → a = y ∨ a ∈ l := by
     simp only [Mem.mem, List.mem]; exact id
 
+  theorem mem_cons_iff {a b : α} {l : List α} : a ∈ b :: l ↔ a = b ∨ a ∈ l :=
+    ⟨eq_or_mem_of_mem_cons, fun h =>
+      Or.elim h (fun h' => by rw [h']; exact mem_cons_self b l) (mem_cons_of_mem b)⟩
+
   theorem forall_mem_cons {p : α → Prop} {a : α} {l : List α} :
     (∀ x ∈ a :: l, p x) ↔ p a ∧ ∀ x ∈ l, p x :=
       ⟨fun h => ⟨h a (mem_cons_self a l), fun x xl => h x (mem_cons_of_mem a xl)⟩, fun ⟨h₁, h₂⟩ x hx => by
         cases hx with
         | inl h => rw [h]; exact h₁
         | inr h => exact h₂ x h⟩
+  
+  @[simp] theorem forall_mem_ne {a : α} {l : List α} : (∀ (a' : α), a' ∈ l → ¬a = a') ↔ a ∉ l :=
+    ⟨fun h m => h _ m rfl, fun h a' m e => h (e.symm ▸ m)⟩
+
+  theorem not_mem_cons_of_ne_of_not_mem {a y : α} {l : List α} : a ≠ y → a ∉ l → a ∉ y::l :=
+    fun h₁ h₂ h₃ => Or.elim (eq_or_mem_of_mem_cons h₃) h₁ h₂
 
   theorem mem_split {l : List α} (h : a ∈ l) : ∃ s t : List α, l = s ++ a :: t := by
     induction l with 
@@ -101,6 +111,11 @@ namespace List
     induction l with
     | nil => rfl
     | cons a l ih => simp [ih]
+
+  @[simp] theorem map_id (l : List α) : map id l = l := by
+    induction l with
+    | nil => rfl
+    | cons a b ih => simp [map, ih]
 
   theorem filterMap_Eq_map (f : α → β) : filterMap (some ∘ f) = map f := by
     apply funext; intro l;
@@ -216,4 +231,139 @@ namespace List
         eq_of_sublist_of_length_eq s (Nat.le_antisymm (length_le_of_sublist s) h)
 
   end Sublist
+
+  @[simp] def pmap {p : α → Prop} (f : ∀ a, p a → β) : ∀ l : List α, (∀ a ∈ l, p a) → List β
+  | []  , H => []
+  | a::l, H => f a (forall_mem_cons.mp H).left :: pmap f l (forall_mem_cons.mp H).right
+  
+  def attach (l : List α) : List {x // x ∈ l} := pmap Subtype.mk l (fun _ => id)
+  
+  @[simp] theorem pmap_eq_map (p : α → Prop) (f : α → β) (l : List α) (H) :
+    @pmap _ _ p (fun a _ => f a) l H = map f l := by
+      induction l with
+      | nil => rfl
+      | cons _ _ ih => simp only [pmap, map, ih]
+
+  theorem pmap_congr {p q : α → Prop} {f : ∀ a, p a → β} {g : ∀ a, q a → β} (l : List α) {H₁ H₂}
+    (h : ∀ a h₁ h₂, f a h₁ = g a h₂) : pmap f l H₁ = pmap g l H₂ := by
+      induction l with
+      | nil => rfl
+      | cons _ _ ih => simp [pmap]; exact ⟨h _ _ _, ih⟩
+
+  theorem map_pmap {p : α → Prop} (g : β → γ) (f : ∀ a, p a → β)
+    (l H) : map g (pmap f l H) = pmap (fun a h => g (f a h)) l H := by
+      induction l with
+      | nil => rfl
+      | cons _ _ ih => simp only [pmap, map, ih]
+
+  theorem pmap_eq_map_attach {p : α → Prop} (f : ∀ a, p a → β) (l H) :
+    pmap f l H = l.attach.map (fun ⟨x, hx⟩ => f x (H _ hx)) := by
+      simp only [attach, map_pmap]; exact pmap_congr l (fun a h₁ h₂ => rfl)
+
+  theorem attach_map_val (l : List α) : l.attach.map Subtype.val = l := by
+    simp only [attach, map_pmap]; exact (pmap_eq_map _ _ _ _).trans (map_id l)
+
+  @[simp] theorem mem_attach (l : List α) : ∀ x, x ∈ l.attach
+  | ⟨a, h⟩ => by
+    have := mem_map.mp (by rw [attach_map_val]; exact h)
+    cases this with
+    | intro x h' => match x, h' with
+      | ⟨x, hx⟩, ⟨h₁, h₂⟩ =>
+        have : ({ val := a, property := h } : Subtype (· ∈ l)) = { val := x, property := hx } := by
+          simp [h₂]
+        rw [this]
+        exact h₁
+
+  @[simp] theorem mem_pmap {p : α → Prop} {f : ∀ a, p a → β} {l H b} :
+    b ∈ pmap f l H ↔ ∃ (a : α) (h : a ∈ l), f a (H a h) = b := by
+      simp only [pmap_eq_map_attach, mem_map, mem_attach, true_and, Subtype.exists]
+      exact Iff.refl _
+
+  open Classical
+
+  protected noncomputable def insert (a : α) (l : List α) : List α :=
+    if a ∈ l then l else a :: l
+
+  @[simp] theorem insert_of_mem {a : α} {l : List α} (h : a ∈ l) : l.insert a = l := by
+    simp only [List.insert, if_pos h]
+
+  @[simp] theorem insert_of_not_mem {a : α} {l : List α} (h : a ∉ l) : l.insert a = a :: l :=
+    by simp only [List.insert, if_neg h]
+
+  @[simp] theorem mem_insert_iff {l : List α} : a ∈ l.insert b ↔ a = b ∨ a ∈ l := by
+    byCases h : b ∈ l;
+    { rw [insert_of_mem h]; exact ⟨Or.inr, fun h' => Or.elim h' (fun h'' => by rw [h'']; exact h) id⟩ }
+    simp only [insert_of_not_mem h, mem_cons_iff]; exact Iff.refl _
+
+  protected noncomputable def union (l₁ l₂ : List α) : List α :=
+    foldr List.insert l₂ l₁
+
+  noncomputable instance ListUnion : Union (List α) where union := List.union
+
+  @[simp] theorem nil_union (l : List α) : [] ∪ l = l := rfl
+
+  @[simp] theorem cons_union (l₁ l₂ : List α) (a : α) : a :: l₁ ∪ l₂ = (l₁ ∪ l₂).insert a := rfl
+
+  @[simp] theorem mem_union {l₁ l₂ : List α} : a ∈ l₁ ∪ l₂ ↔ a ∈ l₁ ∨ a ∈ l₂ := by
+    induction l₁ with
+    | nil => simp
+    | cons x l ih =>
+      simp only [cons_union, mem_insert_iff, mem_cons_iff, ih, Or.assoc]; exact Iff.refl _
+
+  noncomputable def filter' (p : α → Prop) : List α → List α
+  | []     => []
+  | (a::l) => if p a then a :: filter' p l else filter' p l
+
+  @[simp] theorem filter'_cons_of_pos {a : α} (l: List α) (h : p a) : filter' p (a :: l) = a :: filter' p l :=
+    if_pos h
+
+    
+  @[simp] theorem filter'_cons_of_neg {a : α} (s) (h : ¬ p a) : filter' p (a :: s) = filter' p s :=
+    if_neg h
+
+  theorem filter_map_eq_filter' (p : α → Prop) : filterMap (Option.guard p) = filter' p := by
+    apply funext; intro l;
+    induction l with
+    | nil => rfl
+    | cons a l ih =>
+      byCases pa : p a;
+      { simp only [filterMap, Option.guard, if_pos pa, filter'_cons_of_pos _ pa];
+      exact cons_ext.mpr ⟨rfl, ih⟩ }
+      simp only [filterMap, Option.guard, if_neg pa, filter'_cons_of_neg _ pa]; exact ih
+
+  @[simp] theorem filter'_sublist {p : α → Prop} : ∀ (l : List α), filter' p l <+ l
+  | []   => Sublist.nil
+  | a::l =>
+    if pa : p a then by
+      simp [pa]; apply Sublist.cons'; exact filter'_sublist l
+    else by
+      simp [pa]; apply Sublist.cons; exact filter'_sublist l
+
+  @[simp] theorem filter'_subset (p : α → Prop) (l : List α) : filter' p l ⊆ l :=
+    (filter'_sublist l).subset
+
+  theorem of_mem_filter' {p : α → Prop} {a : α} : ∀ {l : List α}, a ∈ filter' p l → p a
+  | b::l, ain =>
+    if pb : p b then
+      have : a ∈ b :: filter' p l := by simp only [filter'_cons_of_pos _ pb] at ain; exact ain
+      Or.elim (eq_or_mem_of_mem_cons this)
+        (fun h => by rw [←h] at pb; exact pb)
+        of_mem_filter'
+    else by
+      simp only [filter'_cons_of_neg _ pb] at ain; exact of_mem_filter' ain
+
+  theorem mem_of_mem_filter' {p : α → Prop} {a : α} {l} (h : a ∈ filter' p l) : a ∈ l :=
+    filter'_subset p l h
+
+  theorem mem_filter'_of_mem {p : α → Prop} {a : α} : ∀ {l}, a ∈ l → p a → a ∈ filter' p l
+  | _::l, Or.inl rfl, pa => by rw [filter'_cons_of_pos _ pa]; exact mem_cons_self _ _
+  | b::l, Or.inr ain, pa =>
+    if pb : p b then by
+      rw [filter'_cons_of_pos _ pb]; exact mem_cons_of_mem _ (mem_filter'_of_mem ain pa)
+    else by
+      rw [filter'_cons_of_neg _ pb]; exact mem_filter'_of_mem ain pa
+
+  @[simp] theorem mem_filter' {p : α → Prop} {a : α} {l : List α} : a ∈ filter' p l ↔ a ∈ l ∧ p a :=
+    ⟨fun h => ⟨mem_of_mem_filter' h, of_mem_filter' h⟩, fun ⟨h₁, h₂⟩ => mem_filter'_of_mem h₁ h₂⟩
+
 end List

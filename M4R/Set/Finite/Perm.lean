@@ -15,7 +15,7 @@ namespace M4R
   
   namespace Perm
 
-    protected theorem refl : ∀ (x : List α), x ~ x
+    @[simp] protected theorem refl : ∀ (x : List α), x ~ x
     | []      => Perm.nil
     | (x::xl) => (Perm.refl xl).cons x
     
@@ -76,7 +76,7 @@ namespace M4R
 
     theorem append_comm  (l₁ l₂ : List α) : (l₁++l₂) ~ (l₂++l₁) :=
       match l₁ with
-      | []     => by simp; exact Perm.refl l₂
+      | []     => by simp
       | (a::t) => ((append_comm t l₂).cons a).trans (middle a l₂ t).symm
 
     theorem length_eq {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.length = l₂.length :=
@@ -111,46 +111,59 @@ namespace M4R
       { intro _ _ _ p₁₂ ih l₁ l₂ _ _ e₁ e₂;
         match l₁, l₂ with
         | [], [] =>
-          simp at *; rw [e₁.right, e₂.right]; exact p₁₂
+          simp only [List.nil_append, List.cons.injEq] at e₁ e₂ ⊢
+          rw [e₁.right, e₂.right]; exact p₁₂
         | [], List.cons _ _ =>
-          simp at *; rw [e₂.left, e₁.right, ←e₁.left]; apply trans p₁₂; rw [←e₂.right]; exact middle _ _ _
+          simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+          rw [e₂.left, e₁.right, ←e₁.left]; apply trans p₁₂; rw [←e₂.right]; exact middle _ _ _
         | List.cons _ _, [] =>
-          simp at *; rw [e₁.left, ←e₂.left, e₂.right]; apply Perm.symm; apply trans p₁₂.symm;
-            rw [←e₁.right]; exact middle _ _ _
+          simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+          rw [e₁.left, ←e₂.left, e₂.right]; apply Perm.symm; apply trans p₁₂.symm;
+          rw [←e₁.right]; exact middle _ _ _
         | List.cons _ _, List.cons z l₂ =>
-          simp at *; rw [e₁.left, e₂.left]; exact cons _ (ih e₁.right e₂.right) }
+          simp only [List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+          rw [e₁.left, e₂.left]; exact cons _ (ih e₁.right e₂.right) }
       { intro _ _ _ _ p₁₂ ih l₁ l₂ _ _ e₁ e₂
         match l₁, l₂ with
         | [], [] =>
-          simp at *; rw [e₁.right, e₂.right, ←e₁.left, e₂.left]; exact Perm.cons _ p₁₂
+          simp only [List.nil_append, List.cons.injEq] at e₁ e₂ ⊢
+          rw [e₁.right, e₂.right, ←e₁.left, e₂.left]; exact Perm.cons _ p₁₂
         | [], List.cons _ l₂ =>
           match l₂ with
           | [] =>
-            simp at *; rw [e₁.right, e₂.left, e₂.right.right]; exact Perm.cons _ p₁₂
+            simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+            rw [e₁.right, e₂.left, e₂.right.right]; exact Perm.cons _ p₁₂
           | List.cons _ _ =>
-            simp at *; rw [e₁.right, e₂.left, e₂.right.left, ←e₁.left]; apply cons;
+            simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+            rw [e₁.right, e₂.left, e₂.right.left, ←e₁.left]; apply cons;
               apply trans p₁₂; rw [←e₂.right.right]; exact middle _ _ _
         | List.cons _ l₁, [] =>
           match l₁ with
           | [] =>
-            simp at *; rw [e₁.right.right, e₂.right, e₁.left]; exact Perm.cons _ p₁₂
+            simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+            rw [e₁.right.right, e₂.right, e₁.left]; exact Perm.cons _ p₁₂
           | List.cons _ l₂ =>
-            simp at *; rw [e₂.right, e₁.left, e₁.right.left, ←e₂.left]; apply cons;
+            simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+            rw [e₂.right, e₁.left, e₁.right.left, ←e₂.left]; apply cons;
               apply Perm.symm; apply trans p₁₂.symm; rw [←e₁.right.right]; exact middle _ _ _
         | List.cons _ l₁, List.cons _ l₂ =>
           match l₁, l₂ with
           | [], [] =>
-            simp at *; rw [e₁.left, e₂.left, ←e₁.right.left, ←e₂.right.left, e₁.right.right, e₂.right.right]
+            simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+            rw [e₁.left, e₂.left, ←e₁.right.left, ←e₂.right.left, e₁.right.right, e₂.right.right]
               exact cons _ p₁₂
           | [], List.cons _ _ =>
-            simp at *; rw [e₁.left, e₂.left, ←e₁.right.left, e₂.right.left, e₁.right.right];
+            simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+            rw [e₁.left, e₂.left, ←e₁.right.left, e₂.right.left, e₁.right.right];
               apply trans (cons _ p₁₂); rw [←e₂.right.right]; apply Perm.symm; apply trans (swap _ _ _);
                 apply cons; apply Perm.symm; exact middle _ _ _
           | List.cons _ _, [] =>
-            simp at *; rw [e₁.left, e₂.left, e₁.right.left, ←e₂.right.left]; apply trans (swap _ _ _); apply cons;
+            simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+            rw [e₁.left, e₂.left, e₁.right.left, ←e₂.right.left]; apply trans (swap _ _ _); apply cons;
               rw [e₂.right.right]; apply Perm.symm; apply trans p₁₂.symm; rw [←e₁.right.right]; exact middle _ _ _
           | List.cons _ _, List.cons _ _ =>
-            simp at *; rw [e₁.left, e₂.left, e₁.right.left, e₂.right.left]; apply trans (swap _ _ _); apply cons;
+            simp only [List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
+            rw [e₁.left, e₂.left, e₁.right.left, e₂.right.left]; apply trans (swap _ _ _); apply cons;
               apply cons; exact ih e₁.right.right e₂.right.right }
       { intro _ t₂ _ p₁₂ p₂₃ ih₁ ih₂ l₁ _ r₁ _ e₁ e₃;
           rw [←e₁] at p₁₂; rw [←e₃] at p₂₃;
@@ -210,6 +223,14 @@ namespace M4R
 
     theorem map (f : α → β) {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.map f ~ l₂.map f := by
       rw [←List.filterMap_Eq_map f]; exact filterMap (some ∘ f) p
+
+    theorem pmap {p : α → Prop} (f : ∀ a, p a → β)
+      {l₁ l₂ : List α} (p : l₁ ~ l₂) {H₁ H₂} : l₁.pmap f H₁ ~ l₂.pmap f H₂ := by
+        induction p with
+        | nil => simp [Perm.refl]
+        | cons x p ih => simp [ih, cons]
+        | swap x y l₂=> simp [swap]
+        | trans p₁ p₂ ih₁ ih₂ => apply ih₁.trans ih₂; exact fun a m => H₂ a (p₂.subset m)
 
     theorem exists_perm_sublist {l₁ l₂ l₂' : List α} (s : l₁ <+ l₂) (p : l₂ ~ l₂') :
       ∃ l₁', l₁' ~ l₁ ∧ l₁' <+ l₂' := by
@@ -313,6 +334,39 @@ namespace M4R
         Subperm.antisymm
           (Subperm.subperm_of_subset_nodup d₁ (fun a => (H a).mp))
           (Subperm.subperm_of_subset_nodup d₂ (fun a => (H a).mpr))⟩
+
+    open Classical
+
+    theorem insert (a : α) {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.insert a ~ l₂.insert a :=
+      if h : a ∈ l₁ then by
+        simp only [List.insert, h, p.subset h]; exact p
+      else by
+        simp only [List.insert, h, mt (p.mem_iff a).mpr h]
+        exact Perm.cons a p
+
+    theorem insert_swap (x y : α) (l : List α) : (l.insert y).insert x ~ (l.insert x).insert y := by
+      byCases xl : x ∈ l; { byCases yl : y ∈ l; { simp [xl, yl] } simp [xl, yl] }
+      byCases xy : x = y; { simp [xy] } byCases yl : y ∈ l; { simp [xl, yl] }
+      simp [xl, yl, List.not_mem_cons_of_ne_of_not_mem xy xl,
+        List.not_mem_cons_of_ne_of_not_mem (Ne.symm xy) yl, swap]
+
+    theorem union_right {l₁ l₂ : List α} (t₁ : List α) (h : l₁ ~ l₂) : l₁ ∪ t₁ ~ l₂ ∪ t₁ := by
+      induction h with
+      | nil => simp
+      | cons a _ ih => exact ih.insert a
+      | swap => exact insert_swap _ _ _
+      | trans _ _ ih₁ ih₂ => exact ih₁.trans ih₂
+
+    theorem union_left (l : List α) {t₁ t₂ : List α} (h : t₁ ~ t₂) : l ∪ t₁ ~ l ∪ t₂ := by
+      induction l with
+      | nil => simp [h]
+      | cons a l ih => simp [insert a ih]
+
+    theorem union {l₁ l₂ t₁ t₂ : List α} (p₁ : l₁ ~ l₂) (p₂ : t₁ ~ t₂) : l₁ ∪ t₁ ~ l₂ ∪ t₂ :=
+      (p₁.union_right t₁).trans (p₂.union_left l₂)
+
+    theorem filter' (p : α → Prop) {l₁ l₂ : List α} (s : l₁ ~ l₂) : l₁.filter' p ~ l₂.filter' p := by
+      rw [←List.filter_map_eq_filter']; exact s.filterMap _
 
   end Perm
 end M4R

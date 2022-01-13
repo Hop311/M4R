@@ -78,3 +78,9 @@ end M4R
 
 @[simp] theorem Quotient.eq [r : Setoid α] {x y : α} : Quotient.mk x = Quotient.mk y ↔ x ≈ y :=
   ⟨Quotient.exact, Quotient.sound⟩
+
+@[simp] protected theorem Subtype.exists {p : α → Prop} {q : {a // p a} → Prop} : (∃ x, q x) ↔ (∃ a b, q ⟨a, b⟩) :=
+  ⟨fun ⟨⟨a, b⟩, h⟩ => ⟨a, b, h⟩, fun ⟨a, b, h⟩ => ⟨⟨a, b⟩, h⟩⟩
+
+def Option.guard (p : α → Prop) [DecidablePred p] (a : α) : Option α :=
+  if p a then some a else none

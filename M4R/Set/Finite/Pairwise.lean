@@ -78,6 +78,10 @@ namespace M4R
         intro h _ y yl eq; rw [←eq]; exact h y yl;
       simp [List.map, consIff, List.mem_map, exists_imp_distrib, and_imp, this, map];
 
+    theorem of_pairwise_map {r : α → α → Prop} {S : β → β → Prop} (f : α → β) (H : ∀ a b : α, S (f a) (f b) → r a b)
+      {l : List α} (p : Pairwise S (l.map f)) : Pairwise r l :=
+        ((map f).mp p).imp H
+
     theorem map_of_pairwise {r : α → α → Prop} {s : β → β → Prop} (f : α → β)
       (H : ∀ a b : α, r a b → s (f a) (f b)) {l : List α}
       (p : Pairwise r l) : Pairwise s (l.map f) := (map f).2 (p.imp H)
@@ -88,14 +92,54 @@ namespace M4R
     | List.Sublist.cons' l₁ l₂ a s, Pairwise.cons i n  =>
       (pairwise_of_sublist s n).cons fun a ha => i a (s.subset ha)
 
+    theorem filter'_of_pairwise {r : α → α → Prop} (p : α → Prop) {l : List α}
+      : Pairwise r l → Pairwise r (l.filter' p) := pairwise_of_sublist (List.filter'_sublist _)
+
   end Pairwise
 end M4R
 
 open M4R
 
-theorem List.nodup_map_on {f : α → β} {l : List α} (H : ∀ x ∈ l, ∀ y ∈ l, f x = f y → x = y)
-  (d : List.nodup l) : List.nodup (l.map f) :=
-    Pairwise.map_of_pairwise f (fun a b ⟨ma, mb, n⟩ e => n (H a ma b mb e)) (Pairwise.and_mem.mp d)
+namespace List
 
-theorem List.nodup_of_sublist {l₁ l₂ : List α} : l₁ <+ l₂ → l₂.nodup → l₁.nodup :=
-  Pairwise.pairwise_of_sublist
+  @[simp] theorem nodup_cons {a : α} {l : List α} : nodup (a::l) ↔ a ∉ l ∧ nodup l := by
+    simp only [nodup, Pairwise.consIff, forall_mem_ne]; exact Iff.refl _
+
+  theorem nodup_of_nodup_map (f : α → β) {l : List α} : nodup (map f l) → nodup l :=
+    Pairwise.of_pairwise_map f fun a b => mt (congrArg f)
+
+  theorem nodup_map_on {f : α → β} {l : List α} (H : ∀ x ∈ l, ∀ y ∈ l, f x = f y → x = y)
+    (d : List.nodup l) : List.nodup (l.map f) :=
+      Pairwise.map_of_pairwise f (fun a b ⟨ma, mb, n⟩ e => n (H a ma b mb e)) (Pairwise.and_mem.mp d)
+
+  theorem nodup_of_sublist {l₁ l₂ : List α} : l₁ <+ l₂ → l₂.nodup → l₁.nodup :=
+    Pairwise.pairwise_of_sublist
+
+  @[simp] theorem nodup_attach {l : List α} : nodup (attach l) ↔ nodup l :=
+    ⟨fun h => attach_map_val l ▸ nodup_map_on (fun ⟨_, _⟩ _ ⟨_, _⟩ _ h => by rw [Subtype.mk.injEq]; exact h) h,
+      fun h => nodup_of_nodup_map Subtype.val ((attach_map_val l).symm ▸ h)⟩
+
+  theorem nodup_pmap {p : α → Prop} {f : ∀ a, p a → β} {l : List α} {H : ∀ a ∈ l, p a}
+    (hf : ∀ a ha b hb, f a ha = f b hb → a = b) (h : l.nodup) : nodup (l.pmap f H) := by
+      rw [pmap_eq_map_attach]; exact nodup_map_on
+        (fun ⟨a, ha⟩ ha' ⟨b, hb⟩ hb' h => by rw [Subtype.mk.injEq]; exact hf a (H _ ha) b (H _ hb) h)
+        (nodup_attach.mpr h)
+
+  open Classical
+
+  theorem nodup_insert {a : α} {l : List α} (h : nodup l) : nodup (l.insert a) :=
+    if h' : a ∈ l then by
+      rw [insert_of_mem h']; exact h
+    else by
+      rw [insert_of_not_mem h', nodup_cons]; exact ⟨h', h⟩
+
+  theorem nodup_union (l₁ : List α) {l₂ : List α} (h : l₂.nodup) : nodup (l₁ ∪ l₂) := by
+    induction l₁ generalizing l₂ with
+    | nil => exact h
+    | cons a l ih =>
+      apply nodup_insert; exact ih h
+
+  theorem nodup_filter' (p : α → Prop) {l : List α} : nodup l → nodup (filter' p l) :=
+    Pairwise.filter'_of_pairwise p
+
+end List

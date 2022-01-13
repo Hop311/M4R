@@ -92,6 +92,10 @@ namespace M4R
           (fun (s t : UnorderedList α) => (s + t).map f = (s.map f) + (t.map f)) l₁ l₂
           (fun s t => congrArg List.to_UnorderedList (List.map_append f s t))
 
+      @[simp] theorem mem_map {f : α → β} {b : β} {s : UnorderedList α} : b ∈ s.map f ↔ ∃ a, a ∈ s ∧ f a = b :=
+        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+          b ∈ l.map f ↔ ∃ a, a ∈ l ∧ f a = b) s (fun _ => List.mem_map)
+
     end map
 
     theorem nodup_map_on {f : α → β} {s : UnorderedList α} (H : ∀ x ∈ s, ∀ y ∈ s, f x = f y → x = y) :
@@ -145,6 +149,55 @@ namespace M4R
     inductive rel {α : Type _} {β : Type _} (r : α → β → Prop) : UnorderedList α → UnorderedList β → Prop
     | zero : rel r 0 0
     | cons {a b as bs} : r a b → rel r as bs → rel r (as.cons a) (bs.cons b)
+
+    def pmap {p : α → Prop} (f : ∀ a, p a → β) (s : UnorderedList α) : (∀ a ∈ s, p a) → UnorderedList β :=
+      @Quotient.recOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => (∀ a ∈ l, p a) → UnorderedList β) s
+        (fun l H => ↑(l.pmap f H)) (fun l₁ l₂ pp => by
+          apply funext; intro h₂; have h₁ : ∀ a, a ∈ ↑l₁ → p a := fun a h => h₂ a (pp.subset h)
+          have : ∀ (s₂ e H), @Eq.rec (UnorderedList α) l₁
+            (fun l _ => (∀ a ∈ l, p a) → UnorderedList β) (fun _ => ↑(l₁.pmap f h₁))
+            s₂ e H = ↑(l₁.pmap f h₁) := by
+              intro _ e _; subst e; rfl
+          have t₁ := this ↑l₂ (Quot.sound pp) h₂
+          have t₂ := Quot.sound (@Perm.pmap _ _ _ f _ _ pp h₁ h₂)
+          exact t₁.trans t₂)
+
+    theorem nodup_pmap {p : α → Prop} {f : ∀ a, p a → β} {s : UnorderedList α} {H : ∀ a ∈ s, p a}
+    (hf : ∀ a ha b hb, f a ha = f b hb → a = b) : nodup s → nodup (pmap f s H) :=
+      @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        (h : ∀ a ∈ l, p a) → nodup l → nodup (pmap f l h)) s (fun l hl => List.nodup_pmap hf) H
+
+    @[simp] theorem mem_pmap {p : α → Prop} {f : ∀ a, p a → β}
+      {s : UnorderedList α} {H : ∀ a ∈ s, p a} {b : β} : b ∈ pmap f s H ↔ ∃ (a : α) (h : a ∈ s), f a (H a h) = b :=
+        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+          (H' : ∀ a ∈ l, p a) → b ∈ pmap f l H' ↔ ∃ (a : α) (h : a ∈ l), f a (H' a h) = b) s
+          (fun l h => List.mem_pmap) H
+
+    noncomputable def ndunion (s t : UnorderedList α) : UnorderedList α :=
+      @Quotient.liftOn₂ (List α) (List α) (UnorderedList α) (Perm.PermSetoid α) (Perm.PermSetoid α) s t
+        (fun l₁ l₂ => ↑(l₁ ∪ l₂)) (fun _ _ _ _ p₁ p₂ => Quot.sound (p₁.union p₂))
+
+    @[simp] theorem mem_ndunion {s t : UnorderedList α} {a : α} : a ∈ ndunion s t ↔ a ∈ s ∨ a ∈ t :=
+      @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α) 
+        (fun (l₁ l₂ : UnorderedList α) => a ∈ ndunion l₁ l₂ ↔ a ∈ l₁ ∨ a ∈ l₂) s t
+        (fun l₁ l₂ => List.mem_union)
+
+    theorem nodup_ndunion (s : UnorderedList α) {t : UnorderedList α} : nodup t → nodup (ndunion s t) :=
+      @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        (fun (l₁ l₂ : UnorderedList α) => nodup l₂ → nodup (ndunion l₁ l₂)) s t
+        (fun l₁ l₂ => List.nodup_union l₁)
+
+    noncomputable def filter (p : α → Prop) (s : UnorderedList α) : UnorderedList α :=
+      Quot.liftOn s (fun l => (l.filter' p : UnorderedList α))
+        (fun l₁ l₂ h => Quot.sound (h.filter' p))
+
+    theorem nodup_filter (p : α → Prop) {l : UnorderedList α} : nodup l → nodup (filter p l) :=
+      @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (s : UnorderedList α) =>
+        nodup s → nodup (filter p s)) l fun l => List.nodup_filter' p
+
+    @[simp] theorem mem_filter {a : α} {s : UnorderedList α} : a ∈ filter p s ↔ a ∈ s ∧ p a :=
+      @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        a ∈ filter p l ↔ a ∈ l ∧ p a) s fun l => List.mem_filter'
 
   end UnorderedList
 end M4R
