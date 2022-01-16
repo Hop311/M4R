@@ -71,6 +71,12 @@ namespace M4R
 
     end append
 
+    protected theorem in_singleton {a a' : α} : a' ∈ UnorderedList.singleton a → a' = a :=
+      List.in_singleton
+
+    protected theorem self_singleton (a : α) : a ∈ UnorderedList.singleton a :=
+      List.self_singleton a
+
     protected theorem cons' (a : α) (l : List α) : Quotient.mk (a :: l) = (↑l : UnorderedList α).cons a := rfl
 
     protected def map (f : α → β) (s : UnorderedList α) : UnorderedList β :=
@@ -86,7 +92,7 @@ namespace M4R
           (fun _ => rfl) s
 
       @[simp] theorem singleton (f : α → β) (a : α) : (UnorderedList.singleton a).map f = UnorderedList.singleton (f a) := rfl
-    
+
       @[simp] theorem add (f : α → β) (l₁ l₂ : UnorderedList α) : (l₁ + l₂).map f = (l₁.map f) + (l₂.map f) :=
         @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
           (fun (s t : UnorderedList α) => (s + t).map f = (s.map f) + (t.map f)) l₁ l₂

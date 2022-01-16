@@ -42,6 +42,12 @@ namespace M4R
 
     protected def singleton (a : α) : Finset α := ⟨UnorderedList.singleton a, Pairwise.singleton _ a⟩
 
+    protected theorem in_singleton {a a' : α} : a' ∈ Finset.singleton a → a' = a :=
+      UnorderedList.in_singleton
+
+    protected theorem self_singleton (a : α) : a ∈ Finset.singleton a :=
+      UnorderedList.self_singleton a
+
     protected def map (f : α → β) (s : Finset α) : UnorderedList β := s.elems.map f
     protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=
       ⟨s.elems.map f, s.elems.nodup_map hf s.nodup⟩

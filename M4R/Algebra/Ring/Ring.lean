@@ -149,6 +149,6 @@ namespace M4R
         mul_distrib_left  := Int.mul_distrib_left
         mul_comm          := Int.mul_comm
       }
-    one_neq_zero := by simp
+    toNonTrivial := IntNonTrivial
 
 end M4R

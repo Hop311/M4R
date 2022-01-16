@@ -74,6 +74,13 @@ namespace M4R
     ⟨by apply not_imp_symm; intro nE x; apply not_imp_symm _ nE; exact fun h => ⟨x, h⟩,
     fun ⟨x, hn⟩ hA => hn (hA x)⟩
 
+  @[simp] theorem not_iff_not : (¬p ↔ ¬q) ↔ (p ↔ q) :=
+    have h : ∀ p q, (p ↔ q) → (¬ p ↔ ¬ q) := fun p q h => ⟨mt h.mpr, mt h.mp⟩
+    ⟨by
+      have := h (¬p) (¬q)
+      simp only [iff_not_not] at this
+      exact this, h p q⟩
+
 end M4R
 
 @[simp] theorem Quotient.eq [r : Setoid α] {x y : α} : Quotient.mk x = Quotient.mk y ↔ x ≈ y :=

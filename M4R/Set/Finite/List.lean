@@ -66,6 +66,14 @@ namespace List
   | []  , s => rfl
   | a::l, s => False.elim (s (mem_cons_self a l))
 
+  protected theorem in_singleton {a a' : α} : a' ∈ [a] → a' = a := by
+    intro ha';
+    simp only [Mem.mem, List.mem, or_false] at ha'
+    exact ha'
+
+  protected theorem self_singleton (a : α) : a ∈ [a] := by
+    simp only [Mem.mem, List.mem]
+
   @[simp] theorem memAppend {a : α} {s t : List α} : a ∈ s ++ t ↔ a ∈ s ∨ a ∈ t := by
       induction s with
       | nil => simp

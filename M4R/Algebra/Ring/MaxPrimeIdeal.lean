@@ -21,7 +21,7 @@ namespace M4R
       apply (h.right hIJ).resolve_left fun heq => by rw [heq] at hxJ; exact hxI hxJ
 
     instance ProperIdealNonTrivialRing [Ring α] {I : Ideal α} (hI : I.proper_ideal) : NonTrivialRing (QClass I) where
-      one_neq_zero := by
+      toNonTrivial.one_neq_zero := by
         intro h10;
         have := @Quotient.exact α (QSetoid I) 0 1 h10.symm;
         simp only [HasEquiv.Equiv, Setoid.r, QRel] at this
@@ -55,7 +55,7 @@ namespace M4R
       fun ha => Classical.choose (maximal_has_inverses' hI ha)
 
     noncomputable instance MaximalField [Ring α] {I : Ideal α} (hI : I.is_maximal) : Field (QClass I) where
-      one_neq_zero := (ProperIdealNonTrivialRing hI.left).one_neq_zero
+      toNonTrivial := (ProperIdealNonTrivialRing hI.left).toNonTrivial
       mul_comm := by
         apply Function.Quotient.ind₂; intros; apply Quot.sound; simp only [QRel]
         rw [mul_comm, neg_add]; exact I.has_zero
@@ -85,7 +85,7 @@ namespace M4R
             exact this) b rfl⟩
 
     instance PrimeIntegralDomain [Ring α] {I : Ideal α} (hI : I.is_prime) : IntegralDomain (QClass I) where
-      one_neq_zero := (ProperIdealNonTrivialRing hI.left).one_neq_zero
+      toNonTrivial := (ProperIdealNonTrivialRing hI.left).toNonTrivial
       mul_comm := by
         apply Function.Quotient.ind₂; intro a b
         apply Quot.sound; simp [QRel]

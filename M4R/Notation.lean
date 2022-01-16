@@ -81,7 +81,12 @@ namespace M4R
   instance NatOne  : One  Nat where one  := 1
   instance IntZero : Zero Int where zero := 0
   instance IntOne  : One  Int where one  := 1
-    
+
+  class NonTrivial (α : Type _) [Zero α] [One α] where
+    one_neq_zero : (1 : α) ≠ 0
+  instance NatNonTrivial : NonTrivial Nat where one_neq_zero := Nat.one_ne_zero
+  instance IntNonTrivial : NonTrivial Int where one_neq_zero := by simp
+
   class Divides (α : Type u) where
     divides : α → α → Prop
   infix:55 " ÷ " => Divides.divides

@@ -1,4 +1,5 @@
-import M4R.Algebra.Group.Monoid
+import M4R.Algebra.Group.Group
+import M4R.Algebra.Group.Sum
 
 namespace M4R
  
@@ -32,30 +33,57 @@ namespace M4R
   namespace Finsupp
 
     instance FinsuppFun [Zero β] : CoeFun (α →₀ β) (fun (x : α →₀ β) => α → β) where coe := to_fun
-  
-    protected theorem ext [Zero β] (x y : α →₀ β) : x = y ↔ x.to_fun = y.to_fun :=
-      ⟨fun h => by rw [h],
-        match x, y with | ⟨xs, xf, xc⟩, ⟨ys, yf, yc⟩ => fun hf => by
-          simp at hf
-          have hs : xs = ys :=
-            Finset.ext fun _ => by rw [xc, yc, hf]; exact Iff.refl _
-          rw [Finsupp.mk.injEq];
-          exact ⟨hs, hf⟩⟩
 
-    protected def zero (α : Type _) (β : Type _) [Zero β] : α →₀ β where
+    protected theorem ext [Zero β] {x y : α →₀ β} : x.to_fun = y.to_fun → x = y :=
+      match x, y with | ⟨xs, _, xc⟩, ⟨ys, _, yc⟩ => fun hf => by
+        simp at hf
+        rw [Finsupp.mk.injEq];
+        exact ⟨Finset.ext fun _ => by rw [xc, yc, hf]; exact Iff.refl _, hf⟩
+
+    protected theorem ext' [Zero β] {x y : α →₀ β} : x = y ↔ x.support = y.support ∧ ∀ a ∈ x.support, x a = y a :=
+      ⟨fun h => by rw [h]; exact ⟨rfl, fun _ _ => rfl⟩, fun h => by
+        apply Finsupp.ext; apply funext; intro a;
+        byCases hx : a ∈ x.support;
+        exact h.right a hx
+        have hy : a ∉ y.support := by rw [h.left] at hx; exact hx
+        rw [of_not_not (mt (x.mem_support_to_fun a).mpr hx),
+          of_not_not (mt (y.mem_support_to_fun a).mpr hy)]⟩
+
+    protected theorem ext_iff [Zero β] (x y : α →₀ β) : x = y ↔ x.to_fun = y.to_fun :=
+      ⟨fun h => by rw [h], Finsupp.ext⟩
+    
+    protected def sum [Zero β] [CommMonoid γ] (f : α →₀ β) (g : α → β → γ) : γ :=
+      ∑ a in f.support, g a (f a)
+
+    protected instance zero [Zero β] : Zero (α →₀ β) where zero :=
+    {
       support            := ∅
       to_fun             := fun _ => 0
       mem_support_to_fun := fun a => ⟨fun h _ => h, fun h => h rfl⟩
-    
-    instance FinsuppZero [Zero β] : Zero (α →₀ β) where zero := Finsupp.zero α β
+    }
 
-    theorem empty_support [Zero β] {f : α →₀ β} (h : f.support = ∅) : f = 0 := by
-      rw [Finsupp.ext]; apply funext; intro x;
-      have : x ∉ f.support := fun h' => by rw [h] at h'; contradiction
-      rw [of_not_not (mt (f.mem_support_to_fun x).mpr this)]; rfl
+    theorem empty_support [Zero β] {f : α →₀ β} (h : f.support = ∅) : f = 0 :=
+      Finsupp.ext (funext fun x => by
+        have : x ∉ f.support := fun h' => by rw [h] at h'; contradiction
+        rw [of_not_not (mt (f.mem_support_to_fun x).mpr this)]; rfl)
 
-    theorem zero_fun [Zero β] {f : α →₀ β} (h : ∀ a, f a = 0) : f = 0 := by
-      rw [Finsupp.ext]; apply funext; intro x; rw [h x]; rfl
+    theorem zero_fun [Zero β] {f : α →₀ β} (h : ∀ a, f a = 0) : f = 0 :=
+      Finsupp.ext (funext fun x => by rw [h x]; rfl)
+
+    def single [DecidableEq α] [DecidableEq β] [Zero β] (a : α) (b : β) : α →₀ β :=
+      if hb : b = 0 then 0 else
+      {
+        support := Finset.singleton a
+        to_fun := fun a' => if a' = a then b else 0
+        mem_support_to_fun := fun a' =>
+          ⟨fun h => by
+            have := Finset.in_singleton h
+            simp only [this]; exact hb,
+          fun h => by
+            byCases ha : a' = a
+            rw [ha]; exact Finset.self_singleton a
+            simp only [ha] at h; contradiction⟩
+      }
 
     def support_set_of_fun [Zero β] (f : α → β) : Set α := {a | f a ≠ 0}
 
@@ -81,18 +109,37 @@ namespace M4R
       support := support_of_fun x y (f x y) (h x y)
       mem_support_to_fun := support_of_fun_complete x y (f x y) (h x y)
 
-    protected noncomputable def add [Monoid β] : (α →₀ β) → (α →₀ β) → α →₀ β :=
-      finsupp_fun (·.to_fun + ·.to_fun) (fun x y a hx hy => by
+    protected noncomputable instance add [Monoid β] : Add (α →₀ β) where
+      add := finsupp_fun (·.to_fun + ·.to_fun) (fun x y a hx hy => by
         simp only [HAdd.hAdd, Add.add, add_eq]; rw [hx, hy, Monoid.add_zero])
 
     noncomputable instance toMonoid [Monoid β] : Monoid (α →₀ β) where
-      add := Finsupp.add
-      add_zero := fun a => (Finsupp.ext _ _).mpr (funext fun _ => Monoid.add_zero _)
-      zero_add := fun a => (Finsupp.ext _ _).mpr (funext fun _ => Monoid.zero_add _)
-      add_assoc := fun a b c => (Finsupp.ext _ _).mpr (funext fun _ => Monoid.add_assoc _ _ _)
+      add_zero := fun _ => Finsupp.ext (funext fun _ => Monoid.add_zero _)
+      zero_add := fun _ => Finsupp.ext (funext fun _ => Monoid.zero_add _)
+      add_assoc := fun _ _ _ => Finsupp.ext (funext fun _ => Monoid.add_assoc _ _ _)
 
     noncomputable instance toCommMonoid [CommMonoid β] : CommMonoid (α →₀ β) where
-      add_comm := fun a b => (Finsupp.ext _ _).mpr (funext fun _ => CommMonoid.add_comm _ _)
+      add_comm := fun _ _ => Finsupp.ext (funext fun _ => CommMonoid.add_comm _ _)
+
+    protected instance neg [Group β] : Neg (α →₀ β) where
+      neg := fun x => {
+        support := x.support
+        to_fun := (- x ·)
+        mem_support_to_fun := fun a =>
+          have h₁ := x.mem_support_to_fun a
+          have h₂ : x a ≠ 0 ↔ - x a ≠ 0 := by
+            simp only [not_iff_not]
+            exact ⟨fun h' => by rw [h', Group.neg_zero], fun h' => by
+              rw [←Group.neg_zero] at h'
+              exact Group.neg_inj h'⟩
+          h₁.trans h₂
+      }
+
+    noncomputable instance toGroup [Group β] : Group (α →₀ β) where
+      add_neg := fun _ => Finsupp.ext (funext fun _ => Group.add_neg _)
+
+    noncomputable instance toAbelianGroup [AbelianGroup β] : AbelianGroup (α →₀ β) where
+      add_comm := toCommMonoid.add_comm
 
   end Finsupp
 end M4R
