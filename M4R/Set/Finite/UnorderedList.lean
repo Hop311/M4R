@@ -7,6 +7,7 @@ def List.to_UnorderedList (l : List α) : M4R.UnorderedList α := Quotient.mk l
 namespace M4R
   namespace UnorderedList
     instance UnorderedListCoe : Coe (List α) (UnorderedList α) where coe := List.to_UnorderedList
+    @[simp] theorem list_coe_eq (l : List α) : Quotient.mk l = (↑l : UnorderedList α) := rfl
 
     protected def mem (a : α) (s : UnorderedList α) : Prop :=
       Quot.liftOn s (fun l => a ∈ l) (fun l₁ l₂ (p : l₁ ~ l₂) => propext (p.mem_iff _))
@@ -24,11 +25,13 @@ namespace M4R
 
     protected def cons (a : α) (s : UnorderedList α) : UnorderedList α :=
       Quot.liftOn s (fun l => List.to_UnorderedList (a::l)) (fun _ _ p => Quot.sound (p.cons a))
+    @[simp] theorem cons_eq (a : α) (l : List α) : ↑(a::l) = (↑l : UnorderedList α).cons a := rfl
 
     protected def Empty {α : Type _} : UnorderedList α := List.to_UnorderedList []
     instance EmptyUnorderedListEmptyCollection : EmptyCollection (UnorderedList α) where
       emptyCollection := UnorderedList.Empty
     instance UnorderedListZero : Zero (UnorderedList α) where zero := ∅
+    @[simp] theorem empty_eq : (↑([] : List α) : UnorderedList α) = (∅ : UnorderedList α) := rfl
 
     protected def singleton (a : α) : UnorderedList α := ↑[a]
     @[simp] theorem singleton_eq (a : α) : List.to_UnorderedList [a] = UnorderedList.singleton a := rfl
@@ -113,39 +116,6 @@ namespace M4R
     theorem nodup_map {f : α → β} {s : UnorderedList α} (hf : Function.injective f) :
       nodup s → nodup (s.map f) :=
         nodup_map_on (fun x _ y _ h => hf h)
-
-    def fold (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂) :
-      (init : α) → UnorderedList β → α := fun init s =>
-        Quot.liftOn s (List.foldl f init) fun _ _ p => by
-          induction p generalizing init with
-          | nil => rfl
-          | cons x _ h => exact h (f init x)
-          | swap x y _ => simp only [List.foldl]; rw [hcomm init x y]
-          | trans _ _ h₁₂ h₂₃ => exact Eq.trans (h₁₂ init) (h₂₃ init)
-
-    namespace fold
-      variable (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
-      
-      @[simp] theorem empty (init : α) : fold f hcomm init ∅ = init := rfl
-
-      @[simp] theorem singleton (init : α) (b : β) : fold f hcomm init (UnorderedList.singleton b) = f init b := rfl
-
-      theorem append (init : α) (s t : UnorderedList β) :
-        fold f hcomm init (s + t) = fold f hcomm (fold f hcomm init s) t :=
-          @Quotient.inductionOn₂ (List β) (List β) (Perm.PermSetoid β) (Perm.PermSetoid β)
-            (fun (a b : UnorderedList β) => fold f hcomm init (a + b) = fold f hcomm (fold f hcomm init a) b) s t
-            (fun a b => List.foldl_append f _ a b)
-
-      theorem cons (init : α) (x : β) (s : UnorderedList β) :
-        fold f hcomm init (s.cons x) = fold f hcomm (f init x) s :=
-          @Quotient.inductionOn (List β) (Perm.PermSetoid β) (fun (ms : UnorderedList β) =>
-            fold f hcomm init (ms.cons x) = fold f hcomm (f init x) ms) s (fun l => rfl)
-
-      theorem cons' (init : α) (x : β) (s : UnorderedList β) :
-        fold f hcomm init (s.cons x) = f (fold f hcomm init s) x := by
-          rw [cons, ←singleton f hcomm _ x, ←singleton f hcomm _ x, ←append, ←append, append.comm]
-
-    end fold
 
     theorem nodup_ext {s t : UnorderedList α} : nodup s → nodup t → (s = t ↔ ∀ a, a ∈ s ↔ a ∈ t) :=
       @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)

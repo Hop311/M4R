@@ -82,7 +82,7 @@ namespace List
           fun p => Or.elim p (fun q => Or.elim q Or.inl
             (fun x => Or.inr (ih.mpr (Or.inl x)))) (fun x => Or.inr (ih.mpr (Or.inr x)))⟩
 
-  @[simp] theorem appendSingleton {a : α} {l : List α} : [a] ++ l = a::l := by rfl
+  @[simp] theorem appendSingleton {a : α} {l : List α} : [a] ++ l = a::l := rfl
 
   @[simp] theorem map_nil (f : α → β) : map f [] = [] := rfl
 
@@ -130,21 +130,6 @@ namespace List
     induction l with
     | nil => simp only [filterMap, map];
     | cons _ _ ih => simp [filterMap, map]; exact ih
-
-  @[simp] theorem foldl_cons (f : α → β → α) (a : α) (b : β) (l : List β) :
-    foldl f a (b::l) = foldl f (f a b) l := rfl
-
-  @[simp] theorem foldl_append (f : α → β → α) (a : α) (l₁ l₂ : List β) :
-    foldl f a (l₁++l₂) = foldl f (foldl f a l₁) l₂ :=
-      match l₁ with
-      | []      => rfl
-      | b::l₁ => by simp only [cons_append, foldl_cons, foldl_append f (f a b) l₁ l₂]
-
-  @[simp] theorem foldl_empty (f : α → β → α) (a : α) :
-    foldl f a [] = a := rfl
-
-  @[simp] theorem foldl_singleton (f : α → β → α) (a : α) (b : β) :
-    foldl f a [b] = f a b := rfl
 
   inductive Sublist : List α → List α → Prop
   | nil : Sublist [] []

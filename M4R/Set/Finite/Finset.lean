@@ -52,18 +52,6 @@ namespace M4R
     protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=
       ⟨s.elems.map f, s.elems.nodup_map hf s.nodup⟩
 
-    def fold (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂) :
-      (init : α) → Finset β → α := fun init s => UnorderedList.fold f hcomm init s.elems
-
-    namespace fold
-      variable (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
-      
-      @[simp] theorem empty (init : α) : Finset.fold f hcomm init ∅ = init := rfl
-
-      @[simp] theorem singleton (init : α) (b : β) : fold f hcomm init (Finset.singleton b) = f init b := rfl
-
-    end fold
-    
     noncomputable def union (s₁ s₂ : Finset α) : Finset α :=
       ⟨s₁.elems.ndunion s₂.elems, UnorderedList.nodup_ndunion s₁.elems s₂.nodup⟩
 

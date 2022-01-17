@@ -38,7 +38,7 @@ namespace M4R
       mul_distrib_right := c.mul_distrib_right
       mul_zero          := c.mul_zero
       zero_mul          := c.zero_mul
-  
+
   end NCSemiring
   
   namespace Semiring

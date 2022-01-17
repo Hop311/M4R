@@ -45,6 +45,10 @@ namespace M4R
         | Nat.zero => a
         | _        => (NCSemiring.pow_nat a m) * a
     instance RingPowNat [NCSemiring α] : Pow α Nat where pow := NCSemiring.pow_nat
+
+    theorem all_trivial [NCSemiring α] (h10 : (1 : α) = 0) (x : α) : x = 0 := by
+      rw [←mul_one x, h10, mul_zero]
+
   end NCSemiring
 
   protected instance NCRing.toAbelianGroup [NCRing α] : AbelianGroup α where

@@ -51,11 +51,8 @@ namespace M4R
 
     protected theorem ext_iff [Zero β] (x y : α →₀ β) : x = y ↔ x.to_fun = y.to_fun :=
       ⟨fun h => by rw [h], Finsupp.ext⟩
-    
-    protected def sum [Zero β] [CommMonoid γ] (f : α →₀ β) (g : α → β → γ) : γ :=
-      ∑ a in f.support, g a (f a)
 
-    protected instance zero [Zero β] : Zero (α →₀ β) where zero :=
+    protected instance zero (α : Type _) (β : Type _) [Zero β] : Zero (α →₀ β) where zero :=
     {
       support            := ∅
       to_fun             := fun _ => 0
@@ -141,5 +138,16 @@ namespace M4R
     noncomputable instance toAbelianGroup [AbelianGroup β] : AbelianGroup (α →₀ β) where
       add_comm := toCommMonoid.add_comm
 
+    protected def sum [Zero β] [CommMonoid γ] (f : α →₀ β) (g : α → β → γ) : γ :=
+      ∑ a in f.support, g a (f a)
+
+    namespace sum
+      @[simp] protected theorem zero [Zero β] [CommMonoid γ] (f : α → β → γ) : Finsupp.sum 0 f = 0 :=
+        UnorderedList.map_sum.all_zero _ _ fun _ _ => by contradiction
+
+      @[simp] protected theorem single [DecidableEq α] [DecidableEq β] [Zero β] [CommMonoid γ]
+        (a : α) (b : β) (f : α → β → γ) (hb : b ≠ 0) : (single a b).sum f = f a b := by
+          simp [Finsupp.sum, Finset.map_sum, single, hb, Finset.singleton]
+    end sum
   end Finsupp
 end M4R
