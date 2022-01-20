@@ -46,9 +46,6 @@ namespace M4R
   def UnorderedList.map_sum [CommMonoid β] (s : UnorderedList α) (f : α → β) : β :=
     s.map_fold_add 0 f
 
-  def Finset.sum [CommMonoid α] (s : Finset α) : α := s.elems.sum
-  def Finset.map_sum [CommMonoid β] (s : Finset α) (f : α → β) : β := s.elems.map_sum f
-
   namespace UnorderedList.sum
 
     theorem cons [CommMonoid α] (a : α) (s : UnorderedList α) : (∑ s.cons a) = (∑ s) + a :=
@@ -60,7 +57,7 @@ namespace M4R
     @[simp] theorem singleton [CommMonoid α] (a : α) : (∑ UnorderedList.singleton a) = a := by
       conv => rhs rw [←zero_add a]
 
-    theorem all_zero [CommMonoid α] (s : UnorderedList α) (h : ∀ x ∈ s, x = 0) : (∑ s) = 0 :=
+    theorem eq_zero [CommMonoid α] {s : UnorderedList α} (h : ∀ x ∈ s, x = 0) : (∑ s) = 0 :=
       @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
         (∀ a ∈ l, a = 0) → (∑ l) = 0) s (fun l hl => by
           induction l with
@@ -81,9 +78,9 @@ namespace M4R
     @[simp] theorem singleton [CommMonoid β] (f : α → β) (a : α) : (∑ f in UnorderedList.singleton a) = f a := by
       simp only [map_sum, map_fold_add, map_fold, map.singleton f a, fold.singleton, zero_add]
 
-    theorem all_zero [CommMonoid β] (f : α → β) (s : UnorderedList α) (h : ∀ x ∈ s, f x = 0) :
+    theorem eq_zero [CommMonoid β] {f : α → β} {s : UnorderedList α} (h : ∀ x ∈ s, f x = 0) :
       (∑ f in s) = 0 :=
-        UnorderedList.sum.all_zero _ fun x hx =>
+        UnorderedList.sum.eq_zero fun x hx =>
           let ⟨a, ha, he⟩ := UnorderedList.map.mem_map.mp hx
           he.symm.trans (h a ha)
 
@@ -94,4 +91,22 @@ namespace M4R
         simp only [map_sum, this]
 
   end UnorderedList.map_sum
+
+  def Finset.sum [CommMonoid α] (s : Finset α) : α := s.elems.sum
+  def Finset.map_sum [CommMonoid β] (s : Finset α) (f : α → β) : β := s.elems.map_sum f
+  
+  namespace Finset.sum
+  
+    theorem eq_zero [CommMonoid α] {s : Finset α} (h : ∀ x ∈ s, x = 0) : (∑ s) = 0 :=
+      UnorderedList.sum.eq_zero h
+
+  end Finset.sum
+
+  namespace Finset.map_sum
+
+    theorem eq_zero [CommMonoid β] {f : α → β} {s : Finset α} (h : ∀ x ∈ s, f x = 0) :
+      (∑ x in s, f x) = 0 :=
+        UnorderedList.map_sum.eq_zero h
+
+  end Finset.map_sum
 end M4R

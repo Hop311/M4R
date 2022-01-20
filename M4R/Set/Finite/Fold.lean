@@ -67,7 +67,7 @@ namespace M4R
       variable (op : α → α → α) (hcomm : ∀ a₁ a₂, op a₁ a₂ = op a₂ a₁) (hassoc : ∀ a₁ a₂ a₃, op (op a₁ a₂) a₃ = op a₁ (op a₂ a₃))
       local infix:55 " ⋆ " => op
 
-      @[simp] theorem empty (init : α) (f : β → α) : map_fold op hcomm hassoc init f ∅ = init := rfl
+      @[simp] theorem empty (init : α) (f : β → α) : map_fold op hcomm hassoc init f 0 = init := rfl
 
       theorem cons (init : α) (f : β → α) (s : UnorderedList β) (b : β):
         (s.cons b).map_fold op hcomm hassoc init f = (s.map_fold op hcomm hassoc init f) ⋆ (f b) := by

@@ -105,7 +105,7 @@ namespace M4R
       apply inductionOn (fun (t₁ t₂ : List α) => ∀ {l₁' l₂' r₁' r₂' : List α},
         l₁'++a::r₁' = t₁ → l₂'++a::r₂' = t₂ → l₁'++r₁' ~ l₂'++r₂') p
       { intro l₁ _ r₁ _ e₁ _
-        have h₀ := List.notMemNil a; rw [←e₁] at h₀
+        have h₀ := List.not_mem_nil a; rw [←e₁] at h₀
         have : a ∈ l₁ ++ a :: r₁ := by apply (mem_iff (middle a l₁ r₁) _).mpr; apply Or.inl; rfl
         contradiction }
       { intro _ _ _ p₁₂ ih l₁ l₂ _ _ e₁ e₂;
@@ -297,6 +297,17 @@ namespace M4R
       theorem antisymm {l₁ l₂ : List α} (h₁ : l₁ <+~ l₂) (h₂ : l₂ <+~ l₁) : l₁ ~ l₂ :=
         h₁.perm_of_length_le h₂.length_le
 
+      theorem subset {l₁ l₂ : List α} : l₁ <+~ l₂ → l₁ ⊆ l₂
+      | ⟨l, p, s⟩ => Subset.trans p.symm.subset s.subset
+
+      theorem subperm_cons (a : α) {l₁ l₂ : List α} : a::l₁ <+~ a::l₂ ↔ l₁ <+~ l₂ :=
+        ⟨fun ⟨l, p, s⟩ => by
+          cases s with
+          | cons _ _ _ s' =>
+            exact (p.subperm_left.2 $ (List.Sublist.sublist_cons _ _).subperm).trans s'.subperm
+          | cons' u _ _ s' => exact ⟨u, p.cons_inv, s'⟩,
+        fun ⟨l, p, s⟩ => ⟨a::l, p.cons a, s.cons' _ _ _⟩⟩
+
       theorem cons_subperm_of_mem {a : α} {l₁ l₂ : List α} (d₁ : l₁.nodup) (h₁ : a ∉ l₁) (h₂ : a ∈ l₂)
         (s : l₁ <+~ l₂) : a :: l₁ <+~ l₂ := by
           let ⟨l, p, s⟩ := s
@@ -367,6 +378,42 @@ namespace M4R
 
     theorem filter' (p : α → Prop) {l₁ l₂ : List α} (s : l₁ ~ l₂) : l₁.filter' p ~ l₂.filter' p := by
       rw [←List.filter_map_eq_filter']; exact s.filterMap _
+
+    theorem cons_erase {a : α} {l : List α} (h : a ∈ l) : l ~ a :: l.erase a :=
+      let ⟨l₁, l₂, _, e₁, e₂⟩ := List.exists_erase_eq h
+      e₂.symm ▸ e₁.symm ▸ (middle a l₁ l₂)
+
+    theorem erase (a : α) {l₁ l₂ : List α} (p : l₁ ~ l₂) :
+      l₁.erase a ~ l₂.erase a :=
+        if h₁ : a ∈ l₁ then
+          have h₂ : a ∈ l₂ := p.subset h₁
+          cons_inv ((cons_erase h₁).symm.trans (p.trans (cons_erase h₂)))
+        else by
+          have h₂ : a ∉ l₂ := mt (p.mem_iff _).mpr h₁
+          rw [List.erase_of_not_mem h₁, List.erase_of_not_mem h₂]; exact p
+
+    theorem diff_right {l₁ l₂ : List α} (t : List α) (h : l₁ ~ l₂) : l₁.diff t ~ l₂.diff t := by
+      induction t generalizing l₁ l₂ h with
+      | nil => simp [h]
+      | cons a t ih =>
+        simp only [List.diff_cons]
+        exact ih (erase a h)
+
+    theorem diff_left (l : List α) {t₁ t₂ : List α} (h : t₁ ~ t₂) : l.diff t₁ = l.diff t₂ := by
+      induction h generalizing l with
+      | nil => simp
+      | cons a p ih => simp; exact ih _
+      | swap x y t => simp [List.erase_comm]
+      | trans p₁ p₂ ih₁ ih₂ => exact (ih₁ _).trans (ih₂ _)
+
+    theorem diff {l₁ l₂ t₁ t₂ : List α} (hl : l₁ ~ l₂) (ht : t₁ ~ t₂) :
+      l₁.diff t₁ ~ l₂.diff t₂ :=
+        ht.diff_left l₂ ▸ hl.diff_right _
+
+    theorem countp_eq (p : α → Prop) [DecidablePred p]
+      {l₁ l₂ : List α} (s : l₁ ~ l₂) : l₁.countp p = l₂.countp p := by
+        rw [List.countp_eq_length_filter', List.countp_eq_length_filter'];
+        exact (s.filter' _).length_eq
 
   end Perm
 end M4R

@@ -34,11 +34,14 @@ namespace M4R
     theorem antisymm {s₁ s₂ : Finset α} (H₁ : s₁ ⊆ s₂) (H₂ : s₂ ⊆ s₁) : s₁ = s₂ :=
       Finset.ext fun a => ⟨@H₁ a, @H₂ a⟩
 
-    protected def Empty : Finset α := ⟨∅, Pairwise.nil⟩
+    protected def Empty : Finset α := ⟨0, Pairwise.nil⟩
     protected def Universal [Fintype α] : Finset α := Fintype.elems
 
     instance EmptyFinsetEmptyCollection : EmptyCollection (Finset α) where
       emptyCollection := Finset.Empty
+
+    theorem eq_empty_of_forall_not_mem {s : Finset α} (h : ∀ x, x ∉ s) : s = ∅ :=
+      Finset.ext fun a => ⟨fun ha => absurd ha (h a), fun _ => by contradiction⟩
 
     protected def singleton (a : α) : Finset α := ⟨UnorderedList.singleton a, Pairwise.singleton _ a⟩
 
@@ -59,6 +62,14 @@ namespace M4R
 
     @[simp] theorem mem_union {a : α} {s₁ s₂ : Finset α} : a ∈ s₁ ∪ s₂ ↔ a ∈ s₁ ∨ a ∈ s₂ :=
       UnorderedList.mem_ndunion
+
+    noncomputable def intersection (s₁ s₂ : Finset α) : Finset α :=
+      ⟨s₁.elems.ndinter s₂.elems, UnorderedList.nodup_ndinter s₂.elems s₁.nodup⟩
+
+    noncomputable instance FinsetIntersection : Intersection (Finset α) where intersection := intersection
+
+    @[simp] theorem mem_inter {a : α} {s₁ s₂ : Finset α} : a ∈ s₁ ∩ s₂ ↔ a ∈ s₁ ∧ a ∈ s₂ :=
+      UnorderedList.mem_ndinter
   
     noncomputable def filter (p : α → Prop) (s : Finset α) : Finset α := ⟨UnorderedList.filter p s.elems, 
       UnorderedList.nodup_filter p s.2⟩
@@ -66,6 +77,18 @@ namespace M4R
     @[simp] theorem filter_val (p : α → Prop) (s : Finset α) : (s.filter p).elems = s.elems.filter p := rfl
 
     @[simp] theorem mem_filter {s : Finset α} {a : α} : a ∈ s.filter p ↔ a ∈ s ∧ p a := UnorderedList.mem_filter
+
+    noncomputable instance : SetMinus (Finset α) :=
+      ⟨fun s₁ s₂ => ⟨s₁.elems - s₂.elems, @UnorderedList.le.nodup_of_le α (s₁.elems - s₂.elems) s₁.elems
+        (UnorderedList.le.sub_le_self _ _) s₁.nodup⟩⟩
+
+    @[simp] theorem sdiff_val (s₁ s₂ : Finset α) : (s₁ ∖ s₂).elems = s₁.elems - s₂.elems := rfl
+
+    @[simp] theorem mem_sdiff {s t : Finset α} {a : α}: a ∈ s ∖ t ↔ a ∈ s ∧ a ∉ t :=
+      UnorderedList.sub.mem_sub_of_nodup s.nodup
+
+    @[simp] theorem inter_sdiff_self (s₁ s₂ : Finset α) : s₁ ∩ (s₂ ∖ s₁) = ∅ :=
+      eq_empty_of_forall_not_mem (by simp only [mem_inter, mem_sdiff]; exact fun x ⟨h, _, hn⟩ => absurd h hn)
 
   end Finset
 

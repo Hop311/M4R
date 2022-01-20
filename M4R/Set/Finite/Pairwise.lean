@@ -1,4 +1,5 @@
 import M4R.Set.Finite.List
+import M4R.Numbers
 
 
 inductive M4R.Pairwise (r : α → α → Prop) : List α → Prop
@@ -22,7 +23,7 @@ namespace M4R
       induction l₁ with
       | nil =>
         apply Iff.intro; intro prl; apply And.intro Pairwise.nil; simp only [nil] at prl;
-        apply And.intro prl; exact (fun x _ _ _ => by have := List.notMemNil x; contradiction)
+        apply And.intro prl; exact (fun x _ _ _ => by have := List.not_mem_nil x; contradiction)
         exact (fun x => x.right.left)
       | cons x l₁ IH =>
         simp; apply Iff.intro;
@@ -47,7 +48,7 @@ namespace M4R
       Pairwise r (l₁ ++ a::l₂) ↔ Pairwise r (a::(l₁++l₂)) := by
         have : Pairwise r (l₁ ++ ([a] ++ l₂)) ↔ Pairwise r ([a] ++ l₁ ++ l₂) := by
           {rw [←List.append_assoc, appendIff, @appendIff _ _ ([a] ++ l₁), appendComm h];
-          simp only [List.memAppend, Or.comm']; apply Iff.refl}
+          simp only [List.mem_append, Or.comm']; apply Iff.refl}
         simp only [List.appendSingleton] at this; exact this
 
     theorem imp_of_mem {r s : α → α → Prop} {l : List α}
@@ -102,6 +103,8 @@ open M4R
 
 namespace List
 
+  @[simp] theorem nodup_nil : @nodup α [] := Pairwise.nil
+
   @[simp] theorem nodup_cons {a : α} {l : List α} : nodup (a::l) ↔ a ∉ l ∧ nodup l := by
     simp only [nodup, Pairwise.consIff, forall_mem_ne]; exact Iff.refl _
 
@@ -141,5 +144,33 @@ namespace List
 
   theorem nodup_filter' (p : α → Prop) {l : List α} : nodup l → nodup (filter' p l) :=
     Pairwise.filter'_of_pairwise p
+
+  theorem nodup_cons_of_nodup {a : α} {l : List α} (m : a ∉ l) (n : nodup l) : nodup (a::l) :=
+    nodup_cons.mpr ⟨m, n⟩
+
+  theorem not_mem_of_nodup_cons {a : α} {l : List α} (h : nodup (a::l)) : a ∉ l :=
+    (nodup_cons.mp h).left
+
+  theorem not_nodup_cons_of_mem {a : α} {l : List α} : a ∈ l → ¬ nodup (a :: l) :=
+    imp_not_comm.mp not_mem_of_nodup_cons
+
+  theorem not_nodup_pair (a : α) : ¬ nodup [a, a] :=
+    not_nodup_cons_of_mem (List.self_singleton _)
+
+  theorem nodup_iff_sublist {l : List α} : nodup l ↔ ∀ a, ¬ [a, a] <+ l :=
+    ⟨fun d a h => not_nodup_pair a (nodup_of_sublist h d), by
+      induction l with
+      | nil => intros; exact nodup_nil
+      | cons a l ih =>
+        intro h;
+        exact nodup_cons_of_nodup (fun al => h a ((Sublist.singleton_sublist.mpr al).cons_cons a))
+          (ih fun a s => h a (Sublist.sublist_cons_of_sublist _ s))⟩
+
+  theorem nodup_iff_count_le_one {l : List α} : l.nodup ↔ ∀ a : α, List.count a l ≤ 1 := by
+    apply nodup_iff_sublist.trans
+    have : (∀ (a : α), ¬[a, a] <+ l) = ∀ (a : α), count a l ≤ 1 := forall_congr fun a =>
+      have : [a, a] <+ l ↔ 1 < count a l := (@count.le_count_iff_repeat_sublist _ a l (Nat.succ 1)).symm
+      propext ((not_iff_not.mpr this).trans Nat.not_lt)
+    rw [this]; exact Iff.rfl
 
 end List

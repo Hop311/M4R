@@ -1,3 +1,4 @@
+import M4R.Logic
 
 namespace Nat
 
@@ -63,6 +64,9 @@ namespace Nat
   | 0    , (m+1), H => zero_le _
   | (n+1), (m+1), H => Nat.add_le_add_right (le_of_sub_eq_zero (by simp only [add_sub_add_right] at H; exact H )) _
 
+  @[simp] theorem sub_eq_zero_iff_le (a b : Nat) : a - b = 0 ↔ a ≤ b :=
+    ⟨le_of_sub_eq_zero, sub_eq_zero_of_le⟩
+
   theorem add_sub_cancel_left (n m : Nat) : n + m - n = m :=
     have : n + m - (n + 0) = m :=
       by rw [add_sub_add_left, Nat.sub_zero]
@@ -106,6 +110,49 @@ namespace Nat
 
   theorem mul_sub_left_distrib (n m k : Nat) : n * (m - k) = n * m - n * k := by
     rw [Nat.mul_comm, mul_sub_right_distrib, Nat.mul_comm m n, Nat.mul_comm n k]
+
+  theorem pos_iff_ne_zero {n : Nat} : 0 < n ↔ n ≠ 0 :=
+    ⟨fun h => (Nat.ne_of_lt h).symm,
+    fun h => Nat.lt_of_le_and_ne (Nat.zero_le n) h.symm⟩
+  
+  protected theorem sub_one (n : Nat) : n - 1 = pred n := rfl
+
+  theorem one_add (n : Nat) : 1 + n = succ n :=
+    (Nat.add_comm 1 n).trans (add_one n)
+
+  theorem pred_sub (n m : Nat) : pred n - m = pred (n - m) := by
+    rw [←Nat.sub_one, sub_sub, one_add, sub_succ]
+
+  theorem le_of_not_ge {a b : Nat} : ¬ a ≥ b → a ≤ b :=
+    Or.resolve_left (Nat.le_total b a)
+
+  theorem le_of_not_le {a b : Nat} : ¬ a ≤ b → b ≤ a :=
+    Or.resolve_left (Nat.le_total a b)
+
+  theorem lt_trichotomy (a b : Nat) : a < b ∨ a = b ∨ b < a :=
+    Or.elim (Nat.le_total a b)
+      (fun h : a ≤ b => Or.elim (Nat.lt_or_eq_of_le h)
+        (fun h : a < b => Or.inl h)
+        (fun h : a = b => Or.inr (Or.inl h)))
+      (fun h : b ≤ a => Or.elim (Nat.lt_or_eq_of_le h)
+        (fun h : b < a => Or.inr (Or.inr h))
+        (fun h : b = a => Or.inr (Or.inl h.symm)))
+
+  theorem le_of_not_lt {a b : Nat} (h : ¬ b < a) : a ≤ b := by
+    cases lt_trichotomy a b with
+    | inl hlt => exact Nat.le_of_lt hlt
+    | inr h =>
+      cases h with
+      | inl heq => exact heq ▸ Nat.le_refl a
+      | inr hgt => exact absurd hgt h
+
+  theorem le_of_not_gt {a b : Nat} : ¬ a > b → a ≤ b := le_of_not_lt
+
+  theorem not_lt_of_ge {a b : Nat} (h : a ≥ b) : ¬ a < b :=
+    fun hab => Nat.not_le_of_gt hab h
+
+  @[simp] theorem not_lt {a b : Nat} : ¬ a < b ↔ b ≤ a :=
+    ⟨le_of_not_gt, not_lt_of_ge⟩
 
 end Nat
 

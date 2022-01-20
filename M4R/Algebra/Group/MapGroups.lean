@@ -143,11 +143,12 @@ namespace M4R
 
     namespace sum
       @[simp] protected theorem zero [Zero β] [CommMonoid γ] (f : α → β → γ) : Finsupp.sum 0 f = 0 :=
-        UnorderedList.map_sum.all_zero _ _ fun _ _ => by contradiction
+        UnorderedList.map_sum.eq_zero fun _ _ => by contradiction
 
       @[simp] protected theorem single [DecidableEq α] [DecidableEq β] [Zero β] [CommMonoid γ]
         (a : α) (b : β) (f : α → β → γ) (hb : b ≠ 0) : (single a b).sum f = f a b := by
           simp [Finsupp.sum, Finset.map_sum, single, hb, Finset.singleton]
+
     end sum
   end Finsupp
 end M4R
