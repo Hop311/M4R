@@ -74,10 +74,10 @@ namespace M4R
       rw [List.append_nil] at this
       exact this
 
-    theorem append_comm  (l₁ l₂ : List α) : (l₁++l₂) ~ (l₂++l₁) :=
+    theorem append_comm {l₁ l₂ : List α} : (l₁++l₂) ~ (l₂++l₁) :=
       match l₁ with
       | []     => by simp
-      | (a::t) => ((append_comm t l₂).cons a).trans (middle a l₂ t).symm
+      | (a::t) => ((append_comm).cons a).trans (middle a l₂ t).symm
 
     theorem length_eq {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.length = l₂.length :=
       @Perm.recOn α (fun (a b : List α) _ => a.length = b.length) l₁ l₂ p rfl
@@ -257,8 +257,22 @@ namespace M4R
   end Perm
 end M4R
 
-protected theorem List.Sublist.subperm {l₁ l₂ : List α} (s : l₁ <+ l₂) : l₁ <+~ l₂ :=
-  ⟨l₁, M4R.Perm.refl _, s⟩
+namespace List.Sublist
+  open M4R
+
+  protected theorem subperm {l₁ l₂ : List α} (s : l₁ <+ l₂) : l₁ <+~ l₂ :=
+    ⟨l₁, M4R.Perm.refl _, s⟩
+  
+  theorem exists_perm_append {l₁ l₂ : List α} : l₁ <+ l₂ → ∃ l, l₂ ~ l₁ ++ l
+  | nil             => ⟨[], Perm.refl _⟩
+  | cons l₁ l₂ a s  =>
+    let ⟨l, p⟩ := exists_perm_append s
+    ⟨a::l, (p.cons a).trans (Perm.middle _ _ _).symm⟩
+  | cons' l₁ l₂ a s =>
+    let ⟨l, p⟩ := exists_perm_append s
+    ⟨l, p.cons a⟩
+
+end List.Sublist
 
 namespace M4R
   namespace Perm
@@ -304,9 +318,12 @@ namespace M4R
         ⟨fun ⟨l, p, s⟩ => by
           cases s with
           | cons _ _ _ s' =>
-            exact (p.subperm_left.2 $ (List.Sublist.sublist_cons _ _).subperm).trans s'.subperm
+            exact (p.subperm_left.mpr (List.Sublist.sublist_cons _ _).subperm).trans s'.subperm
           | cons' u _ _ s' => exact ⟨u, p.cons_inv, s'⟩,
         fun ⟨l, p, s⟩ => ⟨a::l, p.cons a, s.cons' _ _ _⟩⟩
+
+      theorem subperm_swap_left {a b : α} {l₁ l₂ : List α} : a::b::l₁ <+~ l₂ → b::a::l₁ <+~ l₂ :=
+        fun ⟨t, p, s⟩ => ⟨t, p.trans (Perm.swap b a l₁), s⟩
 
       theorem cons_subperm_of_mem {a : α} {l₁ l₂ : List α} (d₁ : l₁.nodup) (h₁ : a ∉ l₁) (h₂ : a ∈ l₂)
         (s : l₁ <+~ l₂) : a :: l₁ <+~ l₂ := by
@@ -331,12 +348,54 @@ namespace M4R
                 ⟨r₁, rt, s'⟩ rt
               exact ⟨b::t, (p'.cons b).trans ((swap _ _ _).trans ((Perm.middle _ _ _).symm.cons a)), s'.cons' _ _ _⟩
 
+      theorem subperm_append_left {l₁ l₂ : List α} : ∀ l, l++l₁ <+~ l++l₂ ↔ l₁ <+~ l₂
+      | []   => Iff.rfl
+      | a::l => (subperm_cons a).trans (subperm_append_left l)
+
+      theorem subperm_append_right {l₁ l₂ : List α} (l : List α) : l₁++l <+~ l₂++l ↔ l₁ <+~ l₂ :=
+        (append_comm.subperm_left.trans append_comm.subperm_right).trans (subperm_append_left l)
+
       theorem subperm_of_subset_nodup {l₁ l₂ : List α} (d : l₁.nodup) (H : l₁ ⊆ l₂) : l₁ <+~ l₂ := by
         induction d with
         | nil => exact ⟨[], Perm.nil, List.Sublist.nil_sublist _⟩
         | cons h d IH =>
           let ⟨H₁, H₂⟩ := List.forall_mem_cons.mp H
           exact cons_subperm_of_mem d (fun h' => by apply h _ h'; rfl) H₁ (IH H₂)
+
+      @[simp] theorem subperm_nil {l : List α} (h : l <+~ []) : l = [] := by
+        let ⟨t, p, s⟩ := h;
+        rw [List.Sublist.eq_nil_of_sublist_nil s] at p
+        exact eq_nil p.symm
+
+      theorem not_cons_self (l : List α) (a : α) : ¬ (a::l <+~ l) := by
+        induction l with
+        | nil =>
+          intro h; have := subperm_nil h
+          contradiction
+        | cons x l ih =>
+          intro h; apply ih;
+          exact (subperm_cons x).mp (subperm_swap_left h)
+
+      theorem exists_of_length_lt {l₁ l₂ : List α} :
+        l₁ <+~ l₂ → l₁.length < l₂.length → ∃ a, a :: l₁ <+~ l₂ := by
+          intro ⟨l, p, s⟩ hlt
+          have : l.length < l₂.length → ∃ a, a :: l <+~ l₂ := by
+            clear p hlt l₁
+            induction s with
+            | nil => intro hlt'; cases hlt'
+            | cons l₁' l₂' a s ih =>
+              intro hlt'
+              cases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hlt') with
+              | inl h' => exact (ih h').imp (fun a s => s.trans (List.Sublist.sublist_cons _ _).subperm)
+              | inr h' => exact ⟨a, List.Sublist.eq_of_sublist_of_length_eq s h' ▸ Subperm.refl _⟩
+            | cons' l₁' l₂' b s ih =>
+              intro h'
+              exact (ih (Nat.lt_of_succ_lt_succ h')).imp (fun a s =>
+                (swap _ _ _).subperm_right.mp ((subperm_cons _).mpr s))
+          exact (this (p.symm.length_eq ▸ hlt)).imp (fun a => (p.cons a).subperm_right.mp)
+
+      theorem exists_of_subperm_ne {l₁ l₂ : List α} (h₁ : l₁ <+~ l₂) (h₂ : ¬ l₁ ~ l₂) : ∃ a, a::l₁ <+~ l₂ :=
+        exists_of_length_lt h₁ (Nat.gt_of_not_le (mt (perm_of_length_le h₁) h₂))
 
     end Subperm
 
@@ -375,6 +434,13 @@ namespace M4R
 
     theorem union {l₁ l₂ t₁ t₂ : List α} (p₁ : l₁ ~ l₂) (p₂ : t₁ ~ t₂) : l₁ ∪ t₁ ~ l₂ ∪ t₂ :=
       (p₁.union_right t₁).trans (p₂.union_left l₂)
+
+    theorem Sublist.union_left (l₁ l₂ : List α) : l₁ <+ l₂ ∪ l₁ := by
+      let ⟨t, s, e⟩ := List.sublist_suffix_of_union l₂ l₁
+      rw [←e]; exact List.Sublist.sublist_append_right t l₁
+
+    theorem Subperm.union_left (l₁ l₂ : List α) : l₁ <+~ l₂ ∪ l₁ :=
+      (Sublist.union_left l₁ l₂).subperm
 
     theorem filter' (p : α → Prop) {l₁ l₂ : List α} (s : l₁ ~ l₂) : l₁.filter' p ~ l₂.filter' p := by
       rw [←List.filter_map_eq_filter']; exact s.filterMap _
@@ -415,5 +481,62 @@ namespace M4R
         rw [List.countp_eq_length_filter', List.countp_eq_length_filter'];
         exact (s.filter' _).length_eq
 
+    section bag_inter
+
+      theorem bag_inter_right {l₁ l₂ : List α} (t : List α) (h : l₁ ~ l₂) :
+        l₁.bag_inter t ~ l₂.bag_inter t := by
+          induction h generalizing t with
+          | nil => exact Perm.refl _
+          | cons x p ih =>
+            byCases hx : x ∈ t
+            { rw [List.cons_bag_inter_of_pos _ hx, List.cons_bag_inter_of_pos _ hx]
+            exact (ih (t.erase x)).cons x }
+            { rw [List.cons_bag_inter_of_neg _ hx, List.cons_bag_inter_of_neg _ hx]
+            exact ih t }
+          | swap x y l =>
+            byCases hxy : x = y
+            { rw [hxy]; exact Perm.refl _ }
+            { byCases hx : x ∈ t;
+              { rw [List.cons_bag_inter_of_pos _ hx]
+                byCases hy : y ∈ t;
+                { rw [List.cons_bag_inter_of_pos _ hy,
+                    List.cons_bag_inter_of_pos _ ((List.mem_erase_of_ne hxy).mpr hx),
+                    List.cons_bag_inter_of_pos _ ((List.mem_erase_of_ne (Ne.symm hxy)).mpr hy),
+                    List.erase_comm];
+                  exact Perm.swap x y _ }
+                { rw [List.cons_bag_inter_of_neg _ hy,
+                    List.cons_bag_inter_of_pos _ hx,
+                    List.cons_bag_inter_of_neg _ (mt List.mem_of_mem_erase hy)]
+                  exact Perm.cons x (Perm.refl _) } }
+              { rw [List.cons_bag_inter_of_neg _ hx]
+                byCases hy : y ∈ t;
+                { rw [List.cons_bag_inter_of_pos _ hy,
+                    List.cons_bag_inter_of_pos _ hy,
+                    List.cons_bag_inter_of_neg _ (mt List.mem_of_mem_erase hx)]
+                  exact Perm.cons y (Perm.refl _) }
+                { rw [List.cons_bag_inter_of_neg _ hy,
+                    List.cons_bag_inter_of_neg _ hx,
+                    List.cons_bag_inter_of_neg _ hy]
+                  exact Perm.refl _ } } }
+          | trans p₁ p₂ ih₁ ih₂ => exact (ih₁ _).trans (ih₂ _)
+
+      theorem bag_inter_left (l : List α) {t₁ t₂ : List α} (p : t₁ ~ t₂) :
+        l.bag_inter t₁ = l.bag_inter t₂ := by
+          induction l generalizing t₁ t₂ p with
+          | nil => simp only [List.nil_bag_inter]
+          | cons a l ih =>
+            byCases h : a ∈ t₁
+            { rw [List.cons_bag_inter_of_pos _ h,
+              List.cons_bag_inter_of_pos _ ((p.mem_iff a).mp h)]
+              exact List.cons_ext.mpr ⟨rfl, ih (p.erase _)⟩ }
+            { rw [List.cons_bag_inter_of_neg _ h,
+              List.cons_bag_inter_of_neg _ (mt (p.mem_iff a).mpr h)]
+              exact ih p }
+
+      theorem bag_inter {l₁ l₂ t₁ t₂ : List α} (hl : l₁ ~ l₂) (ht : t₁ ~ t₂) :
+        l₁.bag_inter t₁ ~ l₂.bag_inter t₂ :=
+          ht.bag_inter_left l₂ ▸ hl.bag_inter_right _
+
+    end bag_inter
   end Perm
 end M4R

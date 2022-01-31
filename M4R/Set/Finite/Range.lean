@@ -88,7 +88,7 @@ namespace List
 
   theorem pairwise_lt_range' : ∀ s n : Nat, Pairwise (fun a b => a < b) (range' s n)
   | s, 0     => Pairwise.nil
-  | s, (n+1) => (chain_iff_pairwise (by exact fun a b c => Nat.lt_trans)).1 (chain_lt_range' s n)
+  | s, (n+1) => (chain_iff_pairwise (by exact fun a b c => Nat.lt_trans)).mp (chain_lt_range' s n)
 
   theorem nodup_range' (s n : Nat) : nodup (range' s n) :=
     (pairwise_lt_range' s n).imp fun _ _ => Nat.ne_of_lt

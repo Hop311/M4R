@@ -85,7 +85,7 @@ namespace M4R
 
     theorem map_of_pairwise {r : α → α → Prop} {s : β → β → Prop} (f : α → β)
       (H : ∀ a b : α, r a b → s (f a) (f b)) {l : List α}
-      (p : Pairwise r l) : Pairwise s (l.map f) := (map f).2 (p.imp H)
+      (p : Pairwise r l) : Pairwise s (l.map f) := (map f).mpr (p.imp H)
 
     theorem pairwise_of_sublist {r : α → α → Prop} {l₁ l₂ : List α} : l₁ <+ l₂ → Pairwise r l₂ → Pairwise r l₁
     | List.Sublist.nil, h => h

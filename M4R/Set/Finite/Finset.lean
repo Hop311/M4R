@@ -55,30 +55,71 @@ namespace M4R
     protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=
       ⟨s.elems.map f, s.elems.nodup_map hf s.nodup⟩
 
+    @[simp] theorem val_le_iff {s₁ s₂ : Finset α} : s₁.elems ≤ s₂.elems ↔ s₁ ⊆ s₂ :=
+      UnorderedList.le.le_iff_subset s₁.nodup
+
     noncomputable def union (s₁ s₂ : Finset α) : Finset α :=
       ⟨s₁.elems.ndunion s₂.elems, UnorderedList.nodup_ndunion s₁.elems s₂.nodup⟩
 
     noncomputable instance FinsetUnion : Union (Finset α) where union := union
 
+    @[simp] theorem union_val (s₁ s₂ : Finset α) : (s₁ ∪ s₂).elems = s₁.elems ∪ s₂.elems :=
+      UnorderedList.ndunion_eq_union s₁.nodup
+
     @[simp] theorem mem_union {a : α} {s₁ s₂ : Finset α} : a ∈ s₁ ∪ s₂ ↔ a ∈ s₁ ∨ a ∈ s₂ :=
       UnorderedList.mem_ndunion
+
+    theorem mem_union_left {a : α} {s₁ : Finset α} (s₂ : Finset α) (h : a ∈ s₁) : a ∈ s₁ ∪ s₂ :=
+      mem_union.mpr (Or.inl h)
+
+    theorem mem_union_right {a : α} {s₂ : Finset α} (s₁ : Finset α) (h : a ∈ s₂) : a ∈ s₁ ∪ s₂ :=
+      mem_union.mpr (Or.inr h)
+
+    theorem union_subset {s₁ s₂ s₃ : Finset α} (h₁ : s₁ ⊆ s₃) (h₂ : s₂ ⊆ s₃) : s₁ ∪ s₂ ⊆ s₃ :=
+      val_le_iff.mp (UnorderedList.ndunion_le.2 ⟨h₁, val_le_iff.mpr h₂⟩)
+
+    theorem subset_union_left (s₁ s₂ : Finset α) : s₁ ⊆ s₁ ∪ s₂ := fun x => mem_union_left _
+
+    theorem subset_union_right (s₁ s₂ : Finset α) : s₂ ⊆ s₁ ∪ s₂ := fun x => mem_union_right _
+
+    theorem union_subset_union {s₁ t₁ s₂ t₂ : Finset α} (h₁ : s₁ ⊆ t₁) (h₂ : s₂ ⊆ t₂) :
+        s₁ ∪ s₂ ⊆ t₁ ∪ t₂ := by
+          intro x hx; rw [mem_union] at hx ⊢
+          exact Or.elim hx (fun h => Or.inl (h₁ h)) (fun h => Or.inr (h₂ h))
+
+    theorem union_comm (s₁ s₂ : Finset α) : s₁ ∪ s₂ = s₂ ∪ s₁ := by
+      apply Finset.ext; intro _; simp only [mem_union, Or.comm']; exact Iff.rfl
+
+    theorem union_assoc (s₁ s₂ s₃ : Finset α) : (s₁ ∪ s₂) ∪ s₃ = s₁ ∪ (s₂ ∪ s₃) := by
+      apply Finset.ext; intro _; simp only [mem_union, Or.assoc]; exact Iff.rfl
 
     noncomputable def intersection (s₁ s₂ : Finset α) : Finset α :=
       ⟨s₁.elems.ndinter s₂.elems, UnorderedList.nodup_ndinter s₂.elems s₁.nodup⟩
 
     noncomputable instance FinsetIntersection : Intersection (Finset α) where intersection := intersection
 
+    @[simp] theorem inter_val (s₁ s₂ : Finset α) : (s₁ ∩ s₂).elems = s₁.elems ∩ s₂.elems :=
+      UnorderedList.ndinter_eq_inter s₁.nodup
+
     @[simp] theorem mem_inter {a : α} {s₁ s₂ : Finset α} : a ∈ s₁ ∩ s₂ ↔ a ∈ s₁ ∧ a ∈ s₂ :=
       UnorderedList.mem_ndinter
-  
+
+    theorem inter_comm (s₁ s₂ : Finset α) : s₁ ∩ s₂ = s₂ ∩ s₁ := by
+      apply Finset.ext; intro _; simp only [mem_inter, And.comm']; exact Iff.rfl
+
+    theorem inter_assoc (s₁ s₂ s₃ : Finset α) : (s₁ ∩ s₂) ∩ s₃ = s₁ ∩ (s₂ ∩ s₃) := by
+      apply Finset.ext; intro _; simp only [mem_inter, And.assoc]; exact Iff.rfl
+
+    def disjoint (s₁ s₂ : Finset α) : Prop := s₁ ∩ s₂ = ∅
+
     noncomputable def filter (p : α → Prop) (s : Finset α) : Finset α := ⟨UnorderedList.filter p s.elems, 
-      UnorderedList.nodup_filter p s.2⟩
+      UnorderedList.nodup_filter p s.nodup⟩
 
     @[simp] theorem filter_val (p : α → Prop) (s : Finset α) : (s.filter p).elems = s.elems.filter p := rfl
 
     @[simp] theorem mem_filter {s : Finset α} {a : α} : a ∈ s.filter p ↔ a ∈ s ∧ p a := UnorderedList.mem_filter
 
-    noncomputable instance : SetMinus (Finset α) :=
+    noncomputable instance sdiff_SetMinus : SetMinus (Finset α) :=
       ⟨fun s₁ s₂ => ⟨s₁.elems - s₂.elems, @UnorderedList.le.nodup_of_le α (s₁.elems - s₂.elems) s₁.elems
         (UnorderedList.le.sub_le_self _ _) s₁.nodup⟩⟩
 
@@ -86,6 +127,18 @@ namespace M4R
 
     @[simp] theorem mem_sdiff {s t : Finset α} {a : α}: a ∈ s ∖ t ↔ a ∈ s ∧ a ∉ t :=
       UnorderedList.sub.mem_sub_of_nodup s.nodup
+
+    theorem union_sdiff_of_subset {s₁ s₂ : Finset α} (h : s₁ ⊆ s₂) : s₁ ∪ (s₂ ∖ s₁) = s₂ := by
+      apply Finset.ext; intro x;
+      simp only [Finset.mem_union, Finset.mem_sdiff];
+      exact ⟨fun h' => Or.elim h' (h ·) And.left,
+        fun h' => Or.elim (Classical.em (x ∈ s₁)) Or.inl (Or.inr ⟨h', ·⟩)⟩
+
+    theorem sdiff_union_of_subset {s₁ s₂ : Finset α} (h : s₁ ⊆ s₂) : (s₂ ∖ s₁) ∪ s₁ = s₂ :=
+      (union_comm _ _).trans (union_sdiff_of_subset h)
+
+    theorem inter_sdiff (s t u : Finset α) : s ∩ (t ∖ u) = (s ∩ t) ∖ u := by
+      apply Finset.ext; intro x; simp only [mem_inter, mem_sdiff, And.assoc]; exact Iff.rfl
 
     @[simp] theorem inter_sdiff_self (s₁ s₂ : Finset α) : s₁ ∩ (s₂ ∖ s₁) = ∅ :=
       eq_empty_of_forall_not_mem (by simp only [mem_inter, mem_sdiff]; exact fun x ⟨h, _, hn⟩ => absurd h hn)

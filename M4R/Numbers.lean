@@ -30,6 +30,10 @@ namespace Nat
     have : b + a < b + c := by rw [Nat.add_comm b a, Nat.add_comm b c]; exact h
     Nat.lt_of_add_lt_add_left this
 
+  theorem succ_ne_self : ∀ n : Nat, succ n ≠ n
+  | 0  , h => absurd h (Nat.succ_ne_zero 0)
+  | n+1, h => succ_ne_self n (Nat.succ.inj h)
+
   @[simp] theorem zero_sub : ∀ a : Nat, 0 - a = 0
   | 0     => rfl
   | (a+1) => congrArg pred (zero_sub a)
@@ -153,6 +157,12 @@ namespace Nat
 
   @[simp] theorem not_lt {a b : Nat} : ¬ a < b ↔ b ≤ a :=
     ⟨le_of_not_gt, not_lt_of_ge⟩
+
+  theorem not_lt_of_gt {a b : Nat} : a > b → ¬ a ≤ b :=
+    fun h₁ h₂ => absurd h₁ (not_lt_of_ge h₂)
+
+  @[simp] theorem not_le {a b : Nat} : ¬ a ≤ b ↔ b < a :=
+    ⟨gt_of_not_le, not_lt_of_gt⟩
 
 end Nat
 

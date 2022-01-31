@@ -1,41 +1,29 @@
 import M4R.Set.Finite.Finset
 
-namespace List
-
-  @[simp] theorem foldl_cons (f : α → β → α) (a : α) (b : β) (l : List β) :
-    foldl f a (b::l) = foldl f (f a b) l := rfl
-
-  @[simp] theorem foldl_append (f : α → β → α) (a : α) (l₁ l₂ : List β) :
-    foldl f a (l₁++l₂) = foldl f (foldl f a l₁) l₂ :=
-      match l₁ with
-      | []      => rfl
-      | b::l₁ => by simp only [cons_append, foldl_cons, foldl_append f (f a b) l₁ l₂]
-
-  @[simp] theorem foldl_empty (f : α → β → α) (a : α) :
-    foldl f a [] = a := rfl
-
-  @[simp] theorem foldl_singleton (f : α → β → α) (a : α) (b : β) :
-    foldl f a [b] = f a b := rfl
-
-end List
-
 namespace M4R
 
+  variable (f : α → β → α) (hrcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
+
+  variable (op : α → α → α) (hcomm : ∀ a₁ a₂, op a₁ a₂ = op a₂ a₁) (hassoc : ∀ a₁ a₂ a₃, op (op a₁ a₂) a₃ = op a₁ (op a₂ a₃))
+  local infix:55 " ⋆ " => op
+
+  theorem hrcomm_of_comm_assoc {op : α → α → α} (hcomm : ∀ a₁ a₂, op a₁ a₂ = op a₂ a₁)
+    (hassoc : ∀ a₁ a₂ a₃, op (op a₁ a₂) a₃ = op a₁ (op a₂ a₃)) :
+      ∀ (a b c : α), op (op a c) b = op (op a b) c := fun a b c => by rw [hassoc, hcomm c, ←hassoc]
+
   namespace UnorderedList
-    def fold (f : α → β → α) (hrcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
-      (init : α) (s : UnorderedList β) : α :=
-        Quot.liftOn s (List.foldl f init) fun _ _ p => by
-          induction p generalizing init with
-          | nil => rfl
-          | cons x _ h => exact h (f init x)
-          | swap x y _ => simp only [List.foldl]; rw [hrcomm init x y]
-          | trans _ _ h₁₂ h₂₃ => exact Eq.trans (h₁₂ init) (h₂₃ init)
+
+    def fold (init : α) (s : UnorderedList β) : α :=
+      Quot.liftOn s (List.foldl f init) fun _ _ p => by
+        induction p generalizing init with
+        | nil => rfl
+        | cons x _ h => exact h (f init x)
+        | swap x y _ => simp only [List.foldl]; rw [hrcomm init x y]
+        | trans _ _ h₁₂ h₂₃ => exact Eq.trans (h₁₂ init) (h₂₃ init)
 
     namespace fold
-
-      variable (f : α → β → α) (hrcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
       
-      @[simp] theorem empty (init : α) : fold f hrcomm init ∅ = init := rfl
+      @[simp] theorem empty (init : α) : fold f hrcomm init 0 = init := rfl
 
       @[simp] theorem singleton (init : α) (b : β) : fold f hrcomm init (UnorderedList.singleton b) = f init b := rfl
 
@@ -54,20 +42,33 @@ namespace M4R
         fold f hrcomm init (s.cons x) = f (fold f hrcomm init s) x := by
           rw [cons, ←singleton f hrcomm _ x, ←singleton f hrcomm _ x, ←append, ←append, append.comm]
 
+      theorem fold_add (a₁ a₂ : α) (s₁ s₂ : UnorderedList α) :
+          (s₁ + s₂).fold op (hrcomm_of_comm_assoc hcomm hassoc) (op a₁ a₂) =
+            (s₁.fold op (hrcomm_of_comm_assoc hcomm hassoc) a₁) ⋆
+              (s₂.fold op (hrcomm_of_comm_assoc hcomm hassoc) a₂) :=
+                @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+                  (s₁ + l).fold op (hrcomm_of_comm_assoc hcomm hassoc) (a₁ ⋆ a₂) =
+                    (s₁.fold op (hrcomm_of_comm_assoc hcomm hassoc) a₁) ⋆
+                    (l.fold op (hrcomm_of_comm_assoc hcomm hassoc) a₂))
+                  s₂ (fun l => by
+                    induction l with
+                    | nil => simp; rw [←cons, cons']
+                    | cons x l ih => simp at ih ⊢; rw [append.cons_over_right, cons', ih, cons', hassoc])
+  
     end fold
-
-    theorem hrcomm_of_comm_assoc {op : α → α → α} (hcomm : ∀ a₁ a₂, op a₁ a₂ = op a₂ a₁) (hassoc : ∀ a₁ a₂ a₃, op (op a₁ a₂) a₃ = op a₁ (op a₂ a₃)) :
-      ∀ (a b c : α), op (op a c) b = op (op a b) c := fun a b c => by rw [hassoc, hcomm c, ←hassoc]
 
     def map_fold (op : α → α → α) (hcomm : ∀ a₁ a₂, op a₁ a₂ = op a₂ a₁) (hassoc : ∀ a₁ a₂ a₃, op (op a₁ a₂) a₃ = op a₁ (op a₂ a₃))
       (init : α) (f : β → α) (s : UnorderedList β) : α :=
         (s.map f).fold op (hrcomm_of_comm_assoc hcomm hassoc) init
 
     namespace map_fold
-      variable (op : α → α → α) (hcomm : ∀ a₁ a₂, op a₁ a₂ = op a₂ a₁) (hassoc : ∀ a₁ a₂ a₃, op (op a₁ a₂) a₃ = op a₁ (op a₂ a₃))
-      local infix:55 " ⋆ " => op
 
       @[simp] theorem empty (init : α) (f : β → α) : map_fold op hcomm hassoc init f 0 = init := rfl
+
+      theorem congr_map (init : α) {s : UnorderedList β} {f g : β → α} (H : ∀ x ∈ s, f x = g x) :
+        s.map_fold op hcomm hassoc init f = s.map_fold op hcomm hassoc init g := by
+          simp only [map_fold]
+          rw [map.congr rfl H]
 
       theorem cons (init : α) (f : β → α) (s : UnorderedList β) (b : β):
         (s.cons b).map_fold op hcomm hassoc init f = (s.map_fold op hcomm hassoc init f) ⋆ (f b) := by
@@ -91,16 +92,36 @@ namespace M4R
   end UnorderedList
   namespace Finset
 
-    def fold (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
-      (init : α) (s : Finset β) : α := UnorderedList.fold f hcomm init s.elems
+    def fold (init : α) (s : Finset β) : α := UnorderedList.fold f hrcomm init s.elems
 
     namespace fold
-      variable (f : α → β → α) (hcomm : ∀ (a : α) (b₁ b₂ : β), f (f a b₂) b₁ = f (f a b₁) b₂)
       
-      @[simp] theorem empty (init : α) : Finset.fold f hcomm init ∅ = init := rfl
+      @[simp] theorem empty (init : α) : Finset.fold f hrcomm init ∅ = init := rfl
 
-      @[simp] theorem singleton (init : α) (b : β) : fold f hcomm init (Finset.singleton b) = f init b := rfl
+      @[simp] theorem singleton (init : α) (b : β) : fold f hrcomm init (Finset.singleton b) = f init b := rfl
 
     end fold
+
+    def map_fold (op : α → α → α) (hcomm : ∀ a₁ a₂, op a₁ a₂ = op a₂ a₁) (hassoc : ∀ a₁ a₂ a₃, op (op a₁ a₂) a₃ = op a₁ (op a₂ a₃))
+      (init : α) (f : β → α) (s : Finset β) : α :=
+        UnorderedList.map_fold op hcomm hassoc init f s.elems
+
+    namespace map_fold
+
+      @[simp] theorem empty (init : α) (f : β → α) : map_fold op hcomm hassoc init f ∅ = init := rfl
+
+      theorem congr_map (init : α) {s : Finset β} {f g : β → α} (H : ∀ x ∈ s, f x = g x) :
+        s.map_fold op hcomm hassoc init f = s.map_fold op hcomm hassoc init g :=
+          UnorderedList.map_fold.congr_map op hcomm hassoc init H
+
+      theorem union_inter (f : β → α) {s₁ s₂ : Finset β} {a₁ a₂ : α} :
+        (s₁ ∪ s₂).map_fold op hcomm hassoc a₁ f ⋆ (s₁ ∩ s₂).map_fold op hcomm hassoc a₂ f =
+          s₁.map_fold op hcomm hassoc a₂ f ⋆ s₂.map_fold op hcomm hassoc a₁ f := by
+            simp only [map_fold, UnorderedList.map_fold]
+            rw [←UnorderedList.fold.fold_add op hcomm hassoc, ←UnorderedList.map.add,
+              Finset.union_val, Finset.inter_val, UnorderedList.union_add_inter,
+              UnorderedList.map.add, hcomm, UnorderedList.fold.fold_add op hcomm hassoc]
+
+    end map_fold
   end Finset
 end M4R

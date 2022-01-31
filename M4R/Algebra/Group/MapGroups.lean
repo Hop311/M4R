@@ -34,6 +34,14 @@ namespace M4R
 
     instance FinsuppFun [Zero β] : CoeFun (α →₀ β) (fun (x : α →₀ β) => α → β) where coe := to_fun
 
+    @[simp] theorem mem_support_iff [Zero β] {f : α →₀ β} {a : α} : a ∈ f.support ↔ f a ≠ 0 :=
+      f.mem_support_to_fun a
+
+    theorem not_mem_support_iff [Zero β] {f : α →₀ β} {a : α} : a ∉ f.support ↔ f a = 0 := by
+      apply not_iff_not.mp
+      simp only [iff_not_not]
+      exact mem_support_iff
+
     protected theorem ext [Zero β] {x y : α →₀ β} : x.to_fun = y.to_fun → x = y :=
       match x, y with | ⟨xs, _, xc⟩, ⟨ys, _, yc⟩ => fun hf => by
         simp at hf
@@ -46,8 +54,8 @@ namespace M4R
         byCases hx : a ∈ x.support;
         exact h.right a hx
         have hy : a ∉ y.support := by rw [h.left] at hx; exact hx
-        rw [of_not_not (mt (x.mem_support_to_fun a).mpr hx),
-          of_not_not (mt (y.mem_support_to_fun a).mpr hy)]⟩
+        rw [of_not_not (mt mem_support_iff.mpr hx),
+          of_not_not (mt mem_support_iff.mpr hy)]⟩
 
     protected theorem ext_iff [Zero β] (x y : α →₀ β) : x = y ↔ x.to_fun = y.to_fun :=
       ⟨fun h => by rw [h], Finsupp.ext⟩
@@ -62,7 +70,7 @@ namespace M4R
     theorem empty_support [Zero β] {f : α →₀ β} (h : f.support = ∅) : f = 0 :=
       Finsupp.ext (funext fun x => by
         have : x ∉ f.support := fun h' => by rw [h] at h'; contradiction
-        rw [of_not_not (mt (f.mem_support_to_fun x).mpr this)]; rfl)
+        rw [of_not_not (mt mem_support_iff.mpr this)]; rfl)
 
     theorem zero_fun [Zero β] {f : α →₀ β} (h : ∀ a, f a = 0) : f = 0 :=
       Finsupp.ext (funext fun x => by rw [h x]; rfl)
@@ -90,8 +98,8 @@ namespace M4R
           Classical.byContradiction fun h' =>
             have h' := not_or_iff_and_not.mp h'
             af (h a
-              (of_not_not (mt (x.mem_support_to_fun a).mpr h'.left))
-              (of_not_not (mt (y.mem_support_to_fun a).mpr h'.right)))
+              (of_not_not (mt mem_support_iff.mpr h'.left))
+              (of_not_not (mt mem_support_iff.mpr h'.right)))
 
     noncomputable def support_of_fun [Zero β] (x y : α →₀ β) (f : α → β) (h : ∀ a, x a = 0 → y a = 0 → f a = 0) : Finset α :=
       (support_of_fun_finite x y f h).to_finset
@@ -123,13 +131,12 @@ namespace M4R
         support := x.support
         to_fun := (- x ·)
         mem_support_to_fun := fun a =>
-          have h₁ := x.mem_support_to_fun a
-          have h₂ : x a ≠ 0 ↔ - x a ≠ 0 := by
+          have : x a ≠ 0 ↔ - x a ≠ 0 := by
             simp only [not_iff_not]
             exact ⟨fun h' => by rw [h', Group.neg_zero], fun h' => by
               rw [←Group.neg_zero] at h'
               exact Group.neg_inj h'⟩
-          h₁.trans h₂
+          mem_support_iff.trans this
       }
 
     noncomputable instance toGroup [Group β] : Group (α →₀ β) where
@@ -138,16 +145,50 @@ namespace M4R
     noncomputable instance toAbelianGroup [AbelianGroup β] : AbelianGroup (α →₀ β) where
       add_comm := toCommMonoid.add_comm
 
+    theorem add_apply [Monoid β] (f₁ f₂ : α →₀ β) (a : α) : (f₁ + f₂) a = f₁ a + f₂ a := rfl
+
+    theorem support_add [Monoid β] {f₁ f₂ : α →₀ β} :
+      (f₁ + f₂).support ⊆ f₁.support ∪ f₂.support := by
+        intro x hx;
+        apply Classical.byContradiction; intro h;
+        simp only [Finset.mem_union, not_or_iff_and_not] at h
+        have : (f₁ + f₂) x = f₁ x + f₂ x := rfl
+        rw [not_mem_support_iff.mp h.left, not_mem_support_iff.mp h.right, Monoid.add_zero] at this
+        exact absurd this (mem_support_iff.mp hx)
+
     protected def sum [Zero β] [CommMonoid γ] (f : α →₀ β) (g : α → β → γ) : γ :=
       ∑ a in f.support, g a (f a)
 
     namespace sum
-      @[simp] protected theorem zero [Zero β] [CommMonoid γ] (f : α → β → γ) : Finsupp.sum 0 f = 0 :=
+      @[simp] protected theorem zero_sum [Zero β] [CommMonoid γ] (f : α → β → γ) : Finsupp.sum 0 f = 0 :=
         UnorderedList.map_sum.eq_zero fun _ _ => by contradiction
+
+      @[simp] protected theorem sum_zero [Zero β] [CommMonoid γ] (f : α →₀ β) : Finsupp.sum f (fun _ _ => (0 : γ)) = 0 :=
+        UnorderedList.map_sum.eq_zero fun _ _ => rfl
 
       @[simp] protected theorem single [DecidableEq α] [DecidableEq β] [Zero β] [CommMonoid γ]
         (a : α) (b : β) (f : α → β → γ) (hb : b ≠ 0) : (single a b).sum f = f a b := by
           simp [Finsupp.sum, Finset.map_sum, single, hb, Finset.singleton]
+
+      theorem support_subset [Zero β] [CommMonoid γ] (f : α →₀ β) {s : Finset α}
+        (hs : f.support ⊆ s) (g : α → β → γ) (h : ∀ i ∈ s, g i 0 = 0) :
+          f.sum g = ∑ x in s, g x (f x) :=
+            Finset.map_sum.subset hs (fun x hxs hx => by
+              rw [of_not_not (mt mem_support_iff.mpr hx)]
+              exact h x hxs)
+
+      protected theorem add [Monoid β] [CommMonoid γ] (x y : α →₀ β) (f : α → β → γ)
+        (h₁ : ∀ a, f a ((x + y) a) = f a (x a) + f a (y a)) (h₂ : ∀ a, f a 0 = 0) :
+          (x + y).sum f = x.sum f + y.sum f := by
+            have hx : x.sum f = ∑ a in x.support ∪ y.support, f a (x a) :=
+              support_subset x (Finset.subset_union_left _ _) f (fun a ha => h₂ a)
+            have hy : y.sum f = ∑ a in x.support ∪ y.support, f a (y a) :=
+              support_subset y (Finset.subset_union_right _ _) f (fun a ha => h₂ a)
+            have hxy : (x + y).sum f = ∑ a in x.support ∪ y.support, f a ((x + y) a) :=
+              support_subset (x + y) support_add f (fun a ha => h₂ a)
+            have := Finset.map_sum.distrib (fun a => f a (x a)) (fun a => f a (y a)) (x.support ∪ y.support)
+            rw [hx, hy, hxy, ←this]
+            exact Finset.map_sum.congr rfl fun a _ => h₁ a
 
     end sum
   end Finsupp

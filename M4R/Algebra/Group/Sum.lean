@@ -10,6 +10,8 @@ namespace M4R
 
   namespace UnorderedList.fold_add
 
+    @[simp] theorem empty [CommMonoid α] (init : α) : UnorderedList.fold_add init ∅ = init := rfl
+
     theorem cons [CommMonoid α] (init a : α) (s : UnorderedList α) : (s.cons a).fold_add init = s.fold_add init + a :=
       UnorderedList.fold.cons' _ _ init a s
 
@@ -33,11 +35,17 @@ namespace M4R
 
   namespace UnorderedList.map_fold_add
 
+    @[simp] theorem empty [CommMonoid α] (init : α) (f : β → α) : UnorderedList.map_fold_add init f ∅ = init := rfl
+
     theorem distrib [CommMonoid α] (init : α) (f g : β → α) (s : UnorderedList β) :
       init + s.map_fold_add init (fun b => f b + g b) =
         (s.map_fold_add init f) + (s.map_fold_add init g) := by
           simp only [map_fold_add, map_fold.distrib]
-  
+
+    theorem congr_map [CommMonoid α] (init : α) {s : UnorderedList β} {f g : β → α} (H : ∀ x ∈ s, f x = g x) :
+      s.map_fold_add init f = s.map_fold_add init g :=
+        map_fold.congr_map (· + ·) CommMonoid.add_comm Monoid.add_assoc init H
+
   end UnorderedList.map_fold_add
 
   def UnorderedList.sum [CommMonoid α] (s : UnorderedList α) : α := 
@@ -47,6 +55,8 @@ namespace M4R
     s.map_fold_add 0 f
 
   namespace UnorderedList.sum
+
+    @[simp] theorem empty [CommMonoid α] : (∑ (∅ : UnorderedList α)) = 0 := rfl
 
     theorem cons [CommMonoid α] (a : α) (s : UnorderedList α) : (∑ s.cons a) = (∑ s) + a :=
       fold_add.cons 0 a s
@@ -75,6 +85,12 @@ namespace M4R
   end UnorderedList.sum
   namespace UnorderedList.map_sum
 
+    @[simp] theorem empty [CommMonoid β] (f : α → β) : (∑ f in (∅ : UnorderedList α)) = 0 := rfl
+
+    theorem congr [CommMonoid β] {f g : α → β} {s₁ s₂ : UnorderedList α} (h : s₁ = s₂) :
+      (∀ x ∈ s₂, f x = g x) → (∑ f in s₁) = ∑ g in s₂ := by
+        rw [h]; exact UnorderedList.map_fold_add.congr_map 0
+
     @[simp] theorem singleton [CommMonoid β] (f : α → β) (a : α) : (∑ f in UnorderedList.singleton a) = f a := by
       simp only [map_sum, map_fold_add, map_fold, map.singleton f a, fold.singleton, zero_add]
 
@@ -96,7 +112,9 @@ namespace M4R
   def Finset.map_sum [CommMonoid β] (s : Finset α) (f : α → β) : β := s.elems.map_sum f
   
   namespace Finset.sum
-  
+
+    @[simp] theorem empty [CommMonoid α] : (∑ (∅ : Finset α)) = 0 := rfl
+
     theorem eq_zero [CommMonoid α] {s : Finset α} (h : ∀ x ∈ s, x = 0) : (∑ s) = 0 :=
       UnorderedList.sum.eq_zero h
 
@@ -104,9 +122,40 @@ namespace M4R
 
   namespace Finset.map_sum
 
+    @[simp] theorem empty [CommMonoid β] (f : α → β) : (∑ f in (∅ : Finset α)) = 0 := rfl
+
     theorem eq_zero [CommMonoid β] {f : α → β} {s : Finset α} (h : ∀ x ∈ s, f x = 0) :
       (∑ x in s, f x) = 0 :=
         UnorderedList.map_sum.eq_zero h
+
+    theorem distrib [CommMonoid β] (f g : α → β) (s : Finset α) :
+      (∑ x in s, f x + g x) = (∑ f in s) + ∑ g in s := by
+        exact UnorderedList.map_sum.distrib f g s
+
+    theorem congr [CommMonoid β] {f g : α → β} {s₁ s₂ : Finset α} (h : s₁ = s₂) :
+      (∀ x ∈ s₂, f x = g x) → (∑ f in s₁) = ∑ g in s₂ :=
+        UnorderedList.map_sum.congr (val_inj.mpr h)
+
+    theorem union_inter [CommMonoid β] {f : α → β} {s₁ s₂ : Finset α} :
+      (∑ f in (s₁ ∪ s₂)) + (∑ f in (s₁ ∩ s₂)) = (∑ f in s₁) + (∑ f in s₂) :=
+        Finset.map_fold.union_inter (· + ·) CommMonoid.add_comm Monoid.add_assoc f
+
+    theorem union [CommMonoid β] {f : α → β} {s₁ s₂ : Finset α} (h : disjoint s₁ s₂) :
+      (∑ f in (s₁ ∪ s₂)) = (∑ f in s₁) + (∑ f in s₂) := by
+        rw [←union_inter, h, empty, add_zero]
+
+    theorem sdiff [CommMonoid β] {s₁ s₂ : Finset α} (h : s₁ ⊆ s₂) {f : α → β} :
+      (∑ f in (s₂ ∖ s₁)) + (∑ f in s₁) = (∑ f in s₂) := by
+        rw [←union (((s₂ ∖ s₁).inter_comm s₁).trans (s₁.inter_sdiff_self s₂)), sdiff_union_of_subset h]
+
+    theorem subset_zero_on_sdiff [CommMonoid β] {s₁ s₂ : Finset α} (h : s₁ ⊆ s₂) {f g : α → β}
+      (hg : ∀ x ∈ (s₂ ∖ s₁), g x = 0) (hfg : ∀ x ∈ s₁, f x = g x) : (∑ f in s₁) = ∑ g in s₂ := by
+        rw [←sdiff h, eq_zero hg, zero_add]
+        exact congr rfl hfg
+
+    theorem subset [CommMonoid β] {s₁ s₂ : Finset α} (h : s₁ ⊆ s₂) {f : α → β} (hf : ∀ x ∈ s₂, x ∉ s₁ → f x = 0) :
+      (∑ x in s₁, f x) = ∑ x in s₂, f x :=
+        subset_zero_on_sdiff h (by simp only [mem_sdiff, and_imp]; exact hf) (fun _ _ => rfl)
 
   end Finset.map_sum
 end M4R
