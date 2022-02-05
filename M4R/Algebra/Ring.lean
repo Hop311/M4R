@@ -11,6 +11,7 @@ import M4R.Algebra.Ring.Ideal
 import M4R.Algebra.Ring.Quotient
 import M4R.Algebra.Ring.MaxPrimeIdeal
 import M4R.Algebra.Ring.Domain
+import M4R.Algebra.Ring.MapRings
 import M4R.Algebra.Ring.Polynomial
 
 import M4R.Algebra.Ring.IdealZorn

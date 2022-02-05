@@ -112,6 +112,22 @@ namespace M4R
   theorem iff_of_false (ha : ¬a) (hb : ¬b) : a ↔ b :=
     ⟨fun h => absurd h ha, fun h => absurd h hb⟩
 
+  theorem eq_self_iff_true (a : α) : a = a ↔ True :=
+    ⟨fun _ => trivial, fun _ => rfl⟩
+
+  theorem forall_true_iff : α → True ↔ True :=
+    ⟨fun _ => trivial, fun _ _ => trivial⟩
+
+  theorem forall_true_iff' {p : α → Prop} (h : ∀ a, p a ↔ True) : (∀ a, p a) ↔ True :=
+    ⟨fun _ => trivial, fun t a => (h a).mpr t⟩
+
+  @[simp] theorem forall_2_true_iff {β : α → Sort _} : (∀ a, β a → True) ↔ True :=
+    forall_true_iff' fun _ => forall_true_iff
+
+  @[simp] theorem forall_3_true_iff {β : α → Sort _} {γ : ∀ a, β a → Sort _} :
+    (∀ (a : α) (b : β a), γ a b → True) ↔ True :=
+      forall_true_iff' fun _ => forall_2_true_iff
+
 end M4R
 
 @[simp] theorem Quotient.eq [r : Setoid α] {x y : α} : Quotient.mk x = Quotient.mk y ↔ x ≈ y :=

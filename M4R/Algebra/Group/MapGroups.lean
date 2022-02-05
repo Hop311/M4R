@@ -75,21 +75,6 @@ namespace M4R
     theorem zero_fun [Zero β] {f : α →₀ β} (h : ∀ a, f a = 0) : f = 0 :=
       Finsupp.ext (funext fun x => by rw [h x]; rfl)
 
-    def single [DecidableEq α] [DecidableEq β] [Zero β] (a : α) (b : β) : α →₀ β :=
-      if hb : b = 0 then 0 else
-      {
-        support := Finset.singleton a
-        to_fun := fun a' => if a' = a then b else 0
-        mem_support_to_fun := fun a' =>
-          ⟨fun h => by
-            have := Finset.in_singleton h
-            simp only [this]; exact hb,
-          fun h => by
-            byCases ha : a' = a
-            rw [ha]; exact Finset.self_singleton a
-            simp only [ha] at h; contradiction⟩
-      }
-
     def support_set_of_fun [Zero β] (f : α → β) : Set α := {a | f a ≠ 0}
 
     theorem support_of_fun_finite [Zero β] (x y : α →₀ β) (f : α → β) (h : ∀ a, x a = 0 → y a = 0 → f a = 0) :
@@ -156,40 +141,103 @@ namespace M4R
         rw [not_mem_support_iff.mp h.left, not_mem_support_iff.mp h.right, Monoid.add_zero] at this
         exact absurd this (mem_support_iff.mp hx)
 
-    protected def sum [Zero β] [CommMonoid γ] (f : α →₀ β) (g : α → β → γ) : γ :=
+    open Classical
+
+    noncomputable def single [Zero β] (a : α) (b : β) : α →₀ β where
+      support := if b = 0 then ∅ else Finset.singleton a
+      to_fun := fun a' => if a' = a then b else 0
+      mem_support_to_fun := fun a' => by
+        byCases hb : b = 0;
+        exact ⟨fun h _ => by simp only [hb] at h; exact h,
+          fun h => by
+            simp only [hb] at h ⊢; apply h; byCases ha : a' = a;
+            repeat { simp only [ha]; rfl }⟩
+        exact ⟨fun h => by
+            simp only [hb] at h; have := Finset.in_singleton h
+            simp only [this]; exact hb,
+          fun h => by
+            byCases ha : a' = a;
+            { simp only [hb, ha]; exact Finset.self_singleton a }
+            { simp only [ha] at h; contradiction }⟩
+
+    namespace single
+
+      @[simp] protected theorem zero {α : Type _} (β : Type _) [Zero β] (a : α) : single a (0 : β) = 0 := by
+        apply Finsupp.ext; apply funext; intro x; simp only [single]; byCases hx : x = a;
+        repeat { simp only [hx]; rfl }
+
+      @[simp] theorem eq_same [Zero β] (a : α) (b : β): single a b a = b :=
+        if_pos rfl
+
+      @[simp] theorem eq_of_ne [Zero β] {a a' : α} (b : β) (h : a' ≠ a) : single a b a' = 0 :=
+        if_neg h
+
+      @[simp] protected theorem add [Monoid β] (a : α) (b₁ b₂ : β) :
+        single a (b₁ + b₂) = single a b₁ + single a b₂ := by
+        apply Finsupp.ext; apply funext; intro x;
+        byCases h : x = a;
+        { rw [h, add_apply, eq_same, eq_same, eq_same] }
+        { rw [add_apply, eq_of_ne (b₁ + b₂) h, eq_of_ne b₁ h, eq_of_ne b₂ h, Monoid.zero_add] }
+
+    end single
+
+    protected def map_sum [Zero β] [CommMonoid γ] (f : α →₀ β) (g : α → β → γ) : γ :=
       ∑ a in f.support, g a (f a)
 
-    namespace sum
-      @[simp] protected theorem zero_sum [Zero β] [CommMonoid γ] (f : α → β → γ) : Finsupp.sum 0 f = 0 :=
+    namespace map_sum
+
+      theorem support_sum [Zero β] [CommMonoid γ] (x : α →₀ β) (f : α → β → γ) : (∑ f in x) = ∑ a in x.support, f a (x a) := rfl
+
+      @[simp] protected theorem zero_sum [Zero β] [CommMonoid γ] (f : α → β → γ) : (∑ f in (0 : α →₀ β)) = 0 :=
         UnorderedList.map_sum.eq_zero fun _ _ => by contradiction
 
-      @[simp] protected theorem sum_zero [Zero β] [CommMonoid γ] (f : α →₀ β) : Finsupp.sum f (fun _ _ => (0 : γ)) = 0 :=
+      @[simp] protected theorem sum_zero [Zero β] [CommMonoid γ] (x : α →₀ β) : (∑ fun _ _ => (0 : γ) in x) = 0 :=
         UnorderedList.map_sum.eq_zero fun _ _ => rfl
 
-      @[simp] protected theorem single [DecidableEq α] [DecidableEq β] [Zero β] [CommMonoid γ]
-        (a : α) (b : β) (f : α → β → γ) (hb : b ≠ 0) : (single a b).sum f = f a b := by
-          simp [Finsupp.sum, Finset.map_sum, single, hb, Finset.singleton]
+      @[simp] protected theorem map_eq_zero [Zero β] [CommMonoid γ] {x : α →₀ β} {f : α → β → γ}
+        (h : ∀ a ∈ x.support, f a (x a) = 0) : (∑ f in x) = 0 :=
+          UnorderedList.map_sum.eq_zero h
+
+      @[simp] protected theorem congr [Zero β] [CommMonoid γ] {x : α →₀ β} {f g : α → β → γ}
+        (h : ∀ a ∈ x.support, f a (x a) = g a (x a)) : (∑ f in x) = (∑ g in x) :=
+          UnorderedList.map_sum.congr rfl h
+
+
+      @[simp] protected theorem single [Zero β] [CommMonoid γ]
+        (a : α) (b : β) (f : α → β → γ) (h : f a 0 = 0) : (∑ f in single a b) = f a b := by
+          byCases hb : b = 0;
+          { simp [support_sum, single, hb, h] }
+          { simp [support_sum, Finset.map_sum, single, hb, Finset.singleton] }
 
       theorem support_subset [Zero β] [CommMonoid γ] (f : α →₀ β) {s : Finset α}
         (hs : f.support ⊆ s) (g : α → β → γ) (h : ∀ i ∈ s, g i 0 = 0) :
-          f.sum g = ∑ x in s, g x (f x) :=
+          (∑ g in f) = ∑ x in s, g x (f x) :=
             Finset.map_sum.subset hs (fun x hxs hx => by
               rw [of_not_not (mt mem_support_iff.mpr hx)]
               exact h x hxs)
 
-      protected theorem add [Monoid β] [CommMonoid γ] (x y : α →₀ β) (f : α → β → γ)
-        (h₁ : ∀ a, f a ((x + y) a) = f a (x a) + f a (y a)) (h₂ : ∀ a, f a 0 = 0) :
-          (x + y).sum f = x.sum f + y.sum f := by
-            have hx : x.sum f = ∑ a in x.support ∪ y.support, f a (x a) :=
-              support_subset x (Finset.subset_union_left _ _) f (fun a ha => h₂ a)
-            have hy : y.sum f = ∑ a in x.support ∪ y.support, f a (y a) :=
-              support_subset y (Finset.subset_union_right _ _) f (fun a ha => h₂ a)
-            have hxy : (x + y).sum f = ∑ a in x.support ∪ y.support, f a ((x + y) a) :=
-              support_subset (x + y) support_add f (fun a ha => h₂ a)
+      theorem sum_add [Zero β] [CommMonoid γ] {f : α →₀ β} {h₁ h₂ : α → β → γ} :
+        (∑ (fun a b => h₁ a b + h₂ a b) in f) = (∑ h₁ in f) + (∑ h₂ in f) :=
+          Finset.map_sum.distrib (fun a => h₁ a (f a)) (fun a => h₂ a (f a)) f.support
+
+      protected theorem add_sum [Monoid β] [CommMonoid γ] (x y : α →₀ β) (f : α → β → γ)
+        (h₁ : ∀ a, f a 0 = 0) (h₂ : ∀ a, f a ((x + y) a) = f a (x a) + f a (y a)) :
+          (∑ f in x + y) = (∑ f in x) + (∑ f in y) := by
+            have hx : (∑ f in x) = ∑ a in x.support ∪ y.support, f a (x a) :=
+              support_subset x (Finset.subset_union_left _ _) f (fun a ha => h₁ a)
+            have hy : (∑ f in y) = ∑ a in x.support ∪ y.support, f a (y a) :=
+              support_subset y (Finset.subset_union_right _ _) f (fun a ha => h₁ a)
+            have hxy : (∑ f in x + y) = ∑ a in x.support ∪ y.support, f a ((x + y) a) :=
+              support_subset (x + y) support_add f (fun a ha => h₁ a)
             have := Finset.map_sum.distrib (fun a => f a (x a)) (fun a => f a (y a)) (x.support ∪ y.support)
             rw [hx, hy, hxy, ←this]
-            exact Finset.map_sum.congr rfl fun a _ => h₁ a
+            exact Finset.map_sum.congr rfl fun a _ => h₂ a
 
-    end sum
+      protected theorem id [CommMonoid β] (x : α →₀ β) :
+        (∑ single in x) = x := by
+        apply Finsupp.ext; apply funext; intro y;
+        sorry
+
+    end map_sum
   end Finsupp
 end M4R
