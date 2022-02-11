@@ -233,6 +233,21 @@ namespace M4R
             rw [hx, hy, hxy, ←this]
             exact Finset.map_sum.congr rfl fun a _ => h₂ a
 
+      theorem sum_finset_sum_index [CommMonoid β] [CommMonoid γ] {s : Finset ι} {g : ι → α →₀ β}
+        {h : α → β → γ} (h_zero : ∀ a, h a 0 = 0) (h_add : ∀ a b₁ b₂, h a (b₁ + b₂) = h a b₁ + h a b₂) :
+          (∑ (∑ h in g ·) in s) = ∑ h in (∑ g in s) :=
+            Finset.induction_on (fun f => (∑ (∑ h in g ·) in f) = ∑ h in (∑ g in f)) s rfl
+              (fun a s has ih => by
+                simp only at ih ⊢
+                rw [Finset.map_sum.sum_insert _ has, ih, Finset.map_sum.sum_insert _ has,
+                  map_sum.add_sum (g a) (∑ g in s) h h_zero (h_add · _ _)])
+
+      theorem sum_sum {β : Type _} {β' : Type _} {γ : Type _} [CommMonoid β] [CommMonoid β'] [CommMonoid γ]
+        {f : α →₀ β} {g : α → β → α' →₀ β'} {h : α' → β' → γ}
+        (h_zero : ∀ a, h a 0 = 0) (h_add : ∀ a b₁ b₂, h a (b₁ + b₂) = h a b₁ + h a b₂) :
+          (∑ h in (∑ g in f)) = ∑ (fun a b => ∑ h in g a b) in f :=
+            (sum_finset_sum_index h_zero h_add).symm
+
       protected theorem id [CommMonoid β] (x : α →₀ β) :
         (∑ single in x) = x := by
         apply Finsupp.ext; apply funext; intro y;

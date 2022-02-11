@@ -33,6 +33,10 @@ namespace M4R
       Quot.liftOn s (fun l => List.to_UnorderedList (a::l)) (fun _ _ p => Quot.sound (p.cons a))
     @[simp] theorem cons_eq (a : α) (l : List α) : ↑(a::l) = (↑l : UnorderedList α).cons a := rfl
 
+    @[simp] theorem nodup_cons {a : α} {s : UnorderedList α} : nodup (s.cons a) ↔ a ∉ s ∧ nodup s :=
+      @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => nodup (l.cons a) ↔ a ∉ l ∧ nodup l) s
+        fun l => List.nodup_cons
+
     protected def Empty {α : Type _} : UnorderedList α := List.to_UnorderedList []
     instance EmptyUnorderedListEmptyCollection : EmptyCollection (UnorderedList α) where
       emptyCollection := UnorderedList.Empty
@@ -42,6 +46,17 @@ namespace M4R
     protected def singleton (a : α) : UnorderedList α := ↑[a]
     @[simp] theorem singleton_eq (a : α) : List.to_UnorderedList [a] = UnorderedList.singleton a := rfl
     theorem singleton_eq_cons (a : α) : UnorderedList.singleton a = UnorderedList.cons a 0 := rfl
+
+    protected theorem induction {p : UnorderedList α → Prop} (h₁ : p 0)
+      (h₂ : ∀ ⦃a : α⦄ {s : UnorderedList α}, p s → p (s.cons a)) (s : UnorderedList α) : p s :=
+        @Quotient.inductionOn (List α) (Perm.PermSetoid α) p s
+          (fun l => by induction l with
+          | nil => exact h₁
+          | cons _ _ ih => exact h₂ ih)
+
+    protected theorem induction_on {p : UnorderedList α → Prop} (s : UnorderedList α)
+      (h₁ : p 0) (h₂ : ∀ ⦃a : α⦄ {s : UnorderedList α}, p s → p (s.cons a)) : p s :=
+        UnorderedList.induction h₁ h₂ s
 
     @[simp] theorem mem_cons {a b : α} {s : UnorderedList α} : a ∈ s.cons b ↔ a = b ∨ a ∈ s :=
       @Quotient.ind (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => a ∈ l.cons b ↔ a = b ∨ a ∈ l)
@@ -246,6 +261,11 @@ namespace M4R
 
       theorem mem_ndinsert_of_mem {a b : α} {s : UnorderedList α} (h : a ∈ s) : a ∈ ndinsert b s :=
         mem_ndinsert.mpr (Or.inr h)
+
+      theorem nodup_ndinsert (a : α) {s : UnorderedList α} : nodup s → nodup (ndinsert a s) :=
+        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => nodup l → nodup (ndinsert a l))
+          s fun l => List.nodup_insert
+
     end ndinsert
 
     section ndunion

@@ -96,9 +96,13 @@ namespace M4R
 
     namespace fold
       
-      @[simp] theorem empty (init : α) : Finset.fold f hrcomm init ∅ = init := rfl
+      @[simp] theorem empty (init : α) : fold f hrcomm init ∅ = init := rfl
 
-      @[simp] theorem singleton (init : α) (b : β) : fold f hrcomm init (Finset.singleton b) = f init b := rfl
+      @[simp] theorem singleton (init : α) (b : β) : (Finset.singleton b).fold f hrcomm init = f init b := rfl
+
+      @[simp] theorem fold_insert (init : α) {a : β} {s : Finset β} (h : a ∉ s) :
+        (insert a s).fold f hrcomm init = f (s.fold f hrcomm init) a := by
+          simp only [fold]; rw [insert_val, UnorderedList.ndinsert_of_not_mem h, UnorderedList.fold.cons']
 
     end fold
 
@@ -110,9 +114,9 @@ namespace M4R
 
       @[simp] theorem empty (init : α) (f : β → α) : map_fold op hcomm hassoc init f ∅ = init := rfl
 
-      theorem congr_map (init : α) {s : Finset β} {f g : β → α} (H : ∀ x ∈ s, f x = g x) :
+      theorem congr_map (init : α) {s : Finset β} {f g : β → α} (h : ∀ x ∈ s, f x = g x) :
         s.map_fold op hcomm hassoc init f = s.map_fold op hcomm hassoc init g :=
-          UnorderedList.map_fold.congr_map op hcomm hassoc init H
+          UnorderedList.map_fold.congr_map op hcomm hassoc init h
 
       theorem union_inter (f : β → α) {s₁ s₂ : Finset β} {a₁ a₂ : α} :
         (s₁ ∪ s₂).map_fold op hcomm hassoc a₁ f ⋆ (s₁ ∩ s₂).map_fold op hcomm hassoc a₂ f =
@@ -121,6 +125,11 @@ namespace M4R
             rw [←UnorderedList.fold.fold_add op hcomm hassoc, ←UnorderedList.map.add,
               Finset.union_val, Finset.inter_val, UnorderedList.union_add_inter,
               UnorderedList.map.add, hcomm, UnorderedList.fold.fold_add op hcomm hassoc]
+
+      @[simp] theorem fold_insert (init : α) (f : β → α) {a : β} {s : Finset β} (h : a ∉ s) :
+        (insert a s).map_fold op hcomm hassoc init f = f a ⋆ s.map_fold op hcomm hassoc init f := by
+          simp only [map_fold, UnorderedList.map_fold]
+          rw [insert_val, UnorderedList.ndinsert_of_not_mem h, UnorderedList.map.cons, UnorderedList.fold.cons', hcomm]
 
     end map_fold
   end Finset

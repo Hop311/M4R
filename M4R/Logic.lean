@@ -15,6 +15,12 @@ theorem Or.comm : p ∨ q → q ∨ p := fun h => Or.elim h Or.inr Or.inl
 
 theorem Or.comm' : p ∨ q ↔ q ∨ p := ⟨Or.comm, Or.comm⟩
 
+theorem Or.left_comm (h : a ∨ (b ∨ c)) : b ∨ (a ∨ c) :=
+  Or.elim h (fun h => Or.inr (Or.inl h)) (Or.elim · Or.inl (fun h => Or.inr (Or.inr h)))
+
+theorem Or.left_comm' : a ∨ (b ∨ c) ↔ b ∨ (a ∨ c) :=
+  ⟨Or.left_comm, Or.left_comm⟩
+
 theorem And.assoc : (p ∧ q) ∧ r ↔ p ∧ (q ∧ r) :=
   ⟨fun ⟨⟨ha, hb⟩, hc⟩ => ⟨ha, ⟨hb, hc⟩⟩, fun ⟨ha, ⟨hb, hc⟩⟩ => ⟨⟨ha, hb⟩, hc⟩⟩
 

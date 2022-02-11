@@ -59,7 +59,26 @@ namespace M4R
             rw [map_sum.single 0 1 _ (by simp only [NCSemiring.zero_mul, single.zero, map_sum.sum_zero]),
               this, map_sum.id]
           mul_assoc         := fun x y z => by
-            sorry
+            simp only [mul_def];
+            have h₁ : ∀ a, (∑ fun a₂ b₂ => single (a + a₂) (0 * b₂) in z) = 0 := by
+              intros; simp only [NCSemiring.zero_mul, single.zero, map_sum.sum_zero]
+            have h₂ : ∀ (a : α) (b₁ b₂ : β),
+              (∑ fun a₂ b₂_1 => single (a + a₂) ((b₁ + b₂) * b₂_1) in z) =
+                (∑ fun a₂ b₂ => single (a + a₂) (b₁ * b₂) in z) + ∑ fun a₂ b₂_1 => single (a + a₂) (b₂ * b₂_1) in z := by
+                  intro a b b'; simp only; rw [←map_sum.sum_add]; apply map_sum.congr
+                  intros; rw [←single.add, NCSemiring.mul_distrib_right]
+            have h₃ : ∀ {a₁} a, single (a₁ + a) (to_fun x a₁ * 0) = 0 := by
+              intros; rw [NCSemiring.mul_zero, single.zero]
+            have h₄ : ∀ {a₁} (a) (b₁ b₂), single (a₁ + a) (to_fun x a₁ * (b₁ + b₂)) =
+                single (a₁ + a) (to_fun x a₁ * b₁) + single (a₁ + a) (to_fun x a₁ * b₂) := by
+                  intros; rw [←single.add, NCSemiring.mul_distrib_left]
+            rw [map_sum.sum_sum h₁ h₂]; apply map_sum.congr; intros
+            rw [map_sum.sum_sum h₁ h₂, map_sum.sum_sum h₃ h₄]; apply map_sum.congr; intros
+            rw [map_sum.single _ _ _ (by
+              conv => rhs; rw [←map_sum.sum_zero z]
+              apply map_sum.congr; intros; rw [NCSemiring.zero_mul, single.zero])]
+            rw [map_sum.sum_sum h₃ h₄]; apply map_sum.congr; intros
+            rw [map_sum.single _ _ _ (by rw [NCSemiring.mul_zero, single.zero]), Monoid.add_assoc, NCSemiring.mul_assoc]
           mul_distrib_left  := fun x y z => by
             simp only [mul_def]
             have : (fun a₁ b₁ => (∑ fun a₂ b₂ => single (a₁ + a₂) (b₁ * b₂) in (y + z))) =

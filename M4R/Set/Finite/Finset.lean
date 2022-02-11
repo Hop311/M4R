@@ -143,6 +143,79 @@ namespace M4R
     @[simp] theorem inter_sdiff_self (s₁ s₂ : Finset α) : s₁ ∩ (s₂ ∖ s₁) = ∅ :=
       eq_empty_of_forall_not_mem (by simp only [mem_inter, mem_sdiff]; exact fun x ⟨h, _, hn⟩ => absurd h hn)
 
+    section cons
+      
+      def cons (a : α) (s : Finset α) (h : a ∉ s) : Finset α :=
+        ⟨s.elems.cons a, UnorderedList.nodup_cons.mpr ⟨h, s.nodup⟩⟩
+
+      @[simp] theorem mem_cons {a : α} {s : Finset α} {h : a ∉ s} {b : α} : b ∈ @cons α a s h ↔ b = a ∨ b ∈ s :=
+        UnorderedList.mem_cons
+
+      @[simp] theorem mem_cons_self (a : α) (s : Finset α) {h : a ∉ s} : a ∈ cons a s h :=
+        mem_cons.mpr (Or.inl rfl)
+
+      @[simp] theorem cons_val {a : α} {s : Finset α} (h : a ∉ s) : (cons a s h).elems = s.elems.cons a := rfl
+
+      @[simp] theorem mk_cons {a : α} {s : UnorderedList α} (h : (s.cons a).nodup) :
+        (⟨s.cons a, h⟩ : Finset α) = cons a ⟨s, (UnorderedList.nodup_cons.mp h).right⟩ (UnorderedList.nodup_cons.mp h).left := rfl
+
+    end cons
+
+    section insert
+  
+      noncomputable def insert (a : α) (s : Finset α) : Finset α :=
+        ⟨s.elems.ndinsert a, UnorderedList.nodup_ndinsert a s.nodup⟩
+
+      theorem insert_def (a : α) (s : Finset α) : insert a s = ⟨s.elems.ndinsert a, UnorderedList.nodup_ndinsert a s.nodup⟩ := rfl
+
+      @[simp] theorem insert_val (a : α) (s : Finset α) : (insert a s).elems = s.elems.ndinsert a := rfl
+
+      theorem insert_val_of_not_mem {a : α} {s : Finset α} (h : a ∉ s) : (insert a s).elems = s.elems.cons a := by
+        rw [insert_val, UnorderedList.ndinsert_of_not_mem h]
+
+      @[simp] theorem mem_insert {a b : α} {s : Finset α} : a ∈ insert b s ↔ a = b ∨ a ∈ s := UnorderedList.mem_ndinsert
+
+      theorem mem_insert_self (a : α) (s : Finset α) : a ∈ insert a s := UnorderedList.mem_ndinsert_self a s.elems
+
+      theorem mem_insert_of_mem {a b : α} {s : Finset α} (h : a ∈ s) : a ∈ insert b s :=
+        UnorderedList.mem_ndinsert_of_mem h
+
+      theorem mem_of_mem_insert_of_ne {a b : α} {s : Finset α} (h : b ∈ insert a s) : b ≠ a → b ∈ s :=
+        (mem_insert.mp h).resolve_left
+
+      @[simp] theorem cons_eq_insert (a : α) (s : Finset α) (h : a ∉ s) : @cons α a s h = insert a s := by
+        apply Finset.ext; intro x; rw [mem_cons, mem_insert]; exact Iff.rfl
+
+      @[simp] theorem insert_eq_of_mem {a : α} {s : Finset α} (h : a ∈ s) : insert a s = s :=
+        val_inj.mp (UnorderedList.ndinsert_of_mem h)
+
+      theorem insert.comm (a b : α) (s : Finset α) : insert a (insert b s) = insert b (insert a s) := by
+        apply Finset.ext; intro x; rw [mem_insert, mem_insert, mem_insert, mem_insert,
+          Or.left_comm']; exact Iff.rfl
+
+    end insert
+
+    theorem cons_induction {p : Finset α → Prop} (h₁ : p ∅)
+      (h₂ : ∀ ⦃a : α⦄ {s : Finset α} (h : a ∉ s), p s → p (cons a s h)) : ∀ s, p s
+    | ⟨s, nd⟩ =>
+      @UnorderedList.induction_on α (fun l => (h : l.nodup) → p ⟨l, h⟩) s
+        (fun _ => h₁) (fun a s ih nd => by
+          let ⟨m, nd'⟩ := UnorderedList.nodup_cons.mp nd
+          rw [(val_inj.mp rfl : ⟨s.cons a, nd⟩ = cons a (Finset.mk s nd') m)]
+          exact h₂ m (ih nd')) nd
+
+    theorem cons_induction_on {p : Finset α → Prop} (s : Finset α) (h₁ : p ∅)
+      (h₂ : ∀ ⦃a : α⦄ {s : Finset α} (h : a ∉ s), p s → p (cons a s h)) : p s :=
+        cons_induction h₁ h₂ s
+
+    protected theorem induction (p : Finset α → Prop) (h₁ : p ∅)
+      (h₂ : ∀ ⦃a : α⦄ {s : Finset α}, a ∉ s → p s → p (insert a s)) : ∀ s, p s :=
+        cons_induction h₁ fun a s ha => (s.cons_eq_insert a ha).symm ▸ h₂ ha
+
+    protected theorem induction_on (p : Finset α → Prop) (s : Finset α) (h₁ : p ∅)
+      (h₂ : ∀ ⦃a : α⦄ {s : Finset α}, a ∉ s → p s → p (insert a s)) : p s :=
+        Finset.induction p h₁ h₂ s
+
   end Finset
 
   namespace Set
