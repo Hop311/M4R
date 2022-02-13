@@ -2,34 +2,45 @@ import M4R.Algebra.Ring.SubRing
 
 namespace M4R
 
-  structure SHomomorphism (α : Type _) (β : Type _) [NCSemiring α] [NCSemiring β] extends MHomomorphism α β where
+  structure SHomomorphism (α : Type _) (β : Type _) [NCSemiring α] [NCSemiring β] extends α →₊ β where
     preserve_one  : hom 1 = 1
     preserve_mul  : ∀ a b, hom (a * b) = hom a * hom b
-  
-  structure SIsomorphism (α : Type _) (β : Type _) [NCSemiring α] [NCSemiring β] extends SHomomorphism α β, MIsomorphism α β
 
-  structure RHomomorphism (α : Type _) (β : Type _) [NCRing α] [NCRing β] extends SHomomorphism α β, GHomomorphism α β
+  infixr:25 " →* " => SHomomorphism
+  instance SHomomorphismFun [NCSemiring α] [NCSemiring β] : CoeFun (α →* β) (fun _ => α → β) where
+    coe := fun f => f.hom
 
-  structure RIsomorphism (α : Type _) (β : Type _) [NCRing α] [NCRing β] extends RHomomorphism α β, MIsomorphism α β
+  structure SIsomorphism (α : Type _) (β : Type _) [NCSemiring α] [NCSemiring β] extends α →* β, α ≅₊ β
 
-  instance SHomomorphismFun [NCSemiring α] [NCSemiring β] : CoeFun (SHomomorphism α β) (fun _ => α → β) where coe := fun f => f.hom
-  instance SIsomorphismFun  [NCSemiring α] [NCSemiring β] : CoeFun (SIsomorphism  α β) (fun _ => α → β) where coe := fun f => f.hom
-  instance RHomomorphismFun [NCRing     α] [NCRing     β] : CoeFun (RHomomorphism α β) (fun _ => α → β) where coe := fun f => f.hom
-  instance RIsomorphismFun  [NCRing     α] [NCRing     β] : CoeFun (RIsomorphism  α β) (fun _ => α → β) where coe := fun f => f.hom
+  infixr:25 " ≅* " => SIsomorphism
+  instance SIsomorphismFun  [NCSemiring α] [NCSemiring β] : CoeFun (α ≅* β) (fun _ => α → β) where
+    coe := fun f => f.hom
+
+  structure RHomomorphism (α : Type _) (β : Type _) [NCRing α] [NCRing β] extends α →* β, α →₋ β
+
+  infixr:25 " →ᵣ " => RHomomorphism
+  instance RHomomorphismFun [NCRing α] [NCRing β] : CoeFun (α →ᵣ β) (fun _ => α → β) where
+    coe := fun f => f.hom
+
+  structure RIsomorphism (α : Type _) (β : Type _) [NCRing α] [NCRing β] extends α →ᵣ β, α ≅₊ β
+
+  infixr:25 " ≅ᵣ " => RIsomorphism
+  instance RIsomorphismFun  [NCRing α] [NCRing β] : CoeFun (α ≅ᵣ β) (fun _ => α → β) where
+    coe := fun f => f.hom
 
   namespace SHomomorphism
 
-    protected def comp [NCSemiring α] [NCSemiring β] [NCSemiring γ] (hbc : SHomomorphism β γ) (hab : SHomomorphism α β) : SHomomorphism α γ where
-      toMHomomorphism := MHomomorphism.comp hbc.toMHomomorphism hab.toMHomomorphism
+    protected def comp [NCSemiring α] [NCSemiring β] [NCSemiring γ] (hbc : β →* γ) (hab : α →* β) : α →* γ where
+      toMHomomorphism := hbc.toMHomomorphism.comp hab.toMHomomorphism
       preserve_one := by simp only [MHomomorphism.comp, Function.comp]; rw [hab.preserve_one, hbc.preserve_one]
       preserve_mul := fun a b => by simp only [MHomomorphism.comp, Function.comp]; rw [hab.preserve_mul, hbc.preserve_mul]
 
-    instance ImageSubSemiring [NCSemiring α] [NCSemiring β] (gh : SHomomorphism α β) : SubSemiring β where
+    instance ImageSubSemiring [NCSemiring α] [NCSemiring β] (gh : α →* β) : SubSemiring β where
       toSubMonoid := gh.ImageSubMonoid
       has_one := ⟨1, gh.preserve_one⟩
       mul_closed := fun _ ⟨a, hax⟩ _ ⟨b, hby⟩ => by rw [←hax, ←hby]; exact ⟨a * b, gh.preserve_mul a b⟩
 
-    protected instance Identity [NCSemiring α] : SHomomorphism α α where
+    protected instance Identity [NCSemiring α] : α →* α where
       toMHomomorphism := MHomomorphism.Identity
       preserve_one := by simp [MHomomorphism.Identity]
       preserve_mul := by intros; rfl
@@ -37,31 +48,62 @@ namespace M4R
   end SHomomorphism
 
   namespace SIsomorphism
-  
-    protected theorem comp [NCSemiring α] [NCSemiring β] [NCSemiring γ] (hbc : SIsomorphism β γ) (hab : SIsomorphism α β) :
-      SIsomorphism α γ where
-        toSHomomorphism := SHomomorphism.comp hbc.toSHomomorphism hab.toSHomomorphism
-        bij             := by have := Function.bijective.comp hbc.bij hab.bij; exact this
 
-    protected instance Identity [NCSemiring α] : SIsomorphism α α where
-      toSHomomorphism := SHomomorphism.Identity
-      bij             := MIsomorphism.Identity.bij
+    protected def inv_hom [NCSemiring α] [NCSemiring β] (f : α ≅* β) : β →* α where
+      toMHomomorphism := f.toMIsomorphism.inv_hom
+      preserve_one := by
+        conv => lhs rw [←f.preserve_one]
+        have : f.toMIsomorphism.inv_hom.hom (f.toSHomomorphism.toMHomomorphism.hom 1) = f.inv (f 1)  := rfl
+        rw [this, f.left_inv]
+      preserve_mul := fun a b => by
+        let ⟨_, ha⟩ := f.right_inv.surjective a
+        let ⟨_, hb⟩ := f.right_inv.surjective b
+        have : f.toMIsomorphism.inv_hom.hom = f.inv := rfl
+        rw [←ha, ←hb, this, ←f.preserve_mul, f.left_inv, f.left_inv, f.left_inv]
+
+    protected def symm [NCSemiring α] [NCSemiring β] (f : α ≅* β) : β ≅* α where
+      toSHomomorphism := f.inv_hom
+      inv := f
+      left_inv := f.right_inv
+      right_inv := f.left_inv
+
+    protected theorem comp [NCSemiring α] [NCSemiring β] [NCSemiring γ] (hbc : β ≅* γ) (hab : α ≅* β) : α ≅* γ where
+      toSHomomorphism := hbc.toSHomomorphism.comp hab.toSHomomorphism
+      inv := hab.inv ∘ hbc.inv
+      left_inv := by
+        intro a
+        have : hbc.toSHomomorphism.comp hab.toSHomomorphism = hbc.hom ∘ hab.hom := rfl
+        rw [this, ←Function.comp_eq, ←Function.comp_eq, hbc.left_inv, hab.left_inv]
+      right_inv := by
+        intro a
+        have : hbc.toSHomomorphism.comp hab.toSHomomorphism = hbc.hom ∘ hab.hom := rfl
+        rw [this, ←Function.comp_eq, ←Function.comp_eq, hab.right_inv, hbc.right_inv]
+
+    protected noncomputable def of_bijection [NCSemiring α] [NCSemiring β] {f : α →* β}
+      (hf : Function.bijective f.hom) : α ≅* β where
+        toSHomomorphism := f
+        inv := fun b => Classical.choose (hf.surj b)
+        left_inv := fun a => hf.inj (Classical.choose_spec (hf.surj (f a)))
+        right_inv := fun a => Classical.choose_spec (hf.surj a)
+
+    protected noncomputable instance Identity [NCSemiring α] : α ≅* α :=
+      SIsomorphism.of_bijection (by apply Function.id_bijective : Function.bijective SHomomorphism.Identity.hom)
 
   end SIsomorphism
 
   namespace RHomomorphism
 
-    protected def comp [NCRing α] [NCRing β] [NCRing γ] (hbc : RHomomorphism β γ) (hab : RHomomorphism α β) : RHomomorphism α γ where
-      toSHomomorphism := SHomomorphism.comp hbc.toSHomomorphism hab.toSHomomorphism
+    protected def comp [NCRing α] [NCRing β] [NCRing γ] (hbc : β →ᵣ γ) (hab : α →ᵣ β) : α →ᵣ γ where
+      toSHomomorphism := hbc.toSHomomorphism.comp hab.toSHomomorphism
       preserve_neg  := fun a => by
         simp only [SHomomorphism.comp, MHomomorphism.comp, Function.comp]
         rw [hab.preserve_neg, hbc.preserve_neg]
 
-    instance ImageSubRing [NCRing α] [NCRing β] (gh : RHomomorphism α β) : SubRing β where
+    instance ImageSubRing [NCRing α] [NCRing β] (gh : α →ᵣ β) : SubRing β where
       toSubSemiring := gh.ImageSubSemiring
       neg_closed := gh.toGHomomorphism.ImageSubGroup.neg_closed
 
-    protected instance Identity [NCRing α] : RHomomorphism α α where
+    protected instance Identity [NCRing α] : α →ᵣ α where
       toSHomomorphism := SHomomorphism.Identity
       preserve_neg    := GHomomorphism.Identity.preserve_neg
 
@@ -69,14 +111,49 @@ namespace M4R
 
   namespace RIsomorphism
 
-    protected def comp [NCRing α] [NCRing β] [NCRing γ] (hbc : RIsomorphism β γ) (hab : RIsomorphism α β) :
-      RIsomorphism α γ where
-        toRHomomorphism := RHomomorphism.comp hbc.toRHomomorphism hab.toRHomomorphism
-        bij             := by have := Function.bijective.comp hbc.bij hab.bij; exact this
+    protected def inv_hom [NCRing α] [NCRing β] (f : α ≅ᵣ β) : β →ᵣ α where
+      toMHomomorphism := f.toMIsomorphism.inv_hom
+      preserve_neg := fun a => by
+        let ⟨_, ha⟩ := f.right_inv.surjective a
+        have : f.toMIsomorphism.inv_hom.hom = f.inv := rfl
+        rw [this, ←ha, ←f.preserve_neg, f.left_inv, f.left_inv]
+      preserve_one := by
+        conv => lhs rw [←f.preserve_one]
+        have : f.toMIsomorphism.inv_hom.hom (f.toSHomomorphism.toMHomomorphism.hom 1) = f.inv (f 1)  := rfl
+        rw [this, f.left_inv]
+      preserve_mul := fun a b => by
+        let ⟨_, ha⟩ := f.right_inv.surjective a
+        let ⟨_, hb⟩ := f.right_inv.surjective b
+        have : f.toMIsomorphism.inv_hom.hom = f.inv := rfl
+        rw [←ha, ←hb, this, ←f.preserve_mul, f.left_inv, f.left_inv, f.left_inv]
 
-    instance Identity [NCRing α] : RIsomorphism α α where
-      toRHomomorphism := RHomomorphism.Identity
-      bij             := MIsomorphism.Identity.bij
+    protected def symm [NCRing α] [NCRing β] (f : α ≅ᵣ β) : β ≅ᵣ α where
+      toRHomomorphism := f.inv_hom
+      inv := f
+      left_inv := f.right_inv
+      right_inv := f.left_inv
+
+    protected theorem comp [NCRing α] [NCRing β] [NCRing γ] (hbc : β ≅ᵣ γ) (hab : α ≅ᵣ β) : α ≅ᵣ γ where
+      toRHomomorphism := hbc.toRHomomorphism.comp hab.toRHomomorphism
+      inv := hab.inv ∘ hbc.inv
+      left_inv := by
+        intro a
+        have : hbc.toRHomomorphism.comp hab.toRHomomorphism = hbc.hom ∘ hab.hom := rfl
+        rw [this, ←Function.comp_eq, ←Function.comp_eq, hbc.left_inv, hab.left_inv]
+      right_inv := by
+        intro a
+        have : hbc.toRHomomorphism.comp hab.toRHomomorphism = hbc.hom ∘ hab.hom := rfl
+        rw [this, ←Function.comp_eq, ←Function.comp_eq, hab.right_inv, hbc.right_inv]
+
+    protected noncomputable def of_bijection [NCRing α] [NCRing β] {f : α →ᵣ β}
+      (hf : Function.bijective f.hom) : α ≅ᵣ β where
+        toRHomomorphism := f
+        inv := fun b => Classical.choose (hf.surj b)
+        left_inv := fun a => hf.inj (Classical.choose_spec (hf.surj (f a)))
+        right_inv := fun a => Classical.choose_spec (hf.surj a)
+
+    protected noncomputable instance Identity [NCRing α] : α ≅ᵣ α :=
+      RIsomorphism.of_bijection (by apply Function.id_bijective : Function.bijective RHomomorphism.Identity.hom)
 
   end RIsomorphism
 end M4R

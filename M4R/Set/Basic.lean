@@ -10,7 +10,7 @@ namespace M4R
     /- Set instances -/
     def SetInhabited : Inhabited (Set α) where default := Set.Empty
     def SingletonSet [Singleton α] : Set α := Set.Universal
-    def SingletonSet.mk {α : Type _} (a : α) : Set α := {x | x = a}
+    protected def SingletonSet.mk {α : Type _} (a : α) : Set α := {x | x = a}
 
     namespace equivalent
 

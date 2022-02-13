@@ -11,6 +11,7 @@ namespace M4R
     protected def mem (a : α) (s : Set α) := s a
     instance SetMem : Mem α (Set α) where mem := Set.mem
 
+    instance PredToSet : Coe (α → Prop) (Set α) where coe := id
     instance SetToSubtype {α : Type u} : CoeSort (Set α) (Type u) where coe := Subtype
 
     def inclusion {s : Set α} : ↑s → α := fun x => x.val

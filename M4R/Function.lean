@@ -3,7 +3,10 @@ import M4R.Set.Basic
 namespace M4R
   namespace Function
 
-    def restrict {α : Type _} {β : Type _} (f : α → β) (s : Set α) : s → β := Function.comp f Set.inclusion
+    theorem comp_eq (f : β → γ) (g : α → β) (a : α) : f (g a) = (f ∘ g) a := rfl
+    theorem comp_assoc (f : γ → δ) (g : β → γ) (h : α → β) : f ∘ g ∘ h = (f ∘ g) ∘ h := rfl
+
+    def restrict (f : α → β) (s : Set α) : s → β := Function.comp f Set.inclusion
 
     def domain (f : α → β) := α
     def codomain (f : α → β) := β
@@ -11,14 +14,14 @@ namespace M4R
     def inv_image (f : α → β) (s : Set β) : Set α := {x | f x ∈ s}
     def fibre (f : α → β) (b : β) : Set α := {x | f x = b}
     
-    def injective (f : α → β) : Prop := ∀ {x y : α}, f x = f y → x = y
+    def injective (f : α → β) : Prop := ∀ ⦃x y : α⦄, f x = f y → x = y
     def surjective (f : α → β) : Prop := ∀ y : β, ∃ x : α, f x = y
     def bijective (f : α → β) : Prop := injective f ∧ surjective f
     def bijective.inj {f : α → β} (h : bijective f) : injective f := h.left
     def bijective.surj {f : α → β} (h : bijective f) : surjective f := h.right
 
     theorem injective.comp {g : β → γ} {f : α → β} (hg : injective g) (hf : injective f) : injective (g ∘ f) :=
-        fun h => hf (hg h)
+        fun _ _ h => hf (hg h)
     theorem surjective.comp {g : β → γ} {f : α → β} (hg : surjective g) (hf : surjective f) : surjective (g ∘ f) :=
       fun (c : γ) => Exists.elim (hg c) (fun b hb => Exists.elim (hf b) (fun a ha =>
       Exists.intro a (show g (f a) = c from (Eq.trans (congrArg g ha) hb))))
@@ -33,6 +36,8 @@ namespace M4R
 
     theorem left_inverse.injective {g : β → α} {f : α → β} : left_inverse g f → injective f :=
       fun h a b hf => h a ▸ h b ▸ hf ▸ rfl
+    theorem left_inverse.inv_surjective {g : β → α} {f : α → β} : left_inverse g f → surjective g :=
+      fun h a => ⟨f a, h a⟩
     theorem has_left_inverse.injective {f : α → β} : has_left_inverse f → injective f :=
       fun h => Exists.elim h (fun finv inv => inv.injective)
     theorem right_inverse_of_injective_of_left_inverse {f : α → β} {g : β → α}
@@ -42,6 +47,8 @@ namespace M4R
 
     theorem right_inverse.surjective {f : α → β} {g : β → α} (h : right_inverse g f) : surjective f :=
       fun y => ⟨g y, h y⟩
+    theorem right_inverse.inv_injective {g : β → α} {f : α → β} : right_inverse g f → injective g :=
+      fun h a b hg => by rw [←h a, ←h b]; exact congrArg f hg
     theorem has_right_inverse.surjective {f : α → β} : has_right_inverse f → surjective f
     | ⟨finv, inv⟩ => inv.surjective
     theorem left_inverse_of_surjective_of_right_inverse {f : α → β} {g : β → α} (surjf : surjective f)
@@ -50,7 +57,7 @@ namespace M4R
         let ⟨x, hx⟩ := surjf y
         by rw [← hx, rfg]
           
-    theorem id_injective : @injective α α id := id
+    theorem id_injective : @injective α α id := fun _ _ => id
     theorem id_surjective : @surjective α α id := fun y => ⟨y, rfl⟩
     theorem id_bijective : @bijective α α id := ⟨id_injective, id_surjective⟩
 

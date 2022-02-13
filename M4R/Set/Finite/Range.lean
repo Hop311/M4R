@@ -173,7 +173,7 @@ namespace M4R
 
     def antidiagonal (n : Nat) : Finset (Nat × Nat) := ⟨UnorderedList.antidiagonal n, List.nodup_antidiagonal n⟩
 
-    def toInt (f : Finset Nat) : Finset Int := f.map_inj (congrArg Int.toNat : Function.injective Int.ofNat)
+    def toInt (f : Finset Nat) : Finset Int := f.map_inj (fun _ _ => congrArg Int.toNat : Function.injective Int.ofNat)
 
   end Finset
 end M4R

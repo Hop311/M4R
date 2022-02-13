@@ -164,6 +164,26 @@ namespace Nat
   @[simp] theorem not_le {a b : Nat} : ¬ a ≤ b ↔ b < a :=
     ⟨gt_of_not_le, not_lt_of_gt⟩
 
+  theorem add_eq_zero (a b : Nat) : a + b = 0 ↔ a = 0 ∧ b = 0 :=
+    ⟨fun h => by
+      induction a with
+      | zero => rw [Nat.zero_add] at h; exact ⟨rfl, h⟩
+      | succ k ih => rw [succ_add] at h; exact absurd h (succ_ne_zero (k+b)),
+    fun ⟨ha, hb⟩ => by rw [ha, hb]⟩
+
+  theorem mul_eq_zero (a b : Nat) : a * b = 0 ↔ a = 0 ∨ b = 0 :=
+    ⟨fun h => by
+      induction a with
+      | zero      => exact Or.inl rfl
+      | succ k ih => rw [succ_mul, add_eq_zero] at h; exact Or.inr h.right,
+    fun h => by
+      cases h with
+      | inl h => rw [h, Nat.zero_mul]
+      | inr h => rw [h, Nat.mul_zero]⟩
+
+  theorem mul_neq_zero (a b : Nat) : a * b ≠ 0 ↔ a ≠ 0 ∧ b ≠ 0 := by
+    rw [←M4R.not_or_iff_and_not, M4R.not_iff_not]; exact mul_eq_zero a b
+
 end Nat
 
 namespace Int

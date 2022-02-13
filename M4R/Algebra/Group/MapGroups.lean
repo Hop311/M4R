@@ -1,4 +1,4 @@
-import M4R.Algebra.Group.Group
+import M4R.Algebra.Group.GMorphism
 import M4R.Algebra.Group.Sum
 
 namespace M4R
@@ -66,6 +66,8 @@ namespace M4R
       to_fun             := fun _ => 0
       mem_support_to_fun := fun a => ⟨fun h _ => h, fun h => h rfl⟩
     }
+
+    theorem zero_apply [Zero β] {a : α} : (0 : α →₀ β) a = 0 := rfl
 
     theorem empty_support [Zero β] {f : α →₀ β} (h : f.support = ∅) : f = 0 :=
       Finsupp.ext (funext fun x => by
@@ -202,6 +204,18 @@ namespace M4R
         (h : ∀ a ∈ x.support, f a (x a) = g a (x a)) : (∑ f in x) = (∑ g in x) :=
           UnorderedList.map_sum.congr rfl h
 
+      def apply_add_hom [CommMonoid β] (a : α) : (α →₀ β) →₊ β where
+        hom           := fun g => g a
+        preserve_zero := zero_apply
+        preserve_add  := (add_apply · · a)
+
+      theorem finset_sum_apply [CommMonoid β] (S : Finset ι) (f : ι → α →₀ β) (a : α) :
+        (∑ f in S) a = ∑ (f · a) in S :=
+          (apply_add_hom a).map_sum f S
+
+      @[simp] theorem sum_apply [Zero β] [CommMonoid β'] {f : α →₀ β} {g : α → β → α' →₀ β'} {a₂ : α'} :
+        (∑ g in f) a₂ = ∑ (fun a₁ b => g a₁ b a₂) in f :=
+          finset_sum_apply _ _ _
 
       @[simp] protected theorem single [Zero β] [CommMonoid γ]
         (a : α) (b : β) (f : α → β → γ) (h : f a 0 = 0) : (∑ f in single a b) = f a b := by
