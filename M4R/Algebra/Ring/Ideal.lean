@@ -32,7 +32,7 @@ namespace M4R
       has_zero := rfl
       add_closed := fun xz yz => by rw [xz, yz, add_zero]; rfl
       mul_closed := fun _ _ h => by rw [h, mul_zero]; trivial
-      
+
     instance UnitIdeal (α : Type _) [Ring α] : Ideal α where
       subset := Set.Universal
       has_zero := trivial
@@ -51,12 +51,9 @@ namespace M4R
       }
 
     protected def equivalent [Ring α] (I J: Ideal α) : Prop := I.subset = J.subset
-    protected theorem ext [Ring α] {I J : Ideal α} : Ideal.equivalent I J ↔ I = J := by
-      match I, J with
-      | ⟨_, _, _, _⟩, ⟨_, _, _, _⟩ =>
-        apply Iff.intro;
-        { intro eq; rw [Ideal.mk.injEq]; exact eq }
-        { simp [Ideal.equivalent]; exact id }
+    protected theorem ext [Ring α] : ∀ {I J : Ideal α}, Ideal.equivalent I J ↔ I = J
+    | ⟨_, _, _, _⟩, ⟨_, _, _, _⟩ =>
+      ⟨by intro eq; rw [Ideal.mk.injEq]; exact eq, by simp [Ideal.equivalent]; exact id⟩
     protected theorem antisymm [Ring α] {I J : Ideal α} (h₁ : I ⊆ J) (h₂ : J ⊆ I) : I = J := by
       rw [←Ideal.ext]; simp only [Ideal.equivalent]; rw [←Set.ext]; simp only [Set.equivalent];
       exact fun x => ⟨fun h => h₁ h, fun h => h₂ h⟩

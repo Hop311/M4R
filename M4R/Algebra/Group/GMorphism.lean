@@ -53,6 +53,9 @@ namespace M4R
       preserve_zero := by simp only [Function.comp]; rw [hab.preserve_zero, hbc.preserve_zero]
       preserve_add  := fun a b => by simp only [Function.comp]; rw [hab.preserve_add, hbc.preserve_add]
 
+    protected def comp.hom [Monoid α] [Monoid β] [Monoid γ] (hbc : β →₊ γ) (hab : α →₊ β) :
+      (hbc.comp hab).hom = hbc.hom ∘ hab.hom := rfl
+
     instance ImageSubMonoid [Monoid α] [Monoid β] (gh : α →₊ β) : SubMonoid β where
       subset     := Function.image gh.hom
       has_zero   := ⟨0, gh.preserve_zero⟩
@@ -71,6 +74,10 @@ namespace M4R
         @Finset.induction_on α (fun t => g (∑ f in t) = ∑ (g ∘ f) in t) s g.preserve_zero (by
           intro _ _ h ih; rw [Finset.map_sum.sum_insert _ h, Finset.map_sum.sum_insert _ h,
             MHomomorphism.preserve_add, ih])
+
+    protected theorem ext [Monoid α] [Monoid β] : ∀ {f g : α →₊ β}, f = g ↔ f.hom = g.hom
+    | ⟨_, _, _⟩, ⟨_, _, _⟩ =>
+      ⟨fun h => by rw [h], fun h => by rw [MHomomorphism.mk.injEq]; exact h⟩
 
   end MHomomorphism
 
@@ -130,6 +137,10 @@ namespace M4R
     protected instance Identity [Group α] : α →₋ α where
       toMHomomorphism := MHomomorphism.Identity
       preserve_neg    := by intros; rfl
+
+    protected theorem ext [Group α] [Group β] : ∀ {f g : α →₋ β}, f = g ↔ f.hom = g.hom
+    | ⟨_, _⟩, ⟨_, _⟩ =>
+      ⟨fun h => by rw [h], fun h => by rw [GHomomorphism.mk.injEq]; exact MHomomorphism.ext.mpr h⟩
 
   end GHomomorphism
 

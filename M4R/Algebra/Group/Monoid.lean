@@ -34,7 +34,12 @@ namespace M4R
       zero_add := fun a => by rw [c.add_comm]; exact c.add_zero a
       add_assoc := c.add_assoc
       add_comm := c.add_comm
-  
+
+    protected def to_constructor (α : Type _) [CommMonoid α] : CommMonoid.constructor_cm α where
+      add_zero  := Monoid.add_zero
+      add_assoc := Monoid.add_assoc
+      add_comm  := CommMonoid.add_comm
+
   end CommMonoid
 
   instance NatMonoid : CommMonoid Nat := CommMonoid.construct

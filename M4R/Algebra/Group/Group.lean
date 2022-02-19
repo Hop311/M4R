@@ -15,7 +15,7 @@ namespace M4R
         _      = (0 : α)              := by rw [add_neg, add_zero, add_neg]
     theorem add_neg_comm [Group α] (a : α) : a + (-a) = (-a) + a :=
       Eq.trans (add_neg a) (Eq.symm (neg_add a))
-      
+
     theorem neg_zero [Group α] : -(0 : α) = 0 := by
       rw [←zero_add (-0), add_neg];
 
@@ -54,7 +54,12 @@ namespace M4R
         rw [←c.add_assoc (-a), c.add_zero, c.add_neg, c.add_zero]
       add_assoc := c.add_assoc
       add_neg := c.add_neg
-  
+
+    protected def to_constructor (α : Type _) [Group α] : Group.constructor_g α where
+      add_zero  := Monoid.add_zero
+      add_assoc := Monoid.add_assoc
+      add_neg   := Group.add_neg
+
   end Group
 
   namespace AbelianGroup
@@ -67,6 +72,13 @@ namespace M4R
     protected instance construct {α : Type _} (c : AbelianGroup.constructor_ab α) : AbelianGroup α where
       toGroup := Group.construct c.toconstructor_g
       add_comm := c.add_comm
+
+    protected def to_constructor (α : Type _) [AbelianGroup α] : AbelianGroup.constructor_ab α where
+      toconstructor_g := Group.to_constructor α
+      add_comm        := CommMonoid.add_comm
+
+    protected theorem neg_add_distrib [AbelianGroup α] (a b : α) : -(a + b) = -a + -b := by
+      rw [Group.neg_add_distrib, add_comm]
 
   end AbelianGroup
 

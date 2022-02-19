@@ -216,6 +216,25 @@ namespace M4R
       (h₂ : ∀ ⦃a : α⦄ {s : Finset α}, a ∉ s → p s → p (insert a s)) : p s :=
         Finset.induction p h₁ h₂ s
 
+    section erase
+
+      noncomputable def erase (s : Finset α) (a : α) : Finset α := ⟨_, UnorderedList.erase.nodup_erase_of_nodup a s.nodup⟩
+
+      @[simp] theorem erase_val (s : Finset α) (a : α) : (erase s a).elems = s.elems.erase a := rfl
+
+      @[simp] theorem mem_erase {a b : α} {s : Finset α} : a ∈ erase s b ↔ a ≠ b ∧ a ∈ s :=
+        UnorderedList.erase.mem_erase_iff_of_nodup s.nodup
+
+      theorem not_mem_erase (a : α) (s : Finset α) : a ∉ erase s a := UnorderedList.erase.mem_erase_of_nodup s.nodup
+
+      @[simp] theorem erase_empty (a : α) : erase ∅ a = ∅ := rfl
+
+      theorem erase_insert {a : α} {s : Finset α} (h : a ∉ s) : erase (insert a s) a = s := by
+        apply Finset.ext; intro x
+        simp only [mem_erase, mem_insert, and_or_distrib_left, false_and, not_and_self, false_or]
+        exact ⟨And.right, fun h' => ⟨fun h'' => by rw [h''] at h'; exact absurd h' h, h'⟩⟩
+
+    end erase
   end Finset
 
   namespace Set

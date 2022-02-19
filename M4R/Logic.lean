@@ -31,6 +31,15 @@ theorem And.comm' : a ∧ b ↔ b ∧ a := ⟨And.comm, And.comm⟩
 theorem And.left_comm : a ∧ (b ∧ c) → b ∧ (a ∧ c) :=
   fun ⟨ha, hb, hc⟩ => ⟨hb, ha, hc⟩
 
+theorem And.imp (hac : a → c) (hbd : b → d) (hab : a ∧ b) : c ∧ d :=
+  ⟨hac hab.left, hbd hab.right⟩
+
+theorem And.imp_left (h : a → b) : a ∧ c → b ∧ c :=
+  And.imp h id
+
+theorem And.imp_right (h : a → b) : c ∧ a → c ∧ b :=
+  And.imp id h
+
 theorem Or.resolve_left {a b : Prop} (h : a ∨ b) (na : ¬ a) : b :=
   Or.elim h (fun ha => absurd ha na) id
 
@@ -58,7 +67,27 @@ theorem M4R.exists_imp_exists {α : Sort u} {p q : α → Prop} (h : ∀ a, (p a
 theorem Exists.imp {p q : α → Prop} (h : ∀ a, (p a → q a)) (p : ∃ a, p a) : ∃ a, q a :=
   M4R.exists_imp_exists h p
 
+theorem Iff.or (h₁ : a ↔ b) (h₂ : c ↔ d) : a ∨ c ↔ b ∨ d :=
+  ⟨fun h => Or.imp h₁.mp h₂.mp h, fun h => Or.imp h₁.mpr h₂.mpr h⟩
+
+theorem Iff.and (h₁ : a ↔ b) (h₂ : c ↔ d) : a ∧ c ↔ b ∧ d :=
+  ⟨fun h => And.imp h₁.mp h₂.mp h, fun h => And.imp h₁.mpr h₂.mpr h⟩
+
 namespace M4R
+
+  theorem and_or_distrib_left : a ∧ (b ∨ c) ↔ (a ∧ b) ∨ (a ∧ c) :=
+    ⟨fun ⟨ha, hbc⟩ => hbc.imp (And.intro ha ·) (And.intro ha ·),
+      Or.rec (And.imp_right Or.inl) (And.imp_right Or.inr)⟩
+
+  theorem or_and_distrib_right : (a ∨ b) ∧ c ↔ (a ∧ c) ∨ (b ∧ c) :=
+    (And.comm'.trans and_or_distrib_left).trans (And.comm'.or And.comm')
+
+  theorem or_and_distrib_left : a ∨ (b ∧ c) ↔ (a ∨ b) ∧ (a ∨ c) :=
+    ⟨Or.rec (fun ha => And.intro (Or.inl ha) (Or.inl ha)) (And.imp Or.inr Or.inr),
+    And.rec (Or.rec ((fun h _ => h) ∘ Or.inl) (Or.imp_right ∘ And.intro))⟩
+
+  theorem and_or_distrib_right : (a ∧ b) ∨ c ↔ (a ∨ c) ∧ (b ∨ c) :=
+    (Or.comm'.trans or_and_distrib_left).trans (Or.comm'.and Or.comm')
 
   @[simp] theorem exists_imp_distrib {p : α → Prop} : ((∃ x, p x) → b) ↔ ∀ x, p x → b :=
     ⟨fun h x hpx => h ⟨x, hpx⟩, fun h ⟨x, hpx⟩ => h x hpx⟩
@@ -133,6 +162,15 @@ namespace M4R
   @[simp] theorem forall_3_true_iff {β : α → Sort _} {γ : ∀ a, β a → Sort _} :
     (∀ (a : α) (b : β a), γ a b → True) ↔ True :=
       forall_true_iff' fun _ => forall_2_true_iff
+
+  @[simp] theorem not_and_self (a : Prop) : (¬a ∧ a) ↔ False :=
+    ⟨fun h => h.left h.right, fun h => False.rec (fun _ => ¬a ∧ a) h⟩
+
+  @[simp] theorem and_not_self (a : Prop) : (a ∧ ¬a) ↔ False := by
+    rw [And.comm']; exact not_and_self a
+
+  @[simp] theorem and_self (a : Prop) : a ∧ a ↔ a :=
+    ⟨And.left, fun h => ⟨h, h⟩⟩
 
 end M4R
 

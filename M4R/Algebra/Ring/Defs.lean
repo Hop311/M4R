@@ -18,7 +18,11 @@ namespace M4R
 
   class Ring (α : Type _) extends NCRing α, Semiring α
 
-  class NonTrivialNCRing (α : Type _) extends NCRing α, NonTrivial α
+  class NonTrivialNCSemiring (α : Type _) extends NCSemiring α, NonTrivial α
+
+  class NonTrivialSemiring (α : Type _) extends Semiring α, NonTrivialNCSemiring α
+
+  class NonTrivialNCRing (α : Type _) extends NCRing α, NonTrivialNCSemiring α
 
   class NonTrivialRing (α : Type _) extends Ring α, NonTrivialNCRing α
 

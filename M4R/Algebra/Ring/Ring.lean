@@ -40,6 +40,14 @@ namespace M4R
       toNeg := (AbelianGroup.construct c.toconstructor_ab).toNeg
       add_neg := (AbelianGroup.construct c.toconstructor_ab).add_neg
 
+    protected def to_constructor (α : Type _) [NCRing α] : NCRing.constructor_ncr α where
+      toconstructor_ab := AbelianGroup.to_constructor α
+      mul_one           := NCSemiring.mul_one
+      one_mul           := NCSemiring.one_mul
+      mul_assoc         := NCSemiring.mul_assoc
+      mul_distrib_left  := NCSemiring.mul_distrib_left
+      mul_distrib_right := NCSemiring.mul_distrib_right
+
   end NCRing
 
   namespace Ring
@@ -107,7 +115,7 @@ namespace M4R
       induction n with
       | zero      => rw [Nat.add_zero, pow_nat_0, mul_one]
       | succ k ih => rw [Nat.add_succ, pow_nat_succ, pow_nat_succ, ←mul_assoc, ih]
-    
+
     theorem pow_nat_mul_distrib [Ring α] (a b : α) (m : Nat) : (a * b)^m = a^m * b^m := by
       induction m with
       | zero      => simp only [Nat.zero_eq, pow_nat_0, mul_one]
@@ -134,6 +142,13 @@ namespace M4R
           mul_distrib_right := fun a b _ => by rw [c.mul_comm, c.mul_comm a, c.mul_comm b]; exact c.mul_distrib_left _ _ _
         }
       mul_comm := c.mul_comm
+
+    protected def to_constructor (α : Type _) [Ring α] : Ring.constructor_r α where
+      toconstructor_ab  := AbelianGroup.to_constructor α
+      mul_one           := NCSemiring.mul_one
+      mul_assoc         := NCSemiring.mul_assoc
+      mul_distrib_left  := NCSemiring.mul_distrib_left
+      mul_comm          := Semiring.mul_comm
 
   end Ring
 

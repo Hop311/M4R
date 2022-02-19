@@ -114,5 +114,22 @@ namespace M4R
           @Quot.ind γ rc (motive (Quot.mk ra a) (Quot.mk rb b)) (fun c : γ => h a b c) qc) qb) qa
 
     end Quotient
+
+    section update
+
+      def update [DecidableEq α] {β : α → Sort _} (f : (a : α) → β a) (a' : α) (v : β a') (a : α) : β a :=
+        if h : a = a' then (by rw [h]; exact v) else f a
+
+      theorem update_apply [DecidableEq α] (f : α → β) (a' : α) (b : β) (a : α) :
+        update f a' b a = if a = a' then b else f a := rfl
+
+      @[simp] theorem update_same [DecidableEq α] {β : α → Sort _} (a : α) (v : β a) (f : (a : α) → β a) :
+        update f a v a = v := dif_pos rfl
+
+      @[simp] theorem update_noteq [DecidableEq α] {β : α → Sort _} {a a' : α} (h : a ≠ a') (v : β a')
+        (f : (a : α) → β a) : update f a' v a = f a :=
+          dif_neg h
+
+    end update
   end Function
 end M4R

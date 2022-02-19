@@ -54,7 +54,7 @@ namespace M4R
           | nil => exact h₁
           | cons _ _ ih => exact h₂ ih)
 
-    protected theorem induction_on {p : UnorderedList α → Prop} (s : UnorderedList α)
+    protected theorem induction_on (p : UnorderedList α → Prop) (s : UnorderedList α)
       (h₁ : p 0) (h₂ : ∀ ⦃a : α⦄ {s : UnorderedList α}, p s → p (s.cons a)) : p s :=
         UnorderedList.induction h₁ h₂ s
 
@@ -492,6 +492,21 @@ namespace M4R
         @le.le_induction_on α s t (fun l₁ l₂ => l₁.erase a ≤ l₂.erase a) h
           fun h' => (h'.erase _).subperm
 
+      theorem nodup_erase_eq_filter (a : α) {s : UnorderedList α} : nodup s → s.erase a = filter (· ≠ a) s :=
+        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+          nodup l → l.erase a = filter (· ≠ a) l) s
+          (fun l d => congrArg (List.to_UnorderedList) (List.nodup_erase_eq_filter' a d))
+
+      theorem nodup_erase_of_nodup (a : α) {l : UnorderedList α} : nodup l → nodup (l.erase a) :=
+        le.nodup_of_le (erase_le _ _)
+
+      theorem mem_erase_iff_of_nodup {a b : α} {l : UnorderedList α} (d : nodup l) :
+        a ∈ l.erase b ↔ a ≠ b ∧ a ∈ l := by
+          rw [nodup_erase_eq_filter b d, mem_filter, And.comm']; exact Iff.rfl
+
+      theorem mem_erase_of_nodup {a : α} {l : UnorderedList α} (h : nodup l) : a ∉ l.erase a := by
+        rw [mem_erase_iff_of_nodup h, not_and_iff_or_not]; exact Or.inl (iff_not_not.mpr rfl)
+
     end erase
 
     protected noncomputable def sub (s t : UnorderedList α) : UnorderedList α :=
@@ -925,16 +940,16 @@ namespace M4R
     theorem add_inter_distrib (s t u : UnorderedList α) : s + (t ∩ u) = (s + t) ∩ (s + u) := by
       rw [append.comm, inter_add_distrib, append.comm s, append.comm s]
 
-      theorem union_add_inter (s t : UnorderedList α) : s ∪ t + s ∩ t = s + t :=
-        le.antisymm (by
-            rw [union_add_distrib]
-            exact union_le ((le.add_le_add_left s).mpr (inter_le_right s t))
-              (by rw [append.comm]; exact (le.add_le_add_right t).mpr (inter_le_left s t)))
-          (by
-            rw [append.comm, add_inter_distrib]
-            apply le_inter ((le.add_le_add_right s).mpr (le_union_right s t))
-            rw [append.comm]
-            exact (le.add_le_add_right t).mpr (le_union_left s t))
+    theorem union_add_inter (s t : UnorderedList α) : s ∪ t + s ∩ t = s + t :=
+      le.antisymm (by
+          rw [union_add_distrib]
+          exact union_le ((le.add_le_add_left s).mpr (inter_le_right s t))
+            (by rw [append.comm]; exact (le.add_le_add_right t).mpr (inter_le_left s t)))
+        (by
+          rw [append.comm, add_inter_distrib]
+          apply le_inter ((le.add_le_add_right s).mpr (le_union_right s t))
+          rw [append.comm]
+          exact (le.add_le_add_right t).mpr (le_union_left s t))
 
   end UnorderedList
 end M4R

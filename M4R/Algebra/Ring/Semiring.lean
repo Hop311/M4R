@@ -1,7 +1,7 @@
 import M4R.Algebra.Ring.Defs
 
 namespace M4R
-  
+
   namespace NCSemiring
 
     protected instance Product (α₁ : Type _) (α₂ : Type _) [NCSemiring α₁] [NCSemiring α₂] : NCSemiring (α₁ × α₂) where
@@ -39,8 +39,18 @@ namespace M4R
       mul_zero          := c.mul_zero
       zero_mul          := c.zero_mul
 
+    protected def to_constructor (α : Type _) [NCSemiring α] : NCSemiring.constructor_ncsr α where
+      toconstructor_cm := CommMonoid.to_constructor α
+      mul_one           := NCSemiring.mul_one
+      one_mul           := NCSemiring.one_mul
+      mul_assoc         := NCSemiring.mul_assoc
+      mul_distrib_left  := NCSemiring.mul_distrib_left
+      mul_distrib_right := NCSemiring.mul_distrib_right
+      mul_zero          := NCSemiring.mul_zero
+      zero_mul          := NCSemiring.zero_mul
+
   end NCSemiring
-  
+
   namespace Semiring
 
     protected instance Product (α₁ : Type _) (α₂ : Type _) [Semiring α₁] [Semiring α₂] : Semiring (α₁ × α₂) where
@@ -63,9 +73,17 @@ namespace M4R
       mul_zero          := c.mul_zero
       zero_mul          := fun a => by rw [c.mul_comm]; exact c.mul_zero a
       mul_comm          := c.mul_comm
-  
+
+    protected def to_constructor (α : Type _) [Semiring α] : Semiring.constructor_sr α where
+      toconstructor_cm := CommMonoid.to_constructor α
+      mul_one           := NCSemiring.mul_one
+      mul_assoc         := NCSemiring.mul_assoc
+      mul_distrib_left  := NCSemiring.mul_distrib_left
+      mul_zero          := NCSemiring.mul_zero
+      mul_comm          := Semiring.mul_comm
+
   end Semiring
-    
+
   instance NatSemiring : Semiring Nat := Semiring.construct
     {
       add_zero          := Nat.add_zero

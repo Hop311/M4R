@@ -173,4 +173,13 @@ namespace List
       propext ((not_iff_not.mpr this).trans Nat.not_lt)
     rw [this]; exact Iff.rfl
 
+  theorem nodup_erase_eq_filter' (a : α) {l : List α} (d : nodup l) : l.erase a = filter' (· ≠ a) l := by
+    induction d with
+    | nil => rfl
+    | @cons b l m d ih =>
+      byCases h : b = a
+      { subst h; rw [erase_cons_head, filter'_cons_of_neg _ (by exact iff_not_not.mpr rfl)]
+        apply Eq.symm; rw [filter'_eq_self]; exact fun a ha => (m a ha).symm }
+      { rw [erase_cons_tail _ h, filter'_cons_of_pos, ih]; exact h }
+
 end List

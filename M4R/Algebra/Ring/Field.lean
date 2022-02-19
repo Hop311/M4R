@@ -56,7 +56,7 @@ namespace M4R
 
   def Ring.is_Field (α : Type _) [Ring α] : Prop := is_NonTrivial α ∧ ∀ {a : α}, (h : a ≠ 0) → ∃ b, a * b = 1
   noncomputable def Ring.is_Field.toField [Ring α] (h : is_Field α) : Field α where
-    one_neq_zero := h.left
+    toNonTrivial.one_neq_zero := h.left
     mul_comm := mul_comm
     inv := fun ha => Classical.choose (h.right ha)
     mul_inv := fun ha => Classical.choose_spec (h.right ha)
@@ -66,11 +66,11 @@ namespace M4R
 
   def Ring.is_IntegralDomain (α : Type _) [Ring α] : Prop := is_NonTrivial α ∧ ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0
   def Ring.is_IntegralDomain.toIntegralDomain [Ring α] (h : is_IntegralDomain α) : IntegralDomain α where
-    one_neq_zero := h.left
+    toNonTrivial.one_neq_zero := h.left
     mul_comm := mul_comm
     integral := h.right
   theorem IntegralDomain.to_is_IntegralDomain [i : IntegralDomain α] : Ring.is_IntegralDomain α :=
-    ⟨i.one_neq_zero, i.integral⟩
+    ⟨i.toNonTrivial.one_neq_zero, i.integral⟩
 
   instance IntegralDomain.toNonTrivialRing (α : Type _) [IntegralDomain α] : NonTrivialRing α where
       toNonTrivial := IntegralDomain.toNCIntegralDomain.toNonTrivial

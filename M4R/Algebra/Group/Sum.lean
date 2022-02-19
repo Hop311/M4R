@@ -35,7 +35,11 @@ namespace M4R
 
   namespace UnorderedList.map_fold_add
 
-    @[simp] theorem empty [CommMonoid α] (init : α) (f : β → α) : UnorderedList.map_fold_add init f ∅ = init := rfl
+    @[simp] theorem empty [CommMonoid α] (init : α) (f : β → α) : map_fold_add init f ∅ = init := rfl
+
+    theorem cons [CommMonoid α] (init : α) (f : β → α) (b : β) (s : UnorderedList β) :
+      (s.cons b).map_fold_add init f = s.map_fold_add init f + f b :=
+        map_fold.cons (· + ·) CommMonoid.add_comm Monoid.add_assoc init f s b
 
     theorem distrib [CommMonoid α] (init : α) (f g : β → α) (s : UnorderedList β) :
       init + s.map_fold_add init (fun b => f b + g b) =
@@ -56,7 +60,7 @@ namespace M4R
 
   namespace UnorderedList.sum
 
-    @[simp] theorem empty [CommMonoid α] : (∑ (∅ : UnorderedList α)) = 0 := rfl
+    @[simp] theorem zero [CommMonoid α] : (∑ (0 : UnorderedList α)) = 0 := rfl
 
     theorem cons [CommMonoid α] (a : α) (s : UnorderedList α) : (∑ s.cons a) = (∑ s) + a :=
       fold_add.cons 0 a s
@@ -85,7 +89,10 @@ namespace M4R
   end UnorderedList.sum
   namespace UnorderedList.map_sum
 
-    @[simp] theorem empty [CommMonoid β] (f : α → β) : (∑ f in (∅ : UnorderedList α)) = 0 := rfl
+    @[simp] theorem zero [CommMonoid β] (f : α → β) : (∑ f in (0 : UnorderedList α)) = 0 := rfl
+
+    theorem cons [CommMonoid β] (f : α → β) (a : α) (s : UnorderedList α) : (∑ f in s.cons a) = (∑ f in s) + (f a) :=
+      map_fold_add.cons 0 f a s
 
     theorem congr [CommMonoid β] {f g : α → β} {s₁ s₂ : UnorderedList α} (h : s₁ = s₂) :
       (∀ x ∈ s₂, f x = g x) → (∑ f in s₁) = ∑ g in s₂ := by
@@ -106,14 +113,27 @@ namespace M4R
         rw [zero_add] at this
         simp only [map_sum, this]
 
+    theorem comm [CommMonoid γ] {s : UnorderedList α} {t : UnorderedList β} {f : α → β → γ} :
+      (∑ x in s, ∑ y in t, f x y) = (∑ y in t, ∑ x in s, f x y) :=
+        UnorderedList.induction_on (fun l => (∑ x in l, ∑ y in t, f x y) = (∑ y in t, ∑ x in l, f x y)) s
+          (by simp only [zero]; exact (eq_zero (fun _ _ => rfl)).symm)
+          (fun a l ih => by
+            simp at ih ⊢
+            have : (fun y => map_sum (UnorderedList.cons a l) (f · y)) =
+              (fun y => (map_sum l (f · y)) + f a y) := by simp only [cons]
+            rw [cons, this, distrib, ih])
+
   end UnorderedList.map_sum
 
   def Finset.sum [CommMonoid α] (s : Finset α) : α := s.elems.sum
   def Finset.map_sum [CommMonoid β] (s : Finset α) (f : α → β) : β := s.elems.map_sum f
-  
+
   namespace Finset.sum
 
     @[simp] theorem empty [CommMonoid α] : (∑ (∅ : Finset α)) = 0 := rfl
+
+    theorem cons [CommMonoid α] {a : α} {s : Finset α} (ha : a ∉ s) : (∑ s.cons a ha) = (∑ s) + a :=
+      UnorderedList.sum.cons a s.elems
 
     theorem eq_zero [CommMonoid α] {s : Finset α} (h : ∀ x ∈ s, x = 0) : (∑ s) = 0 :=
       UnorderedList.sum.eq_zero h
@@ -126,6 +146,9 @@ namespace M4R
   namespace Finset.map_sum
 
     @[simp] theorem empty [CommMonoid β] (f : α → β) : (∑ f in (∅ : Finset α)) = 0 := rfl
+
+    theorem cons [CommMonoid β] (f : α → β) {a : α} {s : Finset α} (ha : a ∉ s) : (∑ f in s.cons a ha) = (∑ f in s) + (f a) :=
+      UnorderedList.map_sum.cons f a s.elems
 
     theorem eq_zero [CommMonoid β] {f : α → β} {s : Finset α} (h : ∀ x ∈ s, f x = 0) :
       (∑ f in s) = 0 :=
@@ -163,6 +186,10 @@ namespace M4R
     @[simp] theorem sum_insert [CommMonoid β] (f : α → β) {a : α} {s : Finset α} :
       a ∉ s → (∑ f in insert a s) = f a + ∑ f in s :=
         map_fold.fold_insert (· + ·) add_comm add_assoc 0 f
+
+    theorem comm [CommMonoid γ] {s : Finset α} {t : Finset β} {f : α → β → γ} :
+      (∑ x in s, ∑ y in t, f x y) = (∑ y in t, ∑ x in s, f x y) :=
+        UnorderedList.map_sum.comm
 
   end Finset.map_sum
 end M4R
