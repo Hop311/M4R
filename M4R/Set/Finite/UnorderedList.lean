@@ -153,6 +153,10 @@ namespace M4R
             (fun (l : UnorderedList α) => (∀ x ∈ l, f x = g x) → l.map f = l.map g) t
             (fun l hl => congrArg List.to_UnorderedList (List.map_congr rfl hl)) h₂
 
+      theorem map_comp (f : α → β) (g : β → γ) (s : UnorderedList α) : (s.map f).map g = s.map (g ∘ f) :=
+        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => (l.map f).map g = l.map (g ∘ f)) s
+          (fun l => congrArg List.to_UnorderedList (l.map_comp f g))
+
     end map
 
     theorem nodup_map_on {f : α → β} {s : UnorderedList α} (H : ∀ x ∈ s, ∀ y ∈ s, f x = f y → x = y) :
@@ -305,10 +309,10 @@ namespace M4R
       @[simp] theorem zero_ndinter (s : UnorderedList α) : ndinter 0 s = 0 := rfl
 
       @[simp] theorem cons_ndinter_of_mem {a : α} (s : UnorderedList α) {t : UnorderedList α} (h : a ∈ t) :
-        ndinter (s.cons a) t = (ndinter s t).cons a := by simp [ndinter, h]
+        ndinter (s.cons a) t = (ndinter s t).cons a := by simp only [ndinter, h, filter_cons_of_pos]
 
       @[simp] theorem ndinter_cons_of_not_mem {a : α} (s : UnorderedList α) {t : UnorderedList α} (h : a ∉ t) :
-        ndinter (s.cons a) t = ndinter s t := by simp [ndinter, h]
+        ndinter (s.cons a) t = ndinter s t := by simp only [ndinter, h, filter_cons_of_neg]
 
       @[simp] theorem mem_ndinter {s t : UnorderedList α} {a : α} : a ∈ ndinter s t ↔ a ∈ s ∧ a ∈ t :=
         mem_filter

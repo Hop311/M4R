@@ -27,13 +27,13 @@ namespace M4R
       a = b ↔ Set.inclusion a = Set.inclusion b :=
         ⟨congrArg Set.inclusion, Set.elementExt⟩
 
-    instance ZeroIdeal [Ring α] : Ideal α where
+    def ZeroIdeal [Ring α] : Ideal α where
       subset := Set.SingletonSet.mk 0
       has_zero := rfl
       add_closed := fun xz yz => by rw [xz, yz, add_zero]; rfl
       mul_closed := fun _ _ h => by rw [h, mul_zero]; trivial
 
-    instance UnitIdeal (α : Type _) [Ring α] : Ideal α where
+    def UnitIdeal (α : Type _) [Ring α] : Ideal α where
       subset := Set.Universal
       has_zero := trivial
       add_closed := by intros; trivial
@@ -60,7 +60,7 @@ namespace M4R
 
     protected def add [Ring α] (I J : Ideal α) : Ideal α where
       subset := {x | ∃ i ∈ I, ∃ j ∈ J, i + j = x }
-      has_zero := ⟨0, I.has_zero, 0, J.has_zero, show 0 + 0 = 0 by rw [add_zero 0]⟩
+      has_zero := ⟨0, I.has_zero, 0, J.has_zero, by rw [add_zero 0]⟩
       add_closed := fun ⟨ia, hia, ja, hja, hija⟩ ⟨ib, hib, jb, hjb, hijb⟩ =>
         ⟨
           ia + ib, I.add_closed hia hib,

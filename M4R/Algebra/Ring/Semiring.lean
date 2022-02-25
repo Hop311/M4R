@@ -20,6 +20,36 @@ namespace M4R
       zero_mul          := fun (a₁, a₂) => by
         simp [HMul.hMul, Mul.mul, Monoid.product_zero]; exact ⟨zero_mul a₁, zero_mul a₂⟩
 
+    theorem ofNat.preserve_succ [NCSemiring α] (n : Nat) : n.succ = (n : α) + 1 := by
+      induction n with
+      | zero => simp only [NCSemiring.ofNat, Monoid.zero_add]
+      | succ k ih => simp only [NCSemiring.ofNat]
+    
+    theorem ofNat.preserve_add [NCSemiring α] (m n : Nat) : m + n = (m : α) + n := by
+      induction n with
+      | zero => simp only [NCSemiring.ofNat, Monoid.add_zero]; rfl
+      | succ k ih => rw [Nat.add_succ, preserve_succ, preserve_succ, ih, Monoid.add_assoc]
+
+    theorem mul_nat_succ [NCSemiring α] (a : α) (n : Nat) : n.succ * a = n * a + a := by
+      rw [ofNat.preserve_succ, mul_distrib_right, one_mul]
+
+    theorem pow_nat_succ [NCSemiring α] (a : α) (x : Nat) : a ^ (Nat.succ x) = a^x * a :=
+      match x with
+      | Nat.zero => by simp only [HPow.hPow, Pow.pow, NCSemiring.pow_nat, one_mul]
+      | Nat.succ k  => rfl
+
+    theorem pow_nat_one [NCSemiring α] (n : Nat) : (1 : α)^n = 1 := by
+      induction n with
+      | zero      => rfl
+      | succ k ih => rw [pow_nat_succ, ih, one_mul];
+    theorem pow_nat_0 [NCSemiring α] (a : α) : a ^ (0 : Nat) = 1 := rfl
+    theorem pow_nat_1 [NCSemiring α] (a : α) : a ^ (1 : Nat) = a := rfl
+
+    theorem pow_nat_add_distrib [NCSemiring α] (a : α) (m n : Nat) : a^(m + n) = a^m * a^n := by
+      induction n with
+      | zero      => rw [Nat.add_zero, pow_nat_0, mul_one]
+      | succ k ih => rw [Nat.add_succ, pow_nat_succ, pow_nat_succ, ←mul_assoc, ih]
+
     protected class constructor_ncsr (α : Type _) extends CommMonoid.constructor_cm α, One α, Mul α where
       mul_one           : ∀ a : α, a * 1 = a
       one_mul           : ∀ a : α, 1 * a = a
@@ -55,6 +85,11 @@ namespace M4R
 
     protected instance Product (α₁ : Type _) (α₂ : Type _) [Semiring α₁] [Semiring α₂] : Semiring (α₁ × α₂) where
       mul_comm := fun (a₁, a₂) (b₁, b₂) => by simp [HMul.hMul, Mul.mul]; exact ⟨mul_comm a₁ b₁, mul_comm a₂ b₂⟩
+
+    theorem mul_right_comm [Semiring α] (a b c : α) : a * b * c = a * c * b := by
+      rw [NCSemiring.mul_assoc, mul_comm b, ←NCSemiring.mul_assoc]
+    theorem mul_left_comm [Semiring α] (a b c : α) : a * (b * c) = b * (a * c) := by
+      rw [←NCSemiring.mul_assoc, mul_comm a, NCSemiring.mul_assoc]
 
     protected class constructor_sr (α : Type _) extends CommMonoid.constructor_cm α, One α, Mul α where
       mul_one           : ∀ a : α, a * 1 = a

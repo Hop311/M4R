@@ -123,6 +123,10 @@ namespace M4R
               (fun y => (map_sum l (f · y)) + f a y) := by simp only [cons]
             rw [cons, this, distrib, ih])
 
+    theorem map [CommMonoid γ] (s : UnorderedList α) (e : α → β) (f : β → γ) :
+      (∑ f in s.map e) = ∑ f ∘ e in s := by
+        simp only [map_sum, map_fold_add, map_fold, UnorderedList.map.map_comp]
+
   end UnorderedList.map_sum
 
   def Finset.sum [CommMonoid α] (s : Finset α) : α := s.elems.sum
@@ -137,6 +141,9 @@ namespace M4R
 
     theorem eq_zero [CommMonoid α] {s : Finset α} (h : ∀ x ∈ s, x = 0) : (∑ s) = 0 :=
       UnorderedList.sum.eq_zero h
+
+    @[simp] theorem singleton [CommMonoid α] (a : α) : (∑ Finset.singleton a) = a :=
+      UnorderedList.sum.singleton a
 
     @[simp] theorem sum_insert [CommMonoid α] {a : α} {s : Finset α} : a ∉ s → (∑ insert a s) = a + ∑ s := by
       rw [add_comm]; exact fold.fold_insert (· + ·) (fun _ _ _ => by apply add_right_comm) 0
@@ -153,6 +160,9 @@ namespace M4R
     theorem eq_zero [CommMonoid β] {f : α → β} {s : Finset α} (h : ∀ x ∈ s, f x = 0) :
       (∑ f in s) = 0 :=
         UnorderedList.map_sum.eq_zero h
+
+    @[simp] theorem singleton [CommMonoid β] (f : α → β) (a : α) : (∑ f in Finset.singleton a) = f a :=
+      UnorderedList.map_sum.singleton f a
 
     theorem distrib [CommMonoid β] (f g : α → β) (s : Finset α) :
       (∑ x in s, f x + g x) = (∑ f in s) + ∑ g in s := by
@@ -190,6 +200,44 @@ namespace M4R
     theorem comm [CommMonoid γ] {s : Finset α} {t : Finset β} {f : α → β → γ} :
       (∑ x in s, ∑ y in t, f x y) = (∑ y in t, ∑ x in s, f x y) :=
         UnorderedList.map_sum.comm
+
+    theorem map [CommMonoid γ] (s : Finset α) {e : α → β} (he : Function.injective e) (f : β → γ) :
+      (∑ f in s.map_inj he) = ∑ f ∘ e in s :=
+        UnorderedList.map_sum.map s.elems e f
+
+    theorem antidiagonal_eq_range [CommMonoid α] (f : Nat × Nat → α) (n : Nat) :
+      (∑ f in Finset.antidiagonal n) = ∑ k in Finset.range n.succ, f (k, n-k) := by
+        have : Finset.antidiagonal n = (Finset.range n.succ).map_inj (fun _ _ h => by
+          rw [Prod.mk.injEq] at h; exact h.left) := rfl
+        rw [this, map_sum.map]
+
+    theorem range'_start [CommMonoid α] (f : Nat → α) (s n : Nat) :
+      (∑ f in Finset.range' s n.succ) = f s + ∑ f in Finset.range' s.succ n := by
+        rw [Finset.range'.start, cons, CommMonoid.add_comm]
+    
+    theorem range'_succ [CommMonoid α] (f : Nat → α) (s n : Nat) :
+      (∑ f in Finset.range' s n.succ) = (∑ f in Finset.range' s n) + f (s+n) := by
+        rw [Finset.range'.succ, cons]
+    
+    theorem range_start [CommMonoid α] (f : Nat → α) (n : Nat) :
+      (∑ f in Finset.range n.succ) = f 0 + ∑ f in Finset.range' 1 n := by
+        rw [Finset.range.start, cons, CommMonoid.add_comm]
+    
+    theorem range_succ [CommMonoid α] (f : Nat → α) (n : Nat) :
+      (∑ f in Finset.range n.succ) = (∑ f in Finset.range n) + f n := by
+        rw [Finset.range.succ, cons]
+
+    theorem range'_shift [CommMonoid α] (f : Nat → α) (s n : Nat) :
+      (∑ f in Finset.range' s n) = ∑ f ∘ Nat.pred in Finset.range' s.succ n := by
+        induction n with
+        | zero => rw [Finset.range'.zero, Finset.range'.zero, empty, empty]
+        | succ n ih =>
+          rw [range'_succ, ih, range'_succ, Nat.succ_add]
+          simp only [Function.comp, Nat.pred_succ]
+    
+    theorem range_shift [CommMonoid α] (f : Nat → α) (n : Nat) :
+      (∑ f in Finset.range n) = ∑ f ∘ Nat.pred in Finset.range' 1 n := by
+        rw [range_eq_range']; exact range'_shift f 0 n
 
   end Finset.map_sum
 end M4R

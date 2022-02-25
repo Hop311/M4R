@@ -1,3 +1,4 @@
+import M4R.Algebra.Ring.Ring
 import M4R.Algebra.Ring.SubRing
 
 namespace M4R
@@ -35,12 +36,12 @@ namespace M4R
       preserve_one := by simp only [MHomomorphism.comp, Function.comp]; rw [hab.preserve_one, hbc.preserve_one]
       preserve_mul := fun a b => by simp only [MHomomorphism.comp, Function.comp]; rw [hab.preserve_mul, hbc.preserve_mul]
 
-    instance ImageSubSemiring [NCSemiring α] [NCSemiring β] (gh : α →* β) : SubSemiring β where
+    def ImageSubSemiring [NCSemiring α] [NCSemiring β] (gh : α →* β) : SubSemiring β where
       toSubMonoid := gh.ImageSubMonoid
       has_one := ⟨1, gh.preserve_one⟩
       mul_closed := fun _ ⟨a, hax⟩ _ ⟨b, hby⟩ => by rw [←hax, ←hby]; exact ⟨a * b, gh.preserve_mul a b⟩
 
-    protected instance Identity [NCSemiring α] : α →* α where
+    protected def Identity [NCSemiring α] : α →* α where
       toMHomomorphism := MHomomorphism.Identity
       preserve_one := by simp [MHomomorphism.Identity]
       preserve_mul := by intros; rfl
@@ -86,8 +87,14 @@ namespace M4R
         left_inv := fun a => hf.inj (Classical.choose_spec (hf.surj (f a)))
         right_inv := fun a => Classical.choose_spec (hf.surj a)
 
-    protected noncomputable instance Identity [NCSemiring α] : α ≅* α :=
+    protected noncomputable def Identity [NCSemiring α] : α ≅* α :=
       SIsomorphism.of_bijection (by apply Function.id_bijective : Function.bijective SHomomorphism.Identity.hom)
+
+    protected def SelfInverse [NCSemiring α] (f : α →* α) (h : ∀ a, f (f a) = a) : α ≅* α where
+      toSHomomorphism := f
+      inv := f.hom
+      left_inv := h
+      right_inv := h
 
   end SIsomorphism
 
@@ -99,11 +106,11 @@ namespace M4R
         simp only [SHomomorphism.comp, MHomomorphism.comp, Function.comp]
         rw [hab.preserve_neg, hbc.preserve_neg]
 
-    instance ImageSubRing [NCRing α] [NCRing β] (gh : α →ᵣ β) : SubRing β where
+    def ImageSubRing [NCRing α] [NCRing β] (gh : α →ᵣ β) : SubRing β where
       toSubSemiring := gh.ImageSubSemiring
       neg_closed := gh.toGHomomorphism.ImageSubGroup.neg_closed
 
-    protected instance Identity [NCRing α] : α →ᵣ α where
+    protected def Identity [NCRing α] : α →ᵣ α where
       toSHomomorphism := SHomomorphism.Identity
       preserve_neg    := GHomomorphism.Identity.preserve_neg
 
@@ -152,8 +159,33 @@ namespace M4R
         left_inv := fun a => hf.inj (Classical.choose_spec (hf.surj (f a)))
         right_inv := fun a => Classical.choose_spec (hf.surj a)
 
-    protected noncomputable instance Identity [NCRing α] : α ≅ᵣ α :=
+    protected noncomputable def Identity [NCRing α] : α ≅ᵣ α :=
       RIsomorphism.of_bijection (by apply Function.id_bijective : Function.bijective RHomomorphism.Identity.hom)
 
+    protected def SelfInverse [NCRing α] (f : α →ᵣ α) (h : ∀ a, f (f a) = a) : α ≅ᵣ α where
+      toRHomomorphism := f
+      inv := f.hom
+      left_inv := h
+      right_inv := h
+
   end RIsomorphism
+
+  protected def NCSemiring.MulHomLeft [NCSemiring α] (a : α) : α →₊ α where
+    hom := (a * ·)
+    preserve_zero := by simp only [NCSemiring.mul_zero]
+    preserve_add := fun _ _ => by simp only [NCSemiring.mul_distrib_left]
+  
+  protected def NCSemiring.MulHomRight [NCSemiring α] (a : α) : α →₊ α where
+    hom := (· * a)
+    preserve_zero := by simp only [NCSemiring.zero_mul]
+    preserve_add := fun _ _ => by simp only [NCSemiring.mul_distrib_right]
+  
+  protected def NCRing.MulHomLeft [NCRing α] (a : α) : α →₋ α where
+    toMHomomorphism := NCSemiring.MulHomLeft a
+    preserve_neg := fun _ => by simp only [NCSemiring.MulHomLeft, NCRing.mul_neg]
+  
+  protected def NCRing.MulHomRight [NCRing α] (a : α) : α →₋ α where
+    toMHomomorphism := NCSemiring.MulHomRight a
+    preserve_neg := fun _ => by simp only [NCSemiring.MulHomRight, NCRing.neg_mul]
+
 end M4R

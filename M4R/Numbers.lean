@@ -30,6 +30,12 @@ namespace Nat
     have : b + a < b + c := by rw [Nat.add_comm b a, Nat.add_comm b c]; exact h
     Nat.lt_of_add_lt_add_left this
 
+  protected theorem le_iff_eq_or_lt {a b : Nat} : a ≤ b ↔ a = b ∨ a < b :=
+    ⟨fun h => (Nat.lt_or_eq_of_le h).comm, fun h => Or.elim h (· ▸ Nat.le.refl) (Nat.le_of_lt)⟩
+
+  protected theorem lt_succ_if_le {a b : Nat} : a < b.succ ↔ a ≤ b :=
+    ⟨le_of_lt_succ, lt_succ_of_le⟩
+
   theorem succ_ne_self : ∀ n : Nat, succ n ≠ n
   | 0  , h => absurd h (Nat.succ_ne_zero 0)
   | n+1, h => succ_ne_self n (Nat.succ.inj h)
@@ -97,6 +103,12 @@ namespace Nat
   theorem sub_pos_of_lt {m n : Nat} (h : m < n) : n - m > 0 :=
     have : 0 + m < n - m + m := by rw [Nat.zero_add, sub_add_cancel (Nat.le_of_lt h)]; exact h
     Nat.lt_of_add_lt_add_right this
+
+  theorem sub_pred {m n : Nat} (h₁ : 0 < n) (h₂ : n ≤ m) : m - n.pred = (m - n).succ := by
+    cases n with
+    | zero   => contradiction
+    | succ n =>
+      rw [Nat.pred_succ, Nat.sub_succ, Nat.succ_pred_eq_of_pos (Nat.sub_pos_of_lt h₂)]
 
   theorem lt_of_sub_eq_succ {m n l : Nat} (H : m - n = succ l) : n < m :=
     gt_of_not_le (mt (@sub_eq_zero_of_le m n) (fun h => by rw [h] at H; contradiction))
@@ -184,6 +196,52 @@ namespace Nat
   theorem mul_neq_zero (a b : Nat) : a * b ≠ 0 ↔ a ≠ 0 ∧ b ≠ 0 := by
     rw [←M4R.not_or_iff_and_not, M4R.not_iff_not]; exact mul_eq_zero a b
 
+  section choose
+
+    protected def choose : Nat → Nat → Nat
+    | _    ,     0 => 1
+    | 0    , k + 1 => 0
+    | n + 1, k + 1 => Nat.choose n k + Nat.choose n (k + 1)
+
+    @[simp] theorem choose_zero_right (n : Nat) : n.choose 0 = 1 := by
+      cases n; rfl; rfl
+
+    theorem choose_zero_right_succ (n : Nat) : n.choose 0 = n.succ.choose 0 := by
+      rw [choose_zero_right, choose_zero_right]
+
+    @[simp] theorem choose_zero_succ (k : Nat) : (0 : Nat).choose k.succ = 0 := rfl
+
+    theorem choose_succ_succ (n k : Nat) : n.succ.choose k.succ = n.choose k + n.choose (succ k) := rfl
+
+    theorem choose_eq_zero_of_lt : ∀ {n k : Nat}, n < k → n.choose k = 0
+    | _    ,     0, hk => absurd hk (Nat.not_lt_zero _)
+    | 0    , k + 1, hk => choose_zero_succ _
+    | n + 1, k + 1, hk => by
+      rw [choose_succ_succ, choose_eq_zero_of_lt (lt_of_succ_lt_succ hk),
+        choose_eq_zero_of_lt (lt_of_succ_lt hk)]
+
+    @[simp] theorem choose_self (n : Nat) : n.choose n = 1 := by
+      induction n with
+      | zero      => rfl
+      | succ n ih => simp only [Nat.choose]; rw [ih, choose_eq_zero_of_lt (lt_succ_self n)]
+
+    theorem choose_self_succ (n : Nat) : n.choose n = n.succ.choose n.succ := by
+      rw [choose_self, choose_self]
+
+    @[simp] theorem choose_succ_self (n : Nat) : n.choose n.succ = 0 :=
+      choose_eq_zero_of_lt (lt_succ_self _)
+
+    @[simp] theorem choose_one_right (n : Nat) : n.choose 1 = n := by
+      induction n with
+      | zero => rfl
+      | succ n ih => simp only [Nat.choose]; rw [ih, choose_zero_right, one_add]
+
+    theorem choose_pred {n k : Nat} (h : 0 < k) : n.choose k + n.choose k.pred = n.succ.choose k := by
+      cases k with
+      | zero => contradiction
+      | succ k => rw [Nat.pred_succ, Nat.add_comm]; rfl
+
+  end choose
 end Nat
 
 namespace Int

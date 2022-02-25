@@ -164,6 +164,24 @@ namespace M4R
 
     end single
 
+    noncomputable instance UnitFinsuppMonoid [Monoid α] : (Unit →₀ α) ≅₊ α where
+      hom := (· Unit.unit)
+      preserve_zero := rfl
+      preserve_add := fun _ _ => rfl
+      inv := fun a => single Unit.unit a
+      left_inv := fun x => Finsupp.ext (funext fun u => by cases u; simp only [single.eq_same])
+      right_inv := fun a => by simp only [single.eq_same]
+
+    noncomputable instance UnitFinsuppGroup [Group α] : (Unit →₀ α) ≅₋ α where
+      toMHomomorphism := UnitFinsuppMonoid.toMHomomorphism
+      preserve_neg := fun _ => rfl
+      inv := UnitFinsuppMonoid.inv
+      left_inv := UnitFinsuppMonoid.left_inv
+      right_inv := UnitFinsuppMonoid.right_inv
+
+    theorem UnitFinsupp.single [Zero α] (x : Unit →₀ α) : x = single Unit.unit (x Unit.unit) :=
+      Finsupp.ext (funext fun u => by cases u; simp only [single.eq_same])
+
     section erase
 
       noncomputable def erase [Zero β] (a : α) (f : α →₀ β) : α →₀ β where
@@ -343,6 +361,10 @@ namespace M4R
           byCases hb : b = 0;
           { simp [support_sum, single, hb, h] }
           { simp [support_sum, Finset.map_sum, single, hb, Finset.singleton] }
+
+      theorem unit_sum [Zero α] [CommMonoid β] {f : Unit → α → β} (x : Unit →₀ α) (h : f Unit.unit 0 = 0):
+        (∑ f in x) = f Unit.unit (x Unit.unit) := by
+          rw [UnitFinsupp.single x, map_sum.single Unit.unit (x Unit.unit) f h, single.eq_same]
 
       theorem support_subset [Zero β] [CommMonoid γ] (f : α →₀ β) {s : Finset α}
         (hs : f.support ⊆ s) (g : α → β → γ) (h : ∀ i ∈ s, g i 0 = 0) :

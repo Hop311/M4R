@@ -1,4 +1,6 @@
 
+theorem Eq.comm {α : Sort _} {a b : α} : a = b ↔ b = a := ⟨Eq.symm, Eq.symm⟩
+
 theorem Or.assoc : p ∨ q ∨ r ↔ (p ∨ q) ∨ r :=
   ⟨fun pq_r => Or.elim pq_r
     (fun x => Or.inl (Or.inl x))
@@ -99,6 +101,12 @@ namespace M4R
     Iff.intro (fun h ha hb => h ⟨ha, hb⟩) (fun h ⟨ha, hb⟩ => h ha hb)
 
   @[simp] theorem not_and : ¬ (a ∧ b) ↔ (a → ¬ b) := and_imp
+
+  theorem or_iff_right_of_imp (ha : a → b) : (a ∨ b) ↔ b :=
+    ⟨Or.rec ha id, Or.inr⟩
+
+  theorem or_iff_left_of_imp (hb : b → a) : (a ∨ b) ↔ a :=
+    ⟨Or.rec id hb, Or.inl⟩
 
   open Classical
 

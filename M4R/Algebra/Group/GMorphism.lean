@@ -56,12 +56,12 @@ namespace M4R
     protected def comp.hom [Monoid α] [Monoid β] [Monoid γ] (hbc : β →₊ γ) (hab : α →₊ β) :
       (hbc.comp hab).hom = hbc.hom ∘ hab.hom := rfl
 
-    instance ImageSubMonoid [Monoid α] [Monoid β] (gh : α →₊ β) : SubMonoid β where
+    def ImageSubMonoid [Monoid α] [Monoid β] (gh : α →₊ β) : SubMonoid β where
       subset     := Function.image gh.hom
       has_zero   := ⟨0, gh.preserve_zero⟩
       add_closed := fun _ ⟨a, hax⟩ _ ⟨b, hby⟩ => by rw [←hax, ←hby]; exact ⟨a + b, gh.preserve_add a b⟩
 
-    protected instance Identity [Monoid α] : α →₊ α where
+    protected def Identity [Monoid α] : α →₊ α where
       hom           := id
       preserve_zero := rfl
       preserve_add  := by intros; rfl
@@ -117,8 +117,17 @@ namespace M4R
       left_inv := fun a => hf.inj (Classical.choose_spec (hf.surj (f a)))
       right_inv := fun a => Classical.choose_spec (hf.surj a)
 
-    protected noncomputable instance Identity [Monoid α] : α ≅₊ α :=
+    protected def to_bijection [Monoid α] [Monoid β] (f : α ≅₊ β) : Function.bijective f.hom :=
+      Function.bijective_of_inverse f.left_inv f.right_inv
+
+    protected noncomputable def Identity [Monoid α] : α ≅₊ α :=
       MIsomorphism.of_bijection (by apply Function.id_bijective : Function.bijective MHomomorphism.Identity.hom)
+
+    protected def SelfInverse [Monoid α] (f : α →₊ α) (h : ∀ a, f (f a) = a) : α ≅₊ α where
+      toMHomomorphism := f
+      inv := f.hom
+      left_inv := h
+      right_inv := h
 
   end MIsomorphism
 
@@ -130,17 +139,39 @@ namespace M4R
         simp only [MHomomorphism.comp, Function.comp];
         rw [hab.preserve_neg, hbc.preserve_neg]
 
-    instance ImageSubGroup [Group α] [Group β] (gh : α →₋ β) : SubGroup β where
+    def ImageSubGroup [Group α] [Group β] (gh : α →₋ β) : SubGroup β where
       toSubMonoid := gh.ImageSubMonoid
       neg_closed := fun x ⟨a, hax⟩ => by rw [←hax]; exact ⟨-a, gh.preserve_neg a⟩
 
-    protected instance Identity [Group α] : α →₋ α where
+    protected def Identity [Group α] : α →₋ α where
       toMHomomorphism := MHomomorphism.Identity
       preserve_neg    := by intros; rfl
 
     protected theorem ext [Group α] [Group β] : ∀ {f g : α →₋ β}, f = g ↔ f.hom = g.hom
     | ⟨_, _⟩, ⟨_, _⟩ =>
       ⟨fun h => by rw [h], fun h => by rw [GHomomorphism.mk.injEq]; exact MHomomorphism.ext.mpr h⟩
+
+    protected structure constructor_gh (α : Type _) (β : Type _) [Group α] [Group β] where
+      hom          : α → β
+      preserve_add : ∀ a b, hom (a + b) = hom a + hom b
+      preserve_neg : ∀ a, hom (-a) = -hom a
+
+    protected def construct [Group α] [Group β] (c : GHomomorphism.constructor_gh α β) : GHomomorphism α β where
+      hom := c.hom
+      preserve_zero := by
+        byCases h : ∃ x : α, x ≠ 0
+        { cases h with | intro x hx =>
+          rw [←Group.add_neg x, c.preserve_add, c.preserve_neg, Group.add_neg] }
+        { simp only [not_exists, iff_not_not] at h; rw [←Monoid.add_zero 0, c.preserve_add];
+          conv => lhs rhs rw [←Group.neg_zero]
+          rw [c.preserve_neg, Group.add_neg] }
+      preserve_add := c.preserve_add
+      preserve_neg := c.preserve_neg
+
+    protected def to_constructor [Group α] [Group β] (f : GHomomorphism α β): GHomomorphism.constructor_gh α β where
+      hom          := f.hom
+      preserve_add := f.preserve_add
+      preserve_neg := f.preserve_neg
 
   end GHomomorphism
 
@@ -177,8 +208,24 @@ namespace M4R
       left_inv := fun a => hf.inj (Classical.choose_spec (hf.surj (f a)))
       right_inv := fun a => Classical.choose_spec (hf.surj a)
 
-    protected noncomputable instance Identity [Group α] : α ≅₋ α :=
+    protected noncomputable def Identity [Group α] : α ≅₋ α :=
       GIsomorphism.of_bijection (by apply Function.id_bijective : Function.bijective GHomomorphism.Identity.hom)
-  
+
+    protected def SelfInverse [Group α] (f : α →₋ α) (h : ∀ a, f (f a) = a) : α ≅₋ α where
+      toGHomomorphism := f
+      inv := f.hom
+      left_inv := h
+      right_inv := h
+
   end GIsomorphism
+
+  protected def AbelianGroup.NegHom [AbelianGroup α] : α →₋ α where
+    hom := (- ·)
+    preserve_zero := by simp only [Group.neg_zero]
+    preserve_add := fun _ _ => by simp only [AbelianGroup.neg_add_distrib]
+    preserve_neg := fun _ => by rfl
+
+  protected def AbelianGroup.NegIso [AbelianGroup α] : α ≅₋ α := GIsomorphism.SelfInverse
+    AbelianGroup.NegHom (fun _ => by simp only [AbelianGroup.NegHom, Group.neg_neg])
+
 end M4R

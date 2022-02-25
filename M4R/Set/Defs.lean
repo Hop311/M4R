@@ -6,6 +6,13 @@ namespace M4R
 
     class Singleton (α : Type _) extends Inhabited α where single (a : α) : a = default
 
+    inductive Unit : Sort _
+    | unit : Unit
+
+    instance UnitSingleton : Singleton Unit where
+      default := Unit.unit
+      single := fun u => by cases u; rfl
+
   namespace Set
 
     protected def mem (a : α) (s : Set α) := s a

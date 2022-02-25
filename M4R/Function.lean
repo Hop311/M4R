@@ -56,7 +56,10 @@ namespace M4R
       fun y =>
         let ⟨x, hx⟩ := surjf y
         by rw [← hx, rfg]
-          
+
+    theorem bijective_of_inverse {f : α → β} {g : β → α} (hl : left_inverse g f) (hr : right_inverse g f) :
+      Function.bijective f := ⟨hl.injective, hr.surjective⟩
+
     theorem id_injective : @injective α α id := fun _ _ => id
     theorem id_surjective : @surjective α α id := fun y => ⟨y, rfl⟩
     theorem id_bijective : @bijective α α id := ⟨id_injective, id_surjective⟩

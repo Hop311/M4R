@@ -23,6 +23,11 @@ namespace List
   theorem range_eq_range' (n : Nat) : range n = range' 0 n :=
     (range_core_range' n 0).trans (by rw [Nat.zero_add])
 
+  theorem range'_start (s n : Nat) : range' s n.succ = [s] ++ range' s.succ n := rfl
+
+  theorem range_start (n : Nat) : range n.succ = [0] ++ range' 1 n := by
+    rw [range_eq_range', range'_start]
+
   @[simp] theorem range'_append : ∀ s m n : Nat, range' s m ++ range' (s+m) n = range' s (n+m)
   | s, 0  , n => rfl
   | s, m+1, n => by
@@ -41,6 +46,21 @@ namespace List
   | 0     => by rw [Nat.add_zero, range_zero, map_nil, append_nil]
   | b + 1 => by rw [Nat.add_succ, range_succ, range_add a b, range_succ, map_append, map_singleton, append_assoc]
 
+  @[simp] theorem mem_range' : ∀ {m s n : Nat}, m ∈ range' s n ↔ s ≤ m ∧ m < s + n
+  | m, s, Nat.zero => by
+    rw [range'_empty, mem_nil_iff, false_iff, not_and_iff_or_not,
+      Nat.add_zero, Nat.not_le, Nat.not_lt]; exact (Nat.le_or_lt s m).comm
+  | m, s, Nat.succ n => by
+    have : m = s → m < s + n + 1 := (· ▸ Nat.lt_succ_of_le (Nat.le_add_right _ _))
+    have l : m = s ∨ s + 1 ≤ m ↔ s ≤ m := by
+      conv => rhs rw [Nat.le_iff_eq_or_lt, Eq.comm]; exact Iff.rfl
+    simp only [range', mem_cons_iff, mem_range', or_and_distrib_left,
+      or_iff_right_of_imp this, l, Nat.add_right_comm]
+    exact Iff.rfl
+
+  @[simp] theorem mem_range {m n : Nat} : m ∈ range n ↔ m < n := by
+    simp only [range_eq_range', mem_range', Nat.zero_le, true_and, Nat.zero_add]; exact Iff.rfl
+
   inductive chain (R : α → α → Prop) : α → List α → Prop
   | nil {a : α} : chain R a []
   | cons : ∀ {a b : α} {l : List α}, R a b → chain R b l → chain R a (b::l)
@@ -56,7 +76,7 @@ namespace List
       induction p generalizing b with
       | nil => constructor
       | cons r c ih => exact chain.cons (Hab r) (ih (@HRS _))
-      
+
   theorem chain.imp {S : α → α → Prop} (H : ∀ a b, R a b → S a b)
     {a : α} {l : List α} (p : chain R a l) : chain S a l :=
       p.imp' H (H a)
@@ -75,7 +95,7 @@ namespace List
         induction c with
         | nil => exact Pairwise.singleton _ _
         | cons r p ih =>
-          exact Pairwise.cons (fun x hx => Or.elim (List.eq_or_mem_of_mem_cons hx)
+          exact Pairwise.cons (fun x hx => Or.elim (eq_or_mem_of_mem_cons hx)
             (fun h => by rw [h]; exact r) (fun h => tr r ((Pairwise.consIff.mp ih).left x h))) ih,
       chain_of_pairwise⟩
 
@@ -129,35 +149,35 @@ namespace M4R
     namespace range'
 
       @[simp] theorem zero (n : Nat) : range' n 0 = 0 := rfl
-      @[simp] theorem singleton (n : Nat) : range' n 1 = [n] := rfl
+      @[simp] theorem singleton (n : Nat) : range' n 1 = UnorderedList.singleton n := rfl
 
-      theorem cons (m n : Nat) : range' m (n+1) = (range' (m+1) n).cons m := rfl
+      theorem append (s m n : Nat) : range' s m + range' (s+m) n = range' s (n+m) :=
+        congrArg List.to_UnorderedList (List.range'_append s m n)
 
-      theorem append : ∀ s m n : Nat, range' s m + range' (s+m) n = range' s (n+m)
-      | s, 0  , n => rfl
-      | s, m+1, n => by
-        have : (range' (s+1) m + range' (s+m+1) n).cons s = (range' (s+1) (n+m)).cons s := by
-          rw [Nat.add_right_comm, append]
-        exact this
+      theorem start (s n : Nat) : range' s n.succ = UnorderedList.singleton s + range' s.succ n := rfl
 
-      theorem succ (s n : Nat) : range' s n.succ = range' s n + [s+n] := by
-        rw [Nat.succ_eq_add_one, Nat.add_comm n 1]; exact (append s n 1).symm
+      theorem succ (s n : Nat) : range' s n.succ = range' s n + UnorderedList.singleton (s+n) :=
+        congrArg List.to_UnorderedList (List.range'_succ s n)
+
+      @[simp] theorem mem_range' {m s n : Nat} : m ∈ range' s n ↔ s ≤ m ∧ m < s + n :=
+        List.mem_range'
 
     end range'
     namespace range
+
       @[simp] theorem zero : range 0 = 0 := rfl
 
-      theorem cons (n : Nat) : range (n+1) = (range' 1 n).cons 0 := by
-        rw [range_eq_range', range'.cons]
+      theorem succ (n : Nat) : range n.succ = range n + UnorderedList.singleton n :=
+        congrArg List.to_UnorderedList (List.range_succ n)
 
-      theorem succ (n : Nat) : range n.succ = range n + [n] := by
-        have := range'.succ 0 n; rw [←range_eq_range', ←range_eq_range', Nat.zero_add] at this
-        exact this
+      theorem start (n : Nat) : range n.succ = UnorderedList.singleton 0 + range' 1 n :=
+        congrArg List.to_UnorderedList (List.range_start n)
 
-      theorem add (a : Nat) : ∀ b, range (a + b) = range a + (range b).map (a + ·)
-      | 0     => by rw [Nat.add_zero, zero, map_nil, append.add_zero]
-      | b + 1 => by
-        rw [Nat.add_succ, succ, add a b, succ, map.add, singleton_eq, singleton_eq, map.singleton, append.assoc]
+      theorem add (a b : Nat) : range (a + b) = range a + (range b).map (a + ·) :=
+        congrArg List.to_UnorderedList (List.range_add a b)
+
+      @[simp] theorem mem_range {m n : Nat} : m ∈ range n ↔ m < n :=
+        List.mem_range
 
     end range
 
@@ -173,7 +193,56 @@ namespace M4R
 
     def antidiagonal (n : Nat) : Finset (Nat × Nat) := ⟨UnorderedList.antidiagonal n, List.nodup_antidiagonal n⟩
 
+    @[simp] theorem antidiagonal.zero : antidiagonal 0 = Finset.singleton (0, 0) := rfl
+
     def toInt (f : Finset Nat) : Finset Int := f.map_inj (fun _ _ => congrArg Int.toNat : Function.injective Int.ofNat)
+
+    namespace range'
+
+      @[simp] theorem zero (n : Nat) : range' n 0 = ∅ := rfl
+      @[simp] theorem singleton (n : Nat) : range' n 1 = Finset.singleton n := rfl
+
+      @[simp] theorem mem_range' {m s n : Nat} : m ∈ range' s n ↔ s ≤ m ∧ m < s + n :=
+        UnorderedList.range'.mem_range'
+
+      theorem not_mem_front {s n} : s ∉ range' s.succ n := by
+        rw [mem_range', not_and_iff_or_not, Nat.not_le, Nat.not_lt]
+        exact Or.inl (Nat.lt_succ_self s)
+
+      theorem not_mem_back {s n} : s+n ∉ range' s n := by
+        rw [mem_range', not_and_iff_or_not, Nat.not_le, Nat.not_lt]
+        exact Or.inr (Nat.le_refl _)
+
+      theorem start (s n : Nat) : range' s n.succ = (range' s.succ n).cons s not_mem_front := rfl
+
+      theorem succ (s n : Nat) : range' s n.succ = (range' s n).cons (s+n) not_mem_back :=
+        Finset.ext fun _ => by
+          rw [Finset.mem_cons, mem_range', mem_range', or_and_distrib_left,
+            or_iff_right_of_imp (· ▸ Nat.le_add_right s n), Nat.add_succ,
+            ←Nat.le_iff_eq_or_lt, Nat.lt_succ_if_le]; exact Iff.rfl
+
+    end range'
+    namespace range
+
+      @[simp] theorem zero : range 0 = ∅ := rfl
+
+      theorem not_mem_back {n} : n ∉ range n := by
+        have := @range'.not_mem_back 0 n
+        rw [Nat.zero_add, ←range_eq_range'] at this
+        exact this
+
+      theorem succ (n : Nat) : range n.succ = (range n).cons n not_mem_back :=
+        Finset.ext fun x => by
+          rw [range_eq_range', range'.succ, Finset.mem_cons, Finset.mem_cons,
+            Nat.zero_add, range_eq_range']; exact Iff.rfl
+
+      theorem start (n : Nat) : range n.succ = (range' 1 n).cons 0 range'.not_mem_front := by
+        rw [range_eq_range', range'.start]
+
+      @[simp] theorem mem_range {m n : Nat} : m ∈ range n ↔ m < n :=
+        UnorderedList.range.mem_range
+
+    end range
 
   end Finset
 end M4R

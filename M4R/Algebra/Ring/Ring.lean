@@ -66,7 +66,7 @@ namespace M4R
     theorem divides_mul' [Ring α] {a c : α} (b : α) : a ÷ c → a ÷ (b * c) := by
       rw [mul_comm]; exact divides_mul b
 
-    theorem isUnit_1 [Ring α] : isUnit (1 : α) := ⟨1, show 1 * 1 = 1 by rw [mul_one]⟩
+    theorem isUnit_1 [Ring α] : isUnit (1 : α) := ⟨1, by simp [one_mul]⟩
     theorem notUnit_0 [Ring α] : (0 : α) ≠ (1 : α) → ¬isUnit (0 : α) := by
       intro h₁ ⟨_, h₂⟩; rw [zero_mul] at h₂; exact h₁ h₂
     theorem unit_mul [Ring α] {a b : α} : isUnit a → isUnit b → isUnit (a * b)
@@ -98,23 +98,6 @@ namespace M4R
       add_assoc := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (mul_assoc a b c)
       add_neg := fun ⟨a, as⟩ => Set.elementExt (mul_unit_inv as)
     }
-
-    theorem pow_nat_succ [Ring α] (a : α) (x : Nat) : a ^ (Nat.succ x) = a^x * a :=
-      match x with
-      | Nat.zero => by simp only [HPow.hPow, Pow.pow, NCSemiring.pow_nat, one_mul]
-      | Nat.succ k  => rfl
-
-    theorem pow_nat_one [Ring α] (n : Nat) : (1 : α)^n = 1 := by
-      induction n with
-      | zero      => rfl
-      | succ k ih => rw [pow_nat_succ, ih, one_mul];
-    theorem pow_nat_0 [Ring α] (a : α) : a ^ (0 : Nat) = 1 := rfl
-    theorem pow_nat_1 [Ring α] (a : α) : a ^ (1 : Nat) = a := rfl
-
-    theorem pow_nat_add_distrib [Ring α] (a : α) (m n : Nat) : a^(m + n) = a^m * a^n := by
-      induction n with
-      | zero      => rw [Nat.add_zero, pow_nat_0, mul_one]
-      | succ k ih => rw [Nat.add_succ, pow_nat_succ, pow_nat_succ, ←mul_assoc, ih]
 
     theorem pow_nat_mul_distrib [Ring α] (a b : α) (m : Nat) : (a * b)^m = a^m * b^m := by
       induction m with

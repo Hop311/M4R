@@ -1,11 +1,12 @@
 import M4R.Algebra.Ring.Ring
+import M4R.Algebra.Ring.RMorphism
 
 open Classical
 
 namespace M4R
 
-  noncomputable instance MapOne (α : Type _) (β : Type _) [Zero α] [Zero β] [One β] : One (α → β) where
-    one := fun a => if a = 0 then 1 else 0
+  --noncomputable instance MapOne (α : Type _) (β : Type _) [Zero α] [Zero β] [One β] : One (α → β) where
+  --s  one := fun a => if a = 0 then 1 else 0
 
   namespace Finsupp        
 
@@ -13,9 +14,6 @@ namespace M4R
       One (α →₀ β) where one := single 0 1
 
     theorem one_def [Zero α] [Zero β] [One β] : (1 : α →₀ β) = single 0 1 := rfl
-
-    theorem non_trivial [Zero α] [Zero β] [One β] (h10 : (1 : β) ≠ 0) : (1 : α →₀ β) = single 0 1 :=
-      rfl
 
     theorem all_trivial (α : Type _) (β : Type _) [Zero α] [NCSemiring β] (h10 : (1 : β) = 0) 
       (x : α →₀ β) : x = 0 :=
@@ -32,24 +30,20 @@ namespace M4R
         mul_zero          := fun x => by simp only [mul_def, map_sum.zero_sum, map_sum.sum_zero]
         zero_mul          := fun x => by simp only [mul_def, map_sum.zero_sum]
         mul_one           := fun x => by
-          byCases h10 : (1 : β) = 0
-          { have := all_trivial α β h10; exact (this (x * 1)).trans (this x).symm }
-          { have : (fun (a₁ : α) (b₁ : β) => ∑ fun a₂ b₂ => single (a₁ + a₂) (b₁ * b₂) in single 0 1)
-              = fun a₁ b₁ => single a₁ b₁ := by
-                apply funext; intro a₁; apply funext; intro b₁;
-                rw [map_sum.single (0 : α) (1 : β) (fun a₂ b₂ => single (a₁ + a₂) (b₁ * b₂))
-                  (by simp only [NCSemiring.mul_zero, single.zero]),
-                  Monoid.add_zero, NCSemiring.mul_one]
-            simp only [mul_def, non_trivial h10, mul_eq, this, map_sum.sum_single] }
+          have : (fun (a₁ : α) (b₁ : β) => ∑ fun a₂ b₂ => single (a₁ + a₂) (b₁ * b₂) in single 0 1)
+            = fun a₁ b₁ => single a₁ b₁ := by
+              apply funext; intro a₁; apply funext; intro b₁;
+              rw [map_sum.single (0 : α) (1 : β) (fun a₂ b₂ => single (a₁ + a₂) (b₁ * b₂))
+                (by simp only [NCSemiring.mul_zero, single.zero]),
+                Monoid.add_zero, NCSemiring.mul_one]
+          simp only [mul_def, one_def, mul_eq, this, map_sum.sum_single]
         one_mul           := fun x => by
-          byCases h10 : (1 : β) = 0
-          { have := all_trivial α β h10; exact (this (1 * x)).trans (this x).symm }
-          { have : (fun (a₂ : α) (b₂ : β) => single (0 + a₂) (1 * b₂)) = fun a₂ b₂ => single a₂ b₂ := by  
-              apply funext; intro a₂; apply funext; intro b₂
-              rw [Monoid.zero_add, NCSemiring.one_mul]
-            simp only [mul_def, non_trivial h10, mul_eq]
-            rw [map_sum.single 0 1 _ (by simp only [NCSemiring.zero_mul, single.zero, map_sum.sum_zero]),
-              this, map_sum.sum_single] }
+          have : (fun (a₂ : α) (b₂ : β) => single (0 + a₂) (1 * b₂)) = fun a₂ b₂ => single a₂ b₂ := by  
+            apply funext; intro a₂; apply funext; intro b₂
+            rw [Monoid.zero_add, NCSemiring.one_mul]
+          simp only [mul_def, one_def, mul_eq]
+          rw [map_sum.single 0 1 _ (by simp only [NCSemiring.zero_mul, single.zero, map_sum.sum_zero]),
+            this, map_sum.sum_single]
         mul_assoc         := fun x y z => by
           simp only [mul_def];
           have h₁ : ∀ a, (∑ fun a₂ b₂ => single (a + a₂) (0 * b₂) in z) = 0 := by
@@ -90,7 +84,7 @@ namespace M4R
 
     noncomputable instance toNonTrivialNCSemiring [Monoid α] [NonTrivialNCSemiring β] : NonTrivialNCSemiring (α →₀ β) where
       one_neq_zero := by
-        intro h; simp only [non_trivial NonTrivial.one_neq_zero] at h
+        intro h; simp only [one_def] at h
         have := congrArg (fun (x : α →₀ β) => x (0 : α)) h
         simp only [single.eq_same, zero_apply] at this
         exact absurd this NonTrivial.one_neq_zero
@@ -107,6 +101,33 @@ namespace M4R
     noncomputable instance toRing [CommMonoid α] [Ring β] : Ring (α →₀ β) where
       toNCRing := toNCRing
       mul_comm := toSemiring.mul_comm
+
+    noncomputable instance UnitFinsuppNCSemiring [NCSemiring α] : (Unit →₀ α) ≅* α where
+      toMHomomorphism := UnitFinsuppMonoid.toMHomomorphism
+      preserve_one := by simp only [UnitFinsuppMonoid, one_def, Singleton.single, single.eq_same]
+      preserve_mul := fun x y => by
+        simp only [mul_def]
+        have : (fun a₂ b₂ => single (Unit.unit + a₂) ((0 : α) * b₂)) = fun _ _ => (0 : Unit →₀ α) := by
+          apply funext; intro u; cases u; apply funext; intro u
+          rw [NCSemiring.zero_mul, single.zero]
+        rw [map_sum.unit_sum x (by rw [this, map_sum.sum_zero]), map_sum.unit_sum y
+          (by rw [NCSemiring.mul_zero, single.zero])]
+        simp only [UnitFinsuppMonoid]; have : Unit.unit + Unit.unit = Unit.unit := rfl
+        rw [this, single.eq_same]
+      inv := UnitFinsuppMonoid.inv
+      left_inv := UnitFinsuppMonoid.left_inv
+      right_inv := UnitFinsuppMonoid.right_inv
+
+    noncomputable instance UnitFinsuppNCRing [NCRing α] : (Unit →₀ α) ≅ᵣ α where
+      toSHomomorphism := UnitFinsuppNCSemiring.toSHomomorphism
+      preserve_neg := UnitFinsuppGroup.preserve_neg
+      inv := UnitFinsuppMonoid.inv
+      left_inv := UnitFinsuppMonoid.left_inv
+      right_inv := UnitFinsuppMonoid.right_inv
+
+    @[simp] theorem single_mul_single [Monoid α] [NCSemiring β] {a₁ a₂ : α} {b₁ b₂ : β} :
+        single a₁ b₁ * single a₂ b₂ = single (a₁ + a₂) (b₁ * b₂) := by
+          simp only [mul_def, map_sum.single, NCSemiring.zero_mul, NCSemiring.mul_zero, single.zero]
 
   end Finsupp
 end M4R

@@ -40,7 +40,7 @@ namespace M4R
         | Nat.zero => 1
         | _        => (NCSemiring.ofNat m) + 1
     @[defaultInstance high]
-    instance RingOfNat [NCSemiring α] (n : Nat) : OfNat α n where ofNat := NCSemiring.ofNat n
+    instance RingOfNatCoe [NCSemiring α] : Coe Nat α where coe := NCSemiring.ofNat
 
     protected def pow_nat [NCSemiring α] (a : α) (n : Nat) : α :=
       match n with

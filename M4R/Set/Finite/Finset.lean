@@ -55,6 +55,17 @@ namespace M4R
     protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=
       ⟨s.elems.map f, s.elems.nodup_map hf s.nodup⟩
 
+    protected theorem map_mem {f : α → β} {b : β} {s : Finset α} : b ∈ s.map f ↔ ∃ a, a ∈ s ∧ f a = b :=
+      UnorderedList.map.mem_map
+    protected theorem map_inj_mem {f : α → β} {hf : Function.injective f} {b : β} {s : Finset α} :
+      b ∈ s.map_inj hf ↔ ∃ a, a ∈ s ∧ f a = b  :=
+        UnorderedList.map.mem_map
+    protected theorem map_inj_mem' {f : α → β} {hf : Function.injective f} {b : β} {s : Finset α} :
+      b ∈ s.map_inj hf ↔ ∃ a, a ∈ s ∧ f a = b ∧ ∀ a', f a' = b → a' = a :=
+        ⟨fun h => by cases Finset.map_inj_mem.mp h with | intro a ha =>
+          exact ⟨a, ha.left, ha.right, fun a' ha' => by rw [←ha.right] at ha'; exact hf ha'⟩,
+        fun ⟨a, b, c, _⟩ => Finset.map_inj_mem.mpr ⟨a, b, c⟩⟩
+
     @[simp] theorem val_le_iff {s₁ s₂ : Finset α} : s₁.elems ≤ s₂.elems ↔ s₁ ⊆ s₂ :=
       UnorderedList.le.le_iff_subset s₁.nodup
 
@@ -144,7 +155,7 @@ namespace M4R
       eq_empty_of_forall_not_mem (by simp only [mem_inter, mem_sdiff]; exact fun x ⟨h, _, hn⟩ => absurd h hn)
 
     section cons
-      
+
       def cons (a : α) (s : Finset α) (h : a ∉ s) : Finset α :=
         ⟨s.elems.cons a, UnorderedList.nodup_cons.mpr ⟨h, s.nodup⟩⟩
 
@@ -162,7 +173,7 @@ namespace M4R
     end cons
 
     section insert
-  
+
       noncomputable def insert (a : α) (s : Finset α) : Finset α :=
         ⟨s.elems.ndinsert a, UnorderedList.nodup_ndinsert a s.nodup⟩
 
@@ -246,7 +257,7 @@ namespace M4R
     @[simp] theorem mem_to_finset {s : Set α} [Fintype s] {a : α} : a ∈ s.to_finset ↔ a ∈ s :=
       ⟨fun h => by let ⟨⟨x, hx⟩, _, h'⟩ := UnorderedList.map.mem_map.mp h; rw [←h']; exact hx,
       fun h => UnorderedList.map.mem_map.mpr ⟨⟨a, h⟩, Fintype.complete _, rfl⟩⟩
-      
+
     @[simp] theorem mem_to_finset_val {s : Set α} [Fintype s] {a : α} : a ∈ s.to_finset.elems ↔ a ∈ s :=
       mem_to_finset
 
@@ -265,7 +276,7 @@ namespace M4R
 
     protected def of_finset {p : Set α} (s : Finset α) (H : ∀ x, x ∈ s ↔ x ∈ p) : Fintype p :=
       Fintype.subtype s H
-    
+
     protected noncomputable instance union (s t : Set α) [Fintype s] [Fintype t] : Fintype (s ∪ t : Set α) :=
       Fintype.of_finset (s.to_finset ∪ t.to_finset) (fun x =>
         ⟨fun h => by
@@ -276,7 +287,7 @@ namespace M4R
           Finset.mem_union.mpr (Or.elim h
             (fun h' => Or.inl (Set.mem_to_finset.mpr h'))
             (fun h' => Or.inr (Set.mem_to_finset.mpr h')))⟩)
-  
+
     protected noncomputable instance sep (s : Set α) (p : α → Prop) [Fintype s] :
       Fintype (Subtype ({a ∈ s | p a} : Set α)) :=
         Fintype.of_finset (s.to_finset.filter p) (fun _ => by
@@ -288,7 +299,7 @@ namespace M4R
     protected noncomputable instance subset {s t : Set α} [Fintype t] (h : s ⊆ t) : Fintype s := by
       rw [←Set.intersection.inter_eq_self_of_subset_right h]
       exact Fintype.intersection t s
-  
+
   end Fintype
 
   inductive finite (s : Set α) : Prop
@@ -313,7 +324,7 @@ namespace M4R
     @[simp] theorem mem_to_finset {s : Set α} (hs : finite s) {a : α} : a ∈ hs.to_finset ↔ a ∈ s :=
       ⟨fun h => by let ⟨⟨x, hx⟩, _, h'⟩ := UnorderedList.map.mem_map.mp h; rw [←h']; exact hx,
       fun h => UnorderedList.map.mem_map.mpr ⟨⟨a, h⟩, hs.to_fintype.complete _, rfl⟩⟩
-      
+
     @[simp] theorem mem_to_finset_val {s : Set α} (hs : finite s) {a : α} : a ∈ hs.to_finset.elems ↔ a ∈ s :=
       mem_to_finset hs
 
@@ -322,7 +333,7 @@ namespace M4R
 
     theorem union {s t : Set α} (hs : finite s) (ht : finite t) : finite (s ∪ t) :=
       finite.intro (@Fintype.union _ s t hs.to_fintype ht.to_fintype)
-    
+
     theorem intersection {s : Set α} (hs : finite s) (t : Set α) : finite (s ∩ t) :=
       finite.intro (@Fintype.intersection _ s t hs.to_fintype)
 

@@ -34,7 +34,8 @@ namespace M4R
 
     theorem neg_neg [Group α] (a : α) : - - a = a := by
       rw [←add_right_cancel _ _ (-a), neg_add, add_neg]
-      
+
+    /-- Use `AbelianGroup.neg_add_distrib` for `-(a + b) = -a + -b`. -/
     theorem neg_add_distrib [Group α] (a b : α) : -(a + b) = -b + -a := by
       rw [←add_right_cancel _ _ (a + b), neg_add, add_assoc, ←add_assoc (-a), neg_add, zero_add, neg_add]
 
