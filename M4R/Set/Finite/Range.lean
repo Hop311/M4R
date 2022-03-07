@@ -221,6 +221,48 @@ namespace M4R
             or_iff_right_of_imp (· ▸ Nat.le_add_right s n), Nat.add_succ,
             ←Nat.le_iff_eq_or_lt, Nat.lt_succ_if_le]; exact Iff.rfl
 
+      theorem append (s m n : Nat) : range' s m ∪ range' (s + m) n = range' s (m + n) := by
+        have := UnorderedList.range'.append s m n
+        apply Finset.ext; intro k
+        rw [Finset.mem_union, mem_range', mem_range', mem_range']
+        exact ⟨fun h => h.elim
+            (fun ⟨h₁, h₂⟩ => ⟨h₁, Nat.add_assoc _ _ _ ▸ Nat.lt_add_right _ _ _ h₂⟩)
+            (fun ⟨h₁, h₂⟩ => ⟨Nat.le_trans (Nat.le_add_right s m) h₁, Nat.add_assoc _ _ _ ▸ h₂⟩),
+          fun ⟨h₁, h₂⟩ => Or.elim (Nat.le_or_lt (s + m) k)
+            (fun h => Or.inr ⟨h, Nat.add_assoc _ _ _ ▸ h₂⟩) (fun h => Or.inl ⟨h₁, h⟩)⟩
+
+      theorem disjoint (s₁ n₁ s₂ n₂ : Nat) : disjoint (range' s₁ n₁) (range' s₂ n₂) ↔ s₁ + n₁ ≤ s₂ ∨ s₂ + n₂ ≤ s₁ ∨ n₁ = 0 ∨ n₂ = 0 := by
+        simp only [Finset.disjoint]
+        have : (range' s₁ n₁ ∩ range' s₂ n₂ = ∅) ↔ ∀ a, (a < s₁ ∨ s₁ + n₁ ≤ a) ∨ a < s₂ ∨ s₂ + n₂ ≤ a := by
+          simp only [Finset.ext_iff, Finset.mem_empty, iff_false, Finset.mem_inter, not_and_iff_or_not,
+            mem_range', not_and_iff_or_not, Nat.not_le, Nat.not_lt]; exact Iff.rfl
+        rw [this]
+        exact ⟨fun h => by
+          have h₁ := h s₁
+          have h₂ := h s₂
+          simp only [Nat.lt_irrefl, false_or, Nat.add_le] at h₁ h₂
+          exact Or.elim h₁ (fun h₁ => Or.inr (Or.inr (Or.inl h₁)))
+            (Or.elim · (fun h₁ => Or.elim h₂
+              (Or.elim · (absurd ⟨h₁, ·⟩ Nat.lt_not_symm) Or.inl)
+              (fun h₂ => Or.inr (Or.inr (Or.inr h₂))))
+              (fun h₁ => Or.inr (Or.inl h₁))),
+          fun h a => by
+            cases h with
+            | inl h =>
+              byCases h' : s₁ + n₁ ≤ a;
+              { exact Or.inl (Or.inr h') }
+              { exact Or.inr (Or.inl (Nat.lt_of_lt_of_le (Nat.not_le.mp h') h)) }
+            | inr h =>
+              cases h with
+              | inl h =>
+                byCases h' : s₂ + n₂ ≤ a;
+                { exact Or.inr (Or.inr h') }
+                { exact Or.inl (Or.inl (Nat.lt_of_lt_of_le (Nat.not_le.mp h') h)) }
+              | inr h =>
+                cases h with
+                | inl h => rw [h, Nat.add_zero]; exact Or.inl (Nat.le_or_lt s₁ a).comm
+                | inr h => rw [h, Nat.add_zero]; exact Or.inr (Nat.le_or_lt s₂ a).comm⟩
+
     end range'
     namespace range
 
@@ -241,6 +283,11 @@ namespace M4R
 
       @[simp] theorem mem_range {m n : Nat} : m ∈ range n ↔ m < n :=
         UnorderedList.range.mem_range
+
+      theorem append (m n : Nat) : range m ∪ range' m n = range (m + n) := by
+        have := range'.append 0 m n
+        simp only [Nat.zero_add, ←range_eq_range'] at this
+        exact this
 
     end range
 

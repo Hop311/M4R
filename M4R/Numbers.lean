@@ -40,6 +40,14 @@ namespace Nat
   | 0  , h => absurd h (Nat.succ_ne_zero 0)
   | n+1, h => succ_ne_self n (Nat.succ.inj h)
 
+  theorem lt_add_right (n m k : Nat) (h : n < m) : n < m + k := by
+    induction k with
+    | zero      => rw [Nat.add_zero] exact h
+    | succ k ih => rw [Nat.add_succ]; exact Nat.lt_succ_of_le (Nat.le_of_lt ih)
+
+  theorem lt_add_left (n m k : Nat) (h : n < m) : n < k + m := by
+    rw [Nat.add_comm]; exact lt_add_right n m k h
+
   @[simp] theorem zero_sub : ∀ a : Nat, 0 - a = 0
   | 0     => rfl
   | (a+1) => congrArg pred (zero_sub a)
@@ -47,6 +55,12 @@ namespace Nat
   theorem succ_pred_eq_of_pos : ∀ {n : Nat}, n > 0 → n.pred.succ = n
   | 0, h      => absurd h (Nat.lt_irrefl 0)
   | succ k, h => rfl
+
+  protected theorem add_left_cancel' {n m k : Nat} : n + m = n + k ↔ m = k :=
+    ⟨Nat.add_left_cancel, congrArg (n + ·)⟩
+
+  protected theorem add_right_cancel' {n m k : Nat} : n + m = k + m ↔ n = k :=
+    ⟨Nat.add_right_cancel, congrArg (· + m)⟩
 
   theorem add_sub_add_right : ∀ (n k m : Nat), (n + k) - (m + k) = n - m
   | n, 0     , m => by rw [add_zero, add_zero]
@@ -130,7 +144,10 @@ namespace Nat
   theorem pos_iff_ne_zero {n : Nat} : 0 < n ↔ n ≠ 0 :=
     ⟨fun h => (Nat.ne_of_lt h).symm,
     fun h => Nat.lt_of_le_and_ne (Nat.zero_le n) h.symm⟩
-  
+
+  theorem ge_one_iff_ne_zero {n : Nat} : 1 ≤ n ↔ n ≠ 0 := by
+    rw [←pos_iff_ne_zero]; exact Iff.rfl
+
   protected theorem sub_one (n : Nat) : n - 1 = pred n := rfl
 
   theorem one_add (n : Nat) : 1 + n = succ n :=
@@ -176,12 +193,26 @@ namespace Nat
   @[simp] theorem not_le {a b : Nat} : ¬ a ≤ b ↔ b < a :=
     ⟨gt_of_not_le, not_lt_of_gt⟩
 
-  theorem add_eq_zero (a b : Nat) : a + b = 0 ↔ a = 0 ∧ b = 0 :=
+  theorem add_eq_zero {a b : Nat} : a + b = 0 ↔ a = 0 ∧ b = 0 :=
     ⟨fun h => by
       induction a with
       | zero => rw [Nat.zero_add] at h; exact ⟨rfl, h⟩
       | succ k ih => rw [succ_add] at h; exact absurd h (succ_ne_zero (k+b)),
     fun ⟨ha, hb⟩ => by rw [ha, hb]⟩
+
+  theorem add_eq_one {a b : Nat} : a + b = 1 ↔ (a = 1 ∧ b = 0) ∨ (a = 0 ∧ b = 1) := by
+    cases a with
+    | zero   =>
+      simp only [Nat.zero_eq, Nat.zero_add, false_and, false_or, true_and]; exact Iff.rfl
+    | succ a =>
+      simp only [false_and, or_false]
+      cases a with
+      | zero   =>
+        conv => lhs rhs rw [←Nat.add_zero 1]
+        rw [Nat.add_left_cancel']; simp only [true_and]; exact Iff.rfl
+      | succ a =>
+        have : ∀ n : Nat, ¬ n.succ.succ = 1 := fun n h => absurd (Nat.succ.inj h) (Nat.succ_ne_zero n)
+        simp only [Nat.succ_add, this, false_and]
 
   theorem mul_eq_zero (a b : Nat) : a * b = 0 ↔ a = 0 ∨ b = 0 :=
     ⟨fun h => by
@@ -195,6 +226,22 @@ namespace Nat
 
   theorem mul_neq_zero (a b : Nat) : a * b ≠ 0 ↔ a ≠ 0 ∧ b ≠ 0 := by
     rw [←M4R.not_or_iff_and_not, M4R.not_iff_not]; exact mul_eq_zero a b
+
+  theorem add_le {a b : Nat} : a + b ≤ a ↔ b = 0 :=
+    ⟨fun h => by
+      conv at h => rhs rw [←Nat.add_zero a]
+      exact Nat.eq_zero_of_le_zero (Nat.le_of_add_le_add_left h),
+    fun h => by rw [h, Nat.add_zero]; exact Nat.le_refl a⟩
+
+  theorem lt_not_symm {a b : Nat} : ¬(a < b ∧ b < a) := by
+    rw [M4R.not_and_iff_or_not, Nat.not_lt, Nat.not_lt]; exact Nat.le_total b a
+
+  theorem add_sub_comm {a b c : Nat} (h : c ≤ a) : a + b - c = a - c + b := by
+    induction b with
+    | zero      => rw [Nat.add_zero, Nat.add_zero]
+    | succ b ih =>
+      rw [Nat.add_succ, Nat.add_succ, ←ih, Nat.succ_sub]
+      exact Nat.add_zero _ ▸ Nat.add_le_add h (Nat.zero_le b)
 
   section choose
 

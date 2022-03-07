@@ -1,4 +1,4 @@
-import M4R.Algebra.Group.Group
+import M4R.Algebra.Group.SubGroup
 import M4R.Algebra.Group.Sum
 
 namespace M4R
@@ -150,6 +150,10 @@ namespace M4R
     protected theorem ext [Group α] [Group β] : ∀ {f g : α →₋ β}, f = g ↔ f.hom = g.hom
     | ⟨_, _⟩, ⟨_, _⟩ =>
       ⟨fun h => by rw [h], fun h => by rw [GHomomorphism.mk.injEq]; exact MHomomorphism.ext.mpr h⟩
+
+    theorem kernel_normal [Group α] [Group β] (f : α →₋ β) : f.kernel.is_normal :=
+      fun a (ha : f a = 0) g => (by rw [MHomomorphism.preserve_add, MHomomorphism.preserve_add,
+        GHomomorphism.preserve_neg, ha, Monoid.add_zero, Group.neg_add] : f _ = 0)
 
     protected structure constructor_gh (α : Type _) (β : Type _) [Group α] [Group β] where
       hom          : α → β

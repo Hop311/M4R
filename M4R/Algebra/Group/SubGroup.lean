@@ -31,7 +31,7 @@ namespace M4R
 
     protected instance toCommMonoid [CommMonoid α] (s : SubMonoid α) : CommMonoid ↑s.subset where
       add_comm := fun ⟨a, _⟩ ⟨b, _⟩ => Set.elementExt (add_comm a b)
-  
+
   end SubMonoid
 
   namespace SubGroup
@@ -48,52 +48,53 @@ namespace M4R
       ⟨match s₁, s₂ with | ⟨_, _⟩, ⟨_, _⟩ => by rw [SubGroup.mk.injEq]; exact (SubMonoid.ext _ _).mp,
       fun h => by rw [h]⟩
 
-    theorem trivialExt [Group α] (s : SubGroup α) : s = Trivial α ↔ (∀ x ∈ s.subset, x = 0) := by
-      rw [←(SubGroup.ext s (Trivial α))]; exact ⟨fun hs => by rw [hs]; exact (fun _ => id),
+    theorem trivialExt [Group α] (s : SubGroup α) : s = Trivial α ↔ (∀ x ∈ s, x = 0) := by
+      rw [←(SubGroup.ext s (Trivial α))]; exact ⟨fun hs => by
+        simp only [Mem.mem]; rw [hs]; exact (fun _ => id),
         fun hx => by rw [←Set.ext]; exact fun x => ⟨hx x,
           fun x0 => by rw [x0]; exact s.has_zero⟩⟩
-    
+
     protected instance toGroup [Group α] (s : SubGroup α) : Group ↑s.subset where
       neg := fun ⟨x, hx⟩ => ⟨-x, s.neg_closed x hx⟩
       add_neg := fun ⟨a, _⟩ => Set.elementExt (add_neg a)
-    
+
     protected instance toAbelianGroup [AbelianGroup α] (s : SubGroup α) : AbelianGroup ↑s.subset where
       add_comm := s.toCommMonoid.add_comm
 
   end SubGroup
 
-  class NormalSubGroup [Group α] (s : SubGroup α) where
-    normal : ∀ a, a ∈ s.subset → ∀ g, -g + a + g ∈ s.subset
+  def SubGroup.is_normal [Group α] (s : SubGroup α) : Prop :=
+    ∀ a : α, a ∈ s → ∀ g, -g + a + g ∈ s
 
   namespace QuotientGroup
     variable [Group α] (s : SubGroup α)
-    
+
     -- i.e. left coset equivalence
-    def QuotientRelation (a b : α) : Prop := -a + b ∈ s.subset
+    def QuotientRelation (a b : α) : Prop := -a + b ∈ s
     theorem QuotientRelation.refl [Group α] (s : SubGroup α) (a : α) : QuotientRelation s a a := by
       simp only [QuotientRelation]; rw [neg_add]; exact s.has_zero;
 
     def QuotClass : Type _ :=
       Quot (QuotientRelation s)
 
-    def QuotAdd [N : NormalSubGroup s] : QuotClass s → QuotClass s → QuotClass s :=
+    def QuotAdd (N : s.is_normal) : QuotClass s → QuotClass s → QuotClass s :=
       Function.Quotient.map₂ (QuotientRelation s) (QuotientRelation s) (QuotientRelation s)
         (QuotientRelation.refl s) (QuotientRelation.refl s) (fun x y => x + y) (fun a₁ a₂ b₁ b₂ ha hb => by
           simp only [QuotientRelation] at *; rw [neg_add_distrib, ←add_zero (-b₁), ←add_neg b₂, ←add_assoc (-b₁),
           add_assoc, add_assoc]; apply s.add_closed; exact hb; rw [←add_assoc, ←add_assoc, add_assoc (-b₂)];
-          exact N.normal (-a₁ + a₂) ha b₂)
+          exact N (-a₁ + a₂) ha b₂)
 
-    def QuotNeg [N : NormalSubGroup s] : QuotClass s → QuotClass s :=
+    def QuotNeg (N : s.is_normal) : QuotClass s → QuotClass s :=
       Function.Quotient.map (QuotientRelation s) (QuotientRelation s) (fun x => -x)
         (fun x y hxy => by
           simp only [QuotientRelation] at *; rw [←neg_add_distrib]; apply s.neg_closed;
-          rw[←zero_add y, ←neg_add (-x), add_assoc (- -x)]; exact N.normal (-x + y) hxy (-x))
+          rw[←zero_add y, ←neg_add (-x), add_assoc (- -x)]; exact N (-x + y) hxy (-x))
 
-    protected instance toGroup (α : Type _) [N : NormalSubGroup s] : Group (QuotClass s) := Group.construct
+    protected instance toGroup (α : Type _) (N : s.is_normal) : Group (QuotClass s) := Group.construct
     {
       zero := Quot.mk (QuotientRelation s) 0
-      add := QuotAdd s
-      neg := QuotNeg s
+      add := QuotAdd s N
+      neg := QuotNeg s N
       add_zero := by
         apply Quot.ind; intro a; apply Quot.sound; simp only [QuotientRelation];
         rw [neg_add_distrib, neg_zero, zero_add, neg_add]; exact s.has_zero
@@ -107,7 +108,7 @@ namespace M4R
     }
     def LeftCoset (a : α) (s : Set α) : Set α := {x | -a + x ∈ s}
     def RightCoset (s : Set α) (a : α) : Set α := {x | x + -a ∈ s}
-    
+
     namespace LeftCoset
       instance LeftCosetHAddInt : HAdd α (Set α) (Set α) where hAdd := LeftCoset
       theorem comp (a b : α) (s : Set α) : a + (b + s) = (a + b) + s := by

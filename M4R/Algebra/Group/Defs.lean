@@ -26,6 +26,7 @@ namespace M4R
 
   structure SubGroup (α : Type _) [Group α] extends SubMonoid α where
       neg_closed : ∀ a ∈ subset, -a ∈ subset
+  instance SubGroupMem [Group α] : Mem α (SubGroup α) where mem := fun x S => x ∈ S.subset
 
   protected instance Monoid.Trivial [Singleton α] : Monoid α where
     zero      := Inhabited.default

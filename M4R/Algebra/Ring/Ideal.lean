@@ -124,6 +124,9 @@ namespace M4R
       apply Iff.intro (fun h => by rw [h]; trivial); intro h;
       exact Ideal.antisymm (in_unit_ideal I) (by rw [←unit_principal (1 : α) isUnit_1]; exact principal_in I 1 h);
 
+    theorem div_mem [Ring α] {I : Ideal α} {a : α} : a ∈ I ↔ ∃ b ∈ I, b ÷ a :=
+      ⟨fun h => ⟨a, h, divides_self a⟩, fun ⟨b, hb, c, hbc⟩ => hbc ▸ I.mul_closed' hb c⟩
+
     protected theorem intersection [Ring α] (I J : Ideal α) : Ideal α where
       subset := I.subset ∩ J.subset
       has_zero := ⟨I.has_zero, J.has_zero⟩

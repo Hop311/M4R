@@ -55,24 +55,25 @@ namespace M4R
 
   end NCSemiring
 
-  protected instance NCRing.toAbelianGroup [NCRing α] : AbelianGroup α where
-    add_comm := CommMonoid.add_comm
+  namespace Semiring
 
-  namespace Ring
-
-    def divides [Ring α] (a b : α) : Prop := ∃ c, a * c = b
-    instance [Ring α] : Divides α where
+    def divides [Semiring α] (a b : α) : Prop := ∃ c, a * c = b
+    instance [Semiring α] : Divides α where
       divides := divides
 
-    def isUnit [Ring α] (a : α) : Prop := a ÷ 1
+    def isUnit [Semiring α] (a : α) : Prop := a ÷ 1
 
-    def associates [Ring α] (a b : α) : Prop := ∃ c, isUnit c ∧ a * c = b
-    instance [Ring α] : RingEq α where
+    def associates [Semiring α] (a b : α) : Prop := ∃ c, isUnit c ∧ a * c = b
+    instance SemiringAssociateEq [Semiring α] : RingEq α where
       ringeq := associates
 
-    def nonZeroNonUnit [Ring α] (a : α) : Prop := a ≠ 0 ∧ ¬isUnit a
-    def irreducible [Ring α] (a : α) : Prop := nonZeroNonUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
+    def nonZeroNonUnit [Semiring α] (a : α) : Prop := a ≠ 0 ∧ ¬isUnit a
+    def irreducible [Semiring α] (a : α) : Prop :=
+      nonZeroNonUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
 
-  end Ring
+  end Semiring
+
+  protected instance NCRing.toAbelianGroup [NCRing α] : AbelianGroup α where
+    add_comm := CommMonoid.add_comm
 
 end M4R

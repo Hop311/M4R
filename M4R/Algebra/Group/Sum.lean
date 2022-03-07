@@ -86,6 +86,14 @@ namespace M4R
       rw [add_zero] at this
       exact this
 
+    theorem prop_sum [CommMonoid α] (p : α → Prop) (s : UnorderedList α) (h₀ : p 0)
+      (h₁ : ∀ a ∈ s, p a) (h₂ : ∀ a₁ a₂, p a₁ → p a₂ → p (a₁ + a₂)) :
+        p (∑ s) :=
+          UnorderedList.induction_on (fun l => l ⊆ s → p (∑ l)) s (fun _ => h₀)
+            (fun a l hl hla => by
+              rw [cons]; exact h₂ _ _ (hl fun x hx => hla (mem_cons.mpr (Or.inr hx)))
+                (h₁ _ (hla (mem_cons.mpr (Or.inl rfl))))) (Subset.refl _)
+
   end UnorderedList.sum
   namespace UnorderedList.map_sum
 
@@ -127,6 +135,13 @@ namespace M4R
       (∑ f in s.map e) = ∑ f ∘ e in s := by
         simp only [map_sum, map_fold_add, map_fold, UnorderedList.map.map_comp]
 
+    theorem prop_sum [CommMonoid β] (p : β → Prop) (f : α → β) (s : UnorderedList α) (h₀ : p 0)
+      (h₁ : ∀ a ∈ s, p (f a)) (h₂ : ∀ b₁ b₂, p b₁ → p b₂ → p (b₁ + b₂)) :
+        p (∑ f in s) :=
+          UnorderedList.sum.prop_sum _ _ h₀ (fun b hb =>
+            let ⟨a, has, hab⟩ := map.mem_map.mp hb
+            hab ▸ h₁ a has) h₂
+
   end UnorderedList.map_sum
 
   def Finset.sum [CommMonoid α] (s : Finset α) : α := s.elems.sum
@@ -147,6 +162,10 @@ namespace M4R
 
     @[simp] theorem sum_insert [CommMonoid α] {a : α} {s : Finset α} : a ∉ s → (∑ insert a s) = a + ∑ s := by
       rw [add_comm]; exact fold.fold_insert (· + ·) (fun _ _ _ => by apply add_right_comm) 0
+
+    theorem prop_sum [CommMonoid α] (p : α → Prop) (s : Finset α) (h₀ : p 0)
+      (h₁ : ∀ a ∈ s, p a) (h₂ : ∀ a₁ a₂, p a₁ → p a₂ → p (a₁ + a₂)) :
+        p (∑ s) := UnorderedList.sum.prop_sum p s h₀ h₁ h₂
 
   end Finset.sum
 
@@ -214,15 +233,15 @@ namespace M4R
     theorem range'_start [CommMonoid α] (f : Nat → α) (s n : Nat) :
       (∑ f in Finset.range' s n.succ) = f s + ∑ f in Finset.range' s.succ n := by
         rw [Finset.range'.start, cons, CommMonoid.add_comm]
-    
+
     theorem range'_succ [CommMonoid α] (f : Nat → α) (s n : Nat) :
       (∑ f in Finset.range' s n.succ) = (∑ f in Finset.range' s n) + f (s+n) := by
         rw [Finset.range'.succ, cons]
-    
+
     theorem range_start [CommMonoid α] (f : Nat → α) (n : Nat) :
       (∑ f in Finset.range n.succ) = f 0 + ∑ f in Finset.range' 1 n := by
         rw [Finset.range.start, cons, CommMonoid.add_comm]
-    
+
     theorem range_succ [CommMonoid α] (f : Nat → α) (n : Nat) :
       (∑ f in Finset.range n.succ) = (∑ f in Finset.range n) + f n := by
         rw [Finset.range.succ, cons]
@@ -234,10 +253,20 @@ namespace M4R
         | succ n ih =>
           rw [range'_succ, ih, range'_succ, Nat.succ_add]
           simp only [Function.comp, Nat.pred_succ]
-    
+
     theorem range_shift [CommMonoid α] (f : Nat → α) (n : Nat) :
       (∑ f in Finset.range n) = ∑ f ∘ Nat.pred in Finset.range' 1 n := by
         rw [range_eq_range']; exact range'_shift f 0 n
+
+    theorem range'_split [CommMonoid α] {f : Nat → α} {s n : Nat} (m : Nat) (h : m ≤ n) :
+      (∑ f in Finset.range' s n) = (∑ f in Finset.range' s m) + (∑ f in Finset.range' (s + m) (n - m)) := by
+        have := Finset.range'.append s m (n - m)
+        rw [Nat.add_comm m, Nat.sub_add_cancel h] at this
+        rw [←this, union ((Finset.range'.disjoint _ _ _ _).mpr (Or.inl (Nat.le_refl _)))]
+
+    theorem prop_sum [CommMonoid β] (p : β → Prop) (f : α → β) (s : Finset α) (h₀ : p 0)
+      (h₁ : ∀ a ∈ s, p (f a)) (h₂ : ∀ b₁ b₂, p b₁ → p b₂ → p (b₁ + b₂)) :
+        p (∑ f in s) := UnorderedList.map_sum.prop_sum p f s h₀ h₁ h₂
 
   end Finset.map_sum
 end M4R

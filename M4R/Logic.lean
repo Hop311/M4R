@@ -180,6 +180,12 @@ namespace M4R
   @[simp] theorem and_self (a : Prop) : a ∧ a ↔ a :=
     ⟨And.left, fun h => ⟨h, h⟩⟩
 
+  theorem funext_iff {β : α → Sort _} {f₁ f₂ : ∀ (x : α), β x} : (∀ x, f₁ x = f₂ x) ↔ f₁ = f₂ :=
+    ⟨funext, congrFun⟩
+
+  theorem propext_iff {a b : Prop} : (a ↔ b) ↔ a = b :=
+    ⟨propext, fun h => h ▸ Iff.rfl⟩
+
 end M4R
 
 @[simp] theorem Quotient.eq [r : Setoid α] {x y : α} : Quotient.mk x = Quotient.mk y ↔ x ≈ y :=

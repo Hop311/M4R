@@ -43,6 +43,8 @@ namespace M4R
     theorem eq_empty_of_forall_not_mem {s : Finset α} (h : ∀ x, x ∉ s) : s = ∅ :=
       Finset.ext fun a => ⟨fun ha => absurd ha (h a), fun _ => by contradiction⟩
 
+    theorem mem_empty {a : α} : a ∈ (∅ : Finset α) ↔ False := Iff.rfl
+
     protected def singleton (a : α) : Finset α := ⟨UnorderedList.singleton a, Pairwise.singleton _ a⟩
 
     protected theorem in_singleton {a a' : α} : a' ∈ Finset.singleton a → a' = a :=

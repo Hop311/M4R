@@ -4,10 +4,10 @@ namespace M4R
   namespace Monoid
 
     protected instance Product (α₁ : Type _) (α₂ : Type _) [Monoid α₁] [Monoid α₂] : Monoid (α₁ × α₂) where
-      zero := (0, 0)
-      add := fun (x₁, x₂) (y₁, y₂) => (x₁ + y₁, x₂ + y₂)
-      add_zero := fun (a₁, a₂) => by simp [HAdd.hAdd, Add.add]; exact ⟨add_zero a₁, add_zero a₂⟩
-      zero_add := fun (a₁, a₂) => by simp [HAdd.hAdd, Add.add]; exact ⟨zero_add a₁, zero_add a₂⟩
+      zero      := (0, 0)
+      add       := fun (x₁, x₂) (y₁, y₂) => (x₁ + y₁, x₂ + y₂)
+      add_zero  := fun (a₁, a₂) => by simp [HAdd.hAdd, Add.add]; exact ⟨add_zero a₁, add_zero a₂⟩
+      zero_add  := fun (a₁, a₂) => by simp [HAdd.hAdd, Add.add]; exact ⟨zero_add a₁, zero_add a₂⟩
       add_assoc := fun (a₁, a₂) (b₁, b₂) (c₁, c₂) => by simp [HAdd.hAdd, Add.add]; exact ⟨add_assoc a₁ b₁ c₁, add_assoc a₂ b₂ c₂⟩
 
     theorem product_zero (α₁ : Type _) (α₂ : Type _) [Monoid α₁] [Monoid α₂] : (0 : α₁ × α₂) = (0, 0) := rfl
@@ -30,10 +30,10 @@ namespace M4R
       add_comm  : ∀ a b : α, a + b = b + a
 
     protected instance construct {α : Type _} (c : CommMonoid.constructor_cm α) : CommMonoid α where
-      add_zero := c.add_zero
-      zero_add := fun a => by rw [c.add_comm]; exact c.add_zero a
+      add_zero  := c.add_zero
+      zero_add  := fun a => by rw [c.add_comm]; exact c.add_zero a
       add_assoc := c.add_assoc
-      add_comm := c.add_comm
+      add_comm  := c.add_comm
 
     protected def to_constructor (α : Type _) [CommMonoid α] : CommMonoid.constructor_cm α where
       add_zero  := Monoid.add_zero

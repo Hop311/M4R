@@ -24,7 +24,7 @@ namespace M4R
       induction n with
       | zero => simp only [NCSemiring.ofNat, Monoid.zero_add]
       | succ k ih => simp only [NCSemiring.ofNat]
-    
+
     theorem ofNat.preserve_add [NCSemiring α] (m n : Nat) : m + n = (m : α) + n := by
       induction n with
       | zero => simp only [NCSemiring.ofNat, Monoid.add_zero]; rfl
@@ -82,14 +82,67 @@ namespace M4R
   end NCSemiring
 
   namespace Semiring
+    open NCSemiring
 
     protected instance Product (α₁ : Type _) (α₂ : Type _) [Semiring α₁] [Semiring α₂] : Semiring (α₁ × α₂) where
       mul_comm := fun (a₁, a₂) (b₁, b₂) => by simp [HMul.hMul, Mul.mul]; exact ⟨mul_comm a₁ b₁, mul_comm a₂ b₂⟩
 
     theorem mul_right_comm [Semiring α] (a b c : α) : a * b * c = a * c * b := by
-      rw [NCSemiring.mul_assoc, mul_comm b, ←NCSemiring.mul_assoc]
+      rw [mul_assoc, mul_comm b, ←mul_assoc]
     theorem mul_left_comm [Semiring α] (a b c : α) : a * (b * c) = b * (a * c) := by
-      rw [←NCSemiring.mul_assoc, mul_comm a, NCSemiring.mul_assoc]
+      rw [←mul_assoc, mul_comm a, mul_assoc]
+
+    theorem divides_self [Semiring α] (a : α) : a ÷ a := ⟨1, mul_one a⟩
+    theorem divides_zero [Semiring α] (a : α) : a ÷ 0 := ⟨0, mul_zero a⟩
+    theorem divides_add [Semiring α] {a b c : α} : a ÷ b → a ÷ c → a ÷ (b + c)
+    | ⟨x, axb⟩, ⟨y, ayc⟩ => ⟨x + y, by rw [mul_distrib_left, axb, ayc]⟩
+    theorem divides_mul [Semiring α] {a b : α} (c : α) : a ÷ b → a ÷ (b * c)
+    | ⟨x, axb⟩ => ⟨x * c, by rw [←mul_assoc, axb]⟩
+    theorem divides_mul' [Semiring α] {a c : α} (b : α) : a ÷ c → a ÷ (b * c) := by
+      rw [mul_comm]; exact divides_mul b
+
+    theorem isUnit_1 [Semiring α] : isUnit (1 : α) := ⟨1, by simp [one_mul]⟩
+    theorem notUnit_0 [Semiring α] : (0 : α) ≠ (1 : α) → ¬isUnit (0 : α) := by
+      intro h₁ ⟨_, h₂⟩; rw [zero_mul] at h₂; exact h₁ h₂
+    theorem unit_mul [Semiring α] {a b : α} : isUnit a → isUnit b → isUnit (a * b)
+    | ⟨x, xs⟩, ⟨y, ys⟩ => by
+      apply Exists.intro (y * x); rw [mul_assoc, ←mul_assoc b, ys, one_mul, xs];
+    theorem divides_unit [Semiring α] {a b : α} : isUnit b → a ÷ b → isUnit a := by
+      intro ub ab;
+      let ⟨binv, bbinv⟩ := Classical.indefiniteDescription _ ub;
+      let ⟨c, ac⟩ := Classical.indefiniteDescription _ ab;
+      exact ⟨c * binv, by rw [←mul_assoc, ac, bbinv];⟩
+    theorem unit_divides [Semiring α] : ∀ a b : α, isUnit a → a ÷ b := by
+      intro a b ⟨c, ac⟩; exact ⟨c * b, by rw [←mul_assoc, ac, one_mul];⟩
+
+    def unit_set (α : Type _) [Semiring α] : Set α := {x | isUnit x}
+
+    noncomputable def unit_inv [Semiring α] {a : α} (h : isUnit a) : α :=
+      Classical.choose h
+    theorem mul_unit_inv [Semiring α] {a : α} (h : isUnit a) : a * unit_inv h = 1 :=
+      Classical.choose_spec h
+    theorem unit_inv_mul [Semiring α] {a : α} (h : isUnit a) : unit_inv h * a = 1 := by
+      rw [mul_comm]; exact mul_unit_inv h
+
+    noncomputable instance UnitGroup [Semiring α] : Group ↑(unit_set α) := Group.construct
+    {  
+      zero := ⟨1, ⟨1, by rw [mul_one]⟩⟩
+      add := fun a b => ⟨a.val * b.val, unit_mul a.property b.property⟩
+      neg := fun ⟨x, xs⟩ => ⟨unit_inv xs, x, unit_inv_mul xs⟩
+      add_zero := fun ⟨a, _⟩ => Set.elementExt (mul_one a)
+      add_assoc := fun ⟨a, _⟩ ⟨b, _⟩ ⟨c, _⟩ => Set.elementExt (mul_assoc a b c)
+      add_neg := fun ⟨a, as⟩ => Set.elementExt (mul_unit_inv as)
+    }
+
+    theorem pow_nat_mul_distrib [Semiring α] (a b : α) (m : Nat) : (a * b)^m = a^m * b^m := by
+      induction m with
+      | zero      => simp only [Nat.zero_eq, pow_nat_0, mul_one]
+      | succ k ih => simp only [pow_nat_succ, ←mul_assoc, ih, mul_comm]
+
+    theorem pow_nat_comp [Semiring α] (a : α) (m n : Nat) : (a^m)^n = a^(m*n) := by 
+      induction m with
+      | zero => rw [Nat.zero_mul, pow_nat_0, pow_nat_one]
+      | succ k ih => rw [pow_nat_succ, Nat.succ_mul, pow_nat_mul_distrib, ih, pow_nat_add_distrib]
 
     protected class constructor_sr (α : Type _) extends CommMonoid.constructor_cm α, One α, Mul α where
       mul_one           : ∀ a : α, a * 1 = a
@@ -99,7 +152,7 @@ namespace M4R
       mul_comm          : ∀ a b : α, a * b = b * a
 
     protected instance construct {α : Type _} (c : Semiring.constructor_sr α) : Semiring α where
-      toCommMonoid := CommMonoid.construct c.toconstructor_cm
+      toCommMonoid      := CommMonoid.construct c.toconstructor_cm
       mul_one           := c.mul_one
       one_mul           := fun a => by rw [c.mul_comm]; exact c.mul_one a
       mul_assoc         := c.mul_assoc
@@ -110,12 +163,12 @@ namespace M4R
       mul_comm          := c.mul_comm
 
     protected def to_constructor (α : Type _) [Semiring α] : Semiring.constructor_sr α where
-      toconstructor_cm := CommMonoid.to_constructor α
-      mul_one           := NCSemiring.mul_one
-      mul_assoc         := NCSemiring.mul_assoc
-      mul_distrib_left  := NCSemiring.mul_distrib_left
-      mul_zero          := NCSemiring.mul_zero
-      mul_comm          := Semiring.mul_comm
+      toconstructor_cm  := CommMonoid.to_constructor α
+      mul_one           := mul_one
+      mul_assoc         := mul_assoc
+      mul_distrib_left  := mul_distrib_left
+      mul_zero          := mul_zero
+      mul_comm          := mul_comm
 
   end Semiring
 
