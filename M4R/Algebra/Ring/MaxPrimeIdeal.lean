@@ -2,21 +2,16 @@ import M4R.Algebra.Ring.Field
 import M4R.Algebra.Ring.Quotient
 
 namespace M4R
-  open Group
-  open Monoid
-  open CommMonoid
-  open NCSemiring
-  open Ring
-  open QuotientRing
+  open Group Monoid CommMonoid NCSemiring Ring QuotientRing
 
   namespace Ideal
     def is_prime [Ring α] (I : Ideal α) : Prop :=
       I.proper_ideal ∧ ∀ r s, r * s ∈ I → r ∈ I ∨ s ∈ I
 
     def is_maximal [Ring α] (I : Ideal α) : Prop :=
-      I.proper_ideal ∧ ∀ {J : Ideal α}, I ⊆ J → J = I ∨ J = UnitIdeal α
+      I.proper_ideal ∧ ∀ {J : Ideal α}, I ⊆ J → J = I ∨ J = 1
 
-    theorem maximal_neq [Ring α] {I : Ideal α} (h : I.is_maximal) : ∀ {J : Ideal α}, I ⊊ J → J = UnitIdeal α := by
+    theorem maximal_neq [Ring α] {I : Ideal α} (h : I.is_maximal) : ∀ {J : Ideal α}, I ⊊ J → J = 1 := by
       intro J ⟨hIJ, x, hxI, hxJ⟩;
       apply (h.right hIJ).resolve_left fun heq => by rw [heq] at hxJ; exact hxI hxJ
 
@@ -109,4 +104,11 @@ namespace M4R
       IntegralDomainPrime (MaximalField h).to_is_IntegralDomain
 
   end Ideal
+  namespace Ring
+    def Spec (α : Type _) [Ring α] : Set (Ideal α) := {I | I.is_prime}
+    def MaxSpec (α : Type _) [Ring α] : Set (Ideal α) := {I | I.is_maximal}
+
+    theorem MaxSpec_sub_Spec {α : Type _} [Ring α] : MaxSpec α ⊆ Spec α :=
+      fun I => Ideal.maximal_is_prime
+  end Ring
 end M4R

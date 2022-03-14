@@ -22,10 +22,12 @@ namespace M4R
         | trans _ _ h₁₂ h₂₃ => exact Eq.trans (h₁₂ init) (h₂₃ init)
 
     namespace fold
-      
+
       @[simp] theorem empty (init : α) : fold f hrcomm init 0 = init := rfl
 
       @[simp] theorem singleton (init : α) (b : β) : fold f hrcomm init (UnorderedList.singleton b) = f init b := rfl
+
+      @[simp] theorem double (init : α) (b c : β) : fold f hrcomm init [b, c] = f (f init b) c := rfl
 
       theorem append (init : α) (s t : UnorderedList β) :
         fold f hrcomm init (s + t) = fold f hrcomm (fold f hrcomm init s) t :=
@@ -54,7 +56,7 @@ namespace M4R
                     induction l with
                     | nil => simp; rw [←cons, cons']
                     | cons x l ih => simp at ih ⊢; rw [append.cons_over_right, cons', ih, cons', hassoc])
-  
+
     end fold
 
     def map_fold (op : α → α → α) (hcomm : ∀ a₁ a₂, op a₁ a₂ = op a₂ a₁) (hassoc : ∀ a₁ a₂ a₃, op (op a₁ a₂) a₃ = op a₁ (op a₂ a₃))
@@ -95,7 +97,7 @@ namespace M4R
     def fold (init : α) (s : Finset β) : α := UnorderedList.fold f hrcomm init s.elems
 
     namespace fold
-      
+
       @[simp] theorem empty (init : α) : fold f hrcomm init ∅ = init := rfl
 
       @[simp] theorem singleton (init : α) (b : β) : (Finset.singleton b).fold f hrcomm init = f init b := rfl

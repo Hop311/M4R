@@ -1,10 +1,7 @@
 import M4R.Algebra.Group.Group
 
 namespace M4R
-  open Monoid
-  open CommMonoid
-  open Group
-  open AbelianGroup
+  open Monoid CommMonoid Group AbelianGroup
 
   namespace SubMonoid
 

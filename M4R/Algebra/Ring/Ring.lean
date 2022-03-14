@@ -3,12 +3,15 @@ import M4R.Algebra.Ring.Semiring
 namespace M4R
 
   namespace NCRing
-    open Group
-    open NCSemiring
+    open Group NCSemiring
 
     protected instance Product (α₁ : Type _) (α₂ : Type _) [NCRing α₁] [NCRing α₂] : NCRing (α₁ × α₂) where
       toNeg := (Group.Product α₁ α₂).toNeg
       add_neg := (Group.Product α₁ α₂).add_neg
+
+    protected instance multi_product {ι : Type _} (fι : ι → Type _) [∀ i, NCRing (fι i)] : NCRing (MultiProd fι) where
+      toNeg   := (Group.multi_product fι).toNeg
+      add_neg := (Group.multi_product fι).add_neg
 
     theorem neg_mul [NCRing α] (a b : α) : -a * b = -(a * b) := by
       rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_right, neg_add, zero_mul]
@@ -81,6 +84,9 @@ namespace M4R
     protected instance Product (α₁ : Type _) (α₂ : Type _) [Ring α₁] [Ring α₂] : Ring (α₁ × α₂) where
       toNCRing := NCRing.Product α₁ α₂
       mul_comm := (Semiring.Product α₁ α₂).mul_comm
+
+    protected instance multi_product {ι : Type _} (fι : ι → Type _) [∀ i, Ring (fι i)] : Ring (MultiProd fι) where
+      mul_comm := (Semiring.multi_product fι).mul_comm
 
     protected class constructor_r (α : Type _) extends AbelianGroup.constructor_ab α, One α, Mul α where
       mul_one           : ∀ a : α, a * 1 = a

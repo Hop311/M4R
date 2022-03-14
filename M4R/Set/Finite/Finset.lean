@@ -15,6 +15,8 @@ namespace M4R
 
     instance FinsetMem : Mem α (Finset α) where mem := fun x f => x ∈ f.elems
 
+    instance FinsetToSubtype {α : Type u} : CoeSort (Finset α) (Type u) where coe := fun f => {x // x ∈ f}
+
     instance FinsetSizeOf : SizeOf (Finset α) where sizeOf := fun f => f.elems.sizeOf
 
     def length (f : Finset α) : Nat := f.elems.length
@@ -52,6 +54,9 @@ namespace M4R
 
     protected theorem self_singleton (a : α) : a ∈ Finset.singleton a :=
       UnorderedList.self_singleton a
+
+    protected theorem mem_singleton {a a' : α} : a' ∈ Finset.singleton a ↔ a' = a :=
+      ⟨Finset.in_singleton, fun h => h.symm ▸ Finset.self_singleton a⟩
 
     protected def map (f : α → β) (s : Finset α) : UnorderedList β := s.elems.map f
     protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=
@@ -106,6 +111,9 @@ namespace M4R
     theorem union_assoc (s₁ s₂ s₃ : Finset α) : (s₁ ∪ s₂) ∪ s₃ = s₁ ∪ (s₂ ∪ s₃) := by
       apply Finset.ext; intro _; simp only [mem_union, Or.assoc]; exact Iff.rfl
 
+    theorem union_self (s : Finset α) : s ∪ s = s :=
+      Finset.ext fun a => by rw [Finset.mem_union, or_self]; exact Iff.rfl
+
     noncomputable def intersection (s₁ s₂ : Finset α) : Finset α :=
       ⟨s₁.elems.ndinter s₂.elems, UnorderedList.nodup_ndinter s₂.elems s₁.nodup⟩
 
@@ -124,6 +132,14 @@ namespace M4R
       apply Finset.ext; intro _; simp only [mem_inter, And.assoc]; exact Iff.rfl
 
     def disjoint (s₁ s₂ : Finset α) : Prop := s₁ ∩ s₂ = ∅
+
+    theorem singleton_disjoint {a b : α} : disjoint (Finset.singleton a) (Finset.singleton b) ↔ a ≠ b := by
+      simp only [disjoint, Finset.ext_iff, Finset.mem_empty, iff_false, Finset.mem_inter, not_and_iff_or_not,
+        Finset.mem_singleton]
+      exact ⟨fun h => (h a).resolve_left (iff_not_not.mpr rfl), fun h x => by
+        byCases hx : x = a
+        { exact hx.symm ▸ Or.inr h }
+        { exact Or.inl hx }⟩
 
     noncomputable def filter (p : α → Prop) (s : Finset α) : Finset α := ⟨UnorderedList.filter p s.elems, 
       UnorderedList.nodup_filter p s.nodup⟩

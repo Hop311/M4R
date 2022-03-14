@@ -15,8 +15,7 @@ namespace M4R
   class IntegralDomain (α : Type _) extends NCIntegralDomain α, Ring α
 
   namespace NCField
-    open NCSemiring
-    open NonTrivial
+    open NCSemiring NonTrivial
 
     instance toNonTrivialRing (α : Type _) [Field α] : NonTrivialRing α where
       toNonTrivial := Field.toNCField.toNonTrivial
@@ -46,8 +45,7 @@ namespace M4R
 
   end NCField
 
-  open NonTrivial
-  open NCField
+  open NonTrivial NCField
 
   def Ring.is_NonTrivial (α : Type _) [Ring α] : Prop := (1 : α) ≠ 0
   def Ring.is_NonTrivial.toNonTrivialRing [Ring α] (h : is_NonTrivial α) : NonTrivialRing α where

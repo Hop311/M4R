@@ -121,6 +121,9 @@ namespace M4R
     protected theorem self_singleton (a : α) : a ∈ UnorderedList.singleton a :=
       List.self_singleton a
 
+    protected theorem in_double (a b : α) : ∀ x ∈ ([a, b] : UnorderedList α), x = a ∨ x = b :=
+      List.in_double a b
+
     @[simp] protected theorem cons' (a : α) (l : List α) : Quotient.mk (a :: l) = (↑l : UnorderedList α).cons a := rfl
 
     protected def map (f : α → β) (s : UnorderedList α) : UnorderedList β :=
@@ -535,7 +538,7 @@ namespace M4R
         exact @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
           ∀ s, s - l ≤ u ↔ s ≤ u + l) t (fun l => by
             induction l with
-            | nil => exact fun s => (by simp : s - 0 ≤ u ↔ s ≤ u + 0)
+            | nil => exact fun s => (by simp only [sub.sub_zero, append.add_zero]; exact Iff.rfl : s - 0 ≤ u ↔ s ≤ u + 0)
             | cons a t ih =>
               intro s
               simp at ih
@@ -617,7 +620,6 @@ namespace M4R
       Quot.liftOn s (List.countp p) (fun l₁ l₂ => Perm.countp_eq p)
 
     namespace countp
-      open Classical
       variable (p : α → Prop)
 
       @[simp] theorem coe_countp (l : List α) : countp p l = l.countp p := rfl

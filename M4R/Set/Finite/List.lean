@@ -103,6 +103,9 @@ namespace List
 
   @[simp] theorem appendSingleton {a : α} {l : List α} : [a] ++ l = a::l := rfl
 
+  protected theorem in_double (a b : α) : ∀ x ∈ [a, b], x = a ∨ x = b := fun x hx =>
+    Or.elim (eq_or_mem_of_mem_cons hx) Or.inl fun hb => Or.inr (List.in_singleton hb)
+
   section map
 
     @[simp] theorem map_nil (f : α → β) : map f [] = [] := rfl
@@ -578,7 +581,7 @@ namespace List
       l.erasep p = l ∨ ∃ a l₁ l₂, (∀ b ∈ l₁, ¬ p b) ∧ p a ∧ l = l₁ ++ a :: l₂ ∧ l.erasep p = l₁ ++ l₂ := by
         byCases h : ∃ a ∈ l, p a
         { let ⟨a, ha, pa⟩ := h; exact Or.inr (exists_of_erasep ha pa) }
-        { simp at h; exact Or.inl (erasep_of_forall_not h) }
+        { simp only [not_exists, not_and] at h; exact Or.inl (erasep_of_forall_not h) }
 
     theorem erasep_append_left {a : α} (pa : p a) :
       ∀ {l₁ : List α} (l₂ : List α), a ∈ l₁ → (l₁++l₂).erasep p = l₁.erasep p ++ l₂

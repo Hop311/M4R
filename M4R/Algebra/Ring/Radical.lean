@@ -2,15 +2,14 @@ import M4R.Algebra.Ring.MaxPrimeIdeal
 import M4R.Algebra.Ring.Prod
 
 namespace M4R
-  open Monoid
-  open NCSemiring
-  open Semiring
+  open Monoid NCSemiring Semiring
 
   namespace Ideal
+    variable [Ring α] (I : Ideal α)
 
-    def is_radical [Ring α] (I : Ideal α) : Prop := ∀ (x : α) (n : Nat), n ≠ 0 → x^n ∈ I → x ∈ I
+    protected def is_radical : Prop := ∀ (x : α) (n : Nat), n ≠ 0 → x^n ∈ I → x ∈ I
 
-    def rad [Ring α] (I : Ideal α) : Ideal α where
+    def radical : Ideal α where
       subset     := {x | ∃ n : Nat, n ≠ 0 ∧ x^n ∈ I}
       has_zero   := ⟨1, Nat.one_ne_zero, by rw [pow_nat_1]; exact I.has_zero⟩
       add_closed := by
@@ -47,29 +46,52 @@ namespace M4R
                   (@divides_add _ _ (a^m))⟩)⟩⟩
       mul_closed := fun a b ⟨m, ⟨hm, hbm⟩⟩ => ⟨m, ⟨hm, by rw [pow_nat_mul_distrib]; exact I.mul_closed (a^m) hbm⟩⟩
 
-    protected theorem rad.is_radical [Ring α] (I : Ideal α) : I.rad.is_radical :=
-      fun x n hn ⟨m, hm, hx⟩ => ⟨n * m, (Nat.mul_neq_zero _ _).mpr ⟨hn, hm⟩,
-        by rw [←pow_nat_comp]; exact hx⟩
+    namespace radical
+      protected theorem is_radical : I.radical.is_radical :=
+        fun x n hn ⟨m, hm, hx⟩ => ⟨n * m, (Nat.mul_neq_zero _ _).mpr ⟨hn, hm⟩,
+          by rw [←pow_nat_comp]; exact hx⟩
 
-    theorem radical_prime_intersection [Ring α] (I : Ideal α) : I.rad = ⋂₀ {J | I ⊆ J ∧ J.is_prime} := by
-      sorry
+      protected theorem sub_self : I ⊆ I.radical := fun x hx =>
+        ⟨1, Nat.one_ne_zero, NCSemiring.pow_nat_1 x ▸ hx⟩
+
+    end radical
+
+    protected theorem is_radical.eq_rad {I : Ideal α} (hI : I.is_radical) : I.radical = I :=
+      Ideal.antisymm (fun x hx => let ⟨n, hn0, hxn⟩ := hx; hI x n hn0 hxn) (radical.sub_self I)
+
+    theorem subset_radical {I J : Ideal α} (h : I ⊆ J) : I.radical ⊆ J.radical :=
+      fun x ⟨n, hn0, hxn⟩ => ⟨n, hn0, h hxn⟩
+
+    theorem prime_radical {I : Ideal α} (hI : I.is_prime) : I.is_radical := fun x n hn hxn => by
+      induction n with
+      | zero   => contradiction
+      | succ n ih =>
+        byCases hn' : n = 0
+        { rw [hn', pow_nat_1] at hxn; exact hxn }
+        { exact Or.elim (hI.right (x^n) x (pow_nat_succ x n ▸ hxn)) (ih hn') id }
 
   end Ideal
 
   namespace Ring
     open QuotientRing
+    variable (α : Type _) [Ring α]
 
-    def nil_radical (α : Type _) [Ring α] : Ideal α := Ideal.ZeroIdeal.rad
+    def nil_radical : Ideal α := (0 : Ideal α).radical
 
-    def is_reduced (α : Type _) [Ring α] : Prop := nil_radical α = Ideal.ZeroIdeal
+    def is_reduced : Prop := nil_radical α = 0
 
-    theorem reduced_reduced (α : Type _) [Ring α] : is_reduced (QClass (nil_radical α)) := by
-      sorry
+    abbrev reduced := QClass (nil_radical α)
 
-    noncomputable def jacobson_radical (α : Type _) [Ring α] : Ideal α := ⋂₀ {J | J.is_maximal}
+    theorem reduced_reduced : is_reduced (reduced α) :=
+      Ideal.is_zero_ideal.mpr fun a ⟨n, hn0, han⟩ =>
+        @Quotient.ind α (QSetoid _) (fun (x : QClass _) => x^n = 0 → x = 0) (fun x (hxn : toQuotient _ _ ^ n = 0) =>
+          let ⟨m, hm0, hxnm⟩ : x^n ∈ nil_radical α := is_zero.mp (preserve_pow_nat _ x n ▸ hxn)
+          is_zero.mpr ⟨n * m, (Nat.mul_neq_zero n m).mpr ⟨hn0, hm0⟩, pow_nat_comp x n m ▸ hxnm⟩) a han
 
-    theorem jacobson_radical.units [Ring α] :
-      ∀ x : α, x ∈ jacobson_radical α ↔ ↑{y : α | ∃ a, 1 + a * x = y} ⊆ unit_set α := by
+    noncomputable def jacobson_radical : Ideal α := ⋂₀ {J | J.is_maximal}
+
+    theorem jacobson_radical.units : ∀ x : α, x ∈ jacobson_radical α ↔
+      ↑{y : α | ∃ a, 1 + a * x = y} ⊆ unit_set α := by
         sorry
 
   end Ring

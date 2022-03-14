@@ -16,3 +16,5 @@ import M4R.Algebra.Ring.Polynomial
 
 import M4R.Algebra.Ring.IdealZorn
 import M4R.Algebra.Ring.Radical
+import M4R.Algebra.Ring.Localisation
+import M4R.Algebra.Ring.LocalRing

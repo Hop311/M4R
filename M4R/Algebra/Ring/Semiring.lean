@@ -20,6 +20,25 @@ namespace M4R
       zero_mul          := fun (a₁, a₂) => by
         simp [HMul.hMul, Mul.mul, Monoid.product_zero]; exact ⟨zero_mul a₁, zero_mul a₂⟩
 
+    protected instance multi_product.One {ι : Type _} (fι : ι → Type _) [∀ i, One (fι i)] : One (MultiProd fι) where
+      one := fun _ => 1
+    protected theorem multi_product.One_def {ι : Type _} {fι : ι → Type _} [∀ i, One (fι i)] : ∀ i, (1 : MultiProd fι) i = 1 :=
+      fun _ => rfl
+    
+    protected instance multi_product.Mul {ι : Type _} (fι : ι → Type _) [∀ i, Mul (fι i)] : Mul (MultiProd fι) where
+      mul := fun a b i => a i * b i
+    protected theorem multi_product.Mul_def {ι : Type _} {fι : ι → Type _} [∀ i, Mul (fι i)] (a b : MultiProd fι) :
+      ∀ i, (a * b) i = a i * b i := fun _ => rfl
+
+    protected instance multi_product {ι : Type _} (fι : ι → Type _) [∀ i, NCSemiring (fι i)] : NCSemiring (MultiProd fι) where
+      mul_one           := fun a => funext fun i => NCSemiring.mul_one (a i)
+      one_mul           := fun a => funext fun i => NCSemiring.one_mul (a i)
+      mul_assoc         := fun a b c => funext fun i => NCSemiring.mul_assoc (a i) (b i) (c i)
+      mul_distrib_left  := fun a b c => funext fun i => NCSemiring.mul_distrib_left (a i) (b i) (c i)
+      mul_distrib_right := fun a b c => funext fun i => NCSemiring.mul_distrib_right (a i) (b i) (c i)
+      mul_zero          := fun a => funext fun i => NCSemiring.mul_zero (a i)
+      zero_mul          := fun a => funext fun i => NCSemiring.zero_mul (a i)
+
     theorem ofNat.preserve_succ [NCSemiring α] (n : Nat) : n.succ = (n : α) + 1 := by
       induction n with
       | zero => simp only [NCSemiring.ofNat, Monoid.zero_add]
@@ -86,6 +105,9 @@ namespace M4R
 
     protected instance Product (α₁ : Type _) (α₂ : Type _) [Semiring α₁] [Semiring α₂] : Semiring (α₁ × α₂) where
       mul_comm := fun (a₁, a₂) (b₁, b₂) => by simp [HMul.hMul, Mul.mul]; exact ⟨mul_comm a₁ b₁, mul_comm a₂ b₂⟩
+
+    protected instance multi_product {ι : Type _} (fι : ι → Type _) [∀ i, Semiring (fι i)] : Semiring (MultiProd fι) where
+      mul_comm := fun a b => funext fun i => Semiring.mul_comm (a i) (b i)
 
     theorem mul_right_comm [Semiring α] (a b c : α) : a * b * c = a * c * b := by
       rw [mul_assoc, mul_comm b, ←mul_assoc]

@@ -290,6 +290,5 @@ namespace M4R
         exact this
 
     end range
-
   end Finset
 end M4R

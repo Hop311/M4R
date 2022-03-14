@@ -94,7 +94,7 @@ namespace M4R
   @[simp] theorem exists_imp_distrib {p : α → Prop} : ((∃ x, p x) → b) ↔ ∀ x, p x → b :=
     ⟨fun h x hpx => h ⟨x, hpx⟩, fun h ⟨x, hpx⟩ => h x hpx⟩
 
-  @[simp] theorem not_exists {p : α → Prop} : (¬ ∃ x, p x) ↔ ∀ x, ¬ p x :=
+  theorem not_exists {p : α → Prop} : (¬ ∃ x, p x) ↔ ∀ x, ¬ p x :=
     exists_imp_distrib
 
   theorem and_imp : (a ∧ b → c) ↔ (a → b → c) :=
@@ -138,7 +138,7 @@ namespace M4R
   theorem imp_not_comm : (a → ¬b) ↔ (b → ¬a) :=
     ⟨fun h hb ha => absurd hb (h ha), fun h ha hb => absurd ha (h hb)⟩
 
-  @[simp] theorem not_forall {p : α → Prop} : (¬ ∀ x, p x) ↔ ∃ x, ¬ p x :=
+  theorem not_forall {p : α → Prop} : (¬ ∀ x, p x) ↔ ∃ x, ¬ p x :=
     ⟨by apply not_imp_symm; intro nE x; apply not_imp_symm _ nE; exact fun h => ⟨x, h⟩,
     fun ⟨x, hn⟩ hA => hn (hA x)⟩
 
@@ -185,6 +185,9 @@ namespace M4R
 
   theorem propext_iff {a b : Prop} : (a ↔ b) ↔ a = b :=
     ⟨propext, fun h => h ▸ Iff.rfl⟩
+
+  theorem forall_congr' {p q : α → Prop} (h : ∀ a, p a ↔ q a) : (∀ a, p a) ↔ (∀ a, q a) :=
+    propext_iff.mpr (forall_congr fun a => propext (h a))
 
 end M4R
 

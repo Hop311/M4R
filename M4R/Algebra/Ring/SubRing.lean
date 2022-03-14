@@ -1,8 +1,7 @@
 import M4R.Algebra.Ring.Defs
 
 namespace M4R
-  open NCSemiring
-  open Semiring
+  open NCSemiring Semiring
 
   namespace SubSemiring
 

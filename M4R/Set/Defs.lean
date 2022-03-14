@@ -67,4 +67,12 @@ namespace M4R
     def toSetSet (s : Set α) (f : α → Set β) : Set (Set β) := {b | ∃ a ∈ s, f a = b}
 
   end Set
+
+  def MultiProd {ι : Type _} (fι : ι → Type _) := ∀ i, fι i
+
+  namespace MultiProd
+    variable {ι : Type _} (fι : ι → Type _)
+
+    def proj (i : ι) : MultiProd fι → fι i := (· i)
+  end MultiProd
 end M4R

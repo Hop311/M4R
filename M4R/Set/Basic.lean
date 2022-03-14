@@ -11,6 +11,7 @@ namespace M4R
     def SetInhabited : Inhabited (Set α) where default := Set.Empty
     def SingletonSet [Singleton α] : Set α := Set.Universal
     protected def SingletonSet.mk {α : Type _} (a : α) : Set α := {x | x = a}
+    protected theorem SingletonSet.mem {α : Type _} (a : α) : ∀ x, x ∈ SingletonSet.mk a ↔ x = a := fun _ => Iff.rfl
 
     namespace equivalent
 
@@ -142,6 +143,8 @@ namespace M4R
       protected theorem subset_iff {s : Set (Set α)} {t : Set α} : ⋃₀ s ⊆ t ↔ ∀t' ∈ s, t' ⊆ t :=
         ⟨fun h t' ht' => Subset.trans (SoSUnion.subset_of_mem ht') h, SoSUnion.subset⟩
 
+      protected theorem mem {S : Set (Set α)} {a : α} : a ∈ ⋃₀ S ↔ ∃ s ∈ S, a ∈ s := Iff.rfl
+
     end SoSUnion
 
     namespace SoSIntersection
@@ -152,8 +155,10 @@ namespace M4R
       protected theorem subset_of_mem {S : Set (Set α)} {t : Set α} (tS : t ∈ S) : ⋂₀ S ⊆ t :=
         fun _ xIS => xIS t tS
 
-      protected theorem subset_iff {s : Set (Set α)} {t : Set α} : t ⊆ ⋂₀ s ↔ ∀t' ∈ s, t ⊆ t' :=
+      protected theorem subset_iff {S : Set (Set α)} {t : Set α} : t ⊆ ⋂₀ S ↔ ∀ t' ∈ S, t ⊆ t' :=
         ⟨fun h t' ht' => Subset.trans h (SoSIntersection.subset_of_mem ht'), SoSIntersection.subset⟩
+
+      protected theorem mem {S : Set (Set α)} {a : α} : a ∈ ⋂₀ S ↔ ∀ s ∈ S, a ∈ s := Iff.rfl
 
     end SoSIntersection
 

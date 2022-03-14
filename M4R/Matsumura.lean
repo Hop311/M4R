@@ -1,9 +1,7 @@
 import M4R.Algebra
 
 namespace M4R
-  open Monoid
-  open NCSemiring
-  open Semiring
+  open Monoid NCSemiring Semiring
 
   variable {A : Type _} [Ring A] {I : Ideal A}
 
@@ -24,18 +22,7 @@ namespace M4R
       | inr h => exact Or.inr (of_not_not h)
     ⟩⟩
 
-  structure MultiplicativeSet (A : Type _) [Ring A] where
-    subset : Set A
-    has_one : 1 ∈ subset
-    mul_closed : ∀ {a b : A}, a ∈ subset → b ∈ subset → a * b ∈ subset
-  instance MultiplicativeSet.MultiplicativeSetMem : Mem A (MultiplicativeSet A) where mem := fun x I => x ∈ I.subset
-
-  theorem MultiplicativeSet.disjoint_ideal_proper {S : MultiplicativeSet A} (hIS : Set.disjoint I.subset S.subset) : I.proper_ideal :=
-    fun h =>
-      have : 1 ∉ I := Set.disjoint.elementwise.mp (hIS.comm) 1 S.has_one
-      absurd (Ideal.is_unit_ideal.mp h) this
-
-  theorem t1_2 (S : MultiplicativeSet A) (hIS : Set.disjoint I.subset S.subset) :
+  theorem t1_2 (I) (S : MultiplicativeSet A) (hIS : Set.disjoint I.subset S.subset) :
     ∃ J : Ideal A, I ⊆ J ∧ Set.disjoint J.subset S.subset ∧ J.is_prime :=
       let ⟨m, hm₁, hm₂⟩ := Ideal.ideal_zorn {J | I ⊆ J ∧ Set.disjoint J.subset S.subset} (by
         intro c cs hc
@@ -69,5 +56,34 @@ namespace M4R
         rw [h₃] at h₂
 
         exact Set.nonempty.mpr (⟨_, h₂, h₁⟩ : Nonempty ↑(m.subset ∩ S.subset)) hm₁.right⟩
+
+  theorem Ideal.radical_prime_intersection : I.radical = ⋂₀ {J | I ⊆ J ∧ J.is_prime} :=
+    Ideal.antisymm (fun x hx => propext sIntersection.mem ▸ fun J ⟨hIJ, hJ⟩ =>
+      (prime_radical hJ).eq_rad ▸ subset_radical hIJ hx)
+      (fun x hx => by
+        apply Classical.byContradiction; intro hxI
+        let S : MultiplicativeSet A := {
+          subset := {a | ∃ n : Nat, a = x ^ n}
+          has_one := ⟨0, rfl⟩
+          mul_closed := fun ⟨m, hm⟩ ⟨n, hn⟩ => ⟨m + n,
+            hm ▸ hn ▸ (pow_nat_add_distrib x m n).symm⟩
+        }
+        let ⟨J, hIJ, hJS, hJ⟩ := t1_2 I.radical S (by
+          apply Set.disjoint.elementwise.mpr; intro a haI ⟨n, hn⟩
+          byCases hn0 : n = 0
+          { apply ((is_unit_ideal.mpr (pow_nat_0 x ▸ hn0 ▸ hn ▸ haI)) ▸ hxI : x ∉ (1 : Ideal A)); trivial }
+          { exact absurd (radical.is_radical I x n hn0 (hn ▸ haI)) hxI })
+        exact absurd ⟨1, rfl⟩ (Set.disjoint.elementwise.mp hJS x
+          (sIntersection.mem.mp hx J ⟨Subset.trans (radical.sub_self I) hIJ, hJ⟩)))
+
+  theorem t1_3 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
+    ⋂₀ fI.toSet = ∏ fI := by
+      sorry
+
+  open QuotientRing
+
+  def t1_4 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
+    QClass (⋂₀ fI.toSet) ≅ᵣ MultiProd (fun i : fI => QClass i.val) := by
+      sorry
 
 end M4R
