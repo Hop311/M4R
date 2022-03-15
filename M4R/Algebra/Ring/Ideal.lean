@@ -286,5 +286,17 @@ namespace M4R
       mul_comm         := product.comm
     }
 
+    structure chain (α : Type _) [Ring α] where
+      f        : Nat → Ideal α
+      hsubsets : ∀ n, f n ⊆ f n.succ
+
+    namespace chain
+      variable [Ring α] (c : chain α)
+
+      instance chain_coefun : CoeFun (chain α) (fun _ => Nat → Ideal α) where coe := f
+
+      def is_stable : Prop := ∃ N : Nat, ∀ n, N ≤ n → c n = c N
+
+    end chain
   end Ideal
 end M4R

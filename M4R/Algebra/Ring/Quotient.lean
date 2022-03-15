@@ -46,8 +46,8 @@ namespace M4R
         (fun x y hxy => by
           simp only [QRel] at *; rw [←neg_add_distrib, add_comm]; exact I.neg_closed hxy)
 
-    def QuotMul [Ring α] (I : Ideal α) : QClass I → QClass I → QClass I := by
-      apply Function.Quotient.map₂ (QRel I) (QRel I) (QRel I)
+    def QuotMul [Ring α] (I : Ideal α) : QClass I → QClass I → QClass I :=
+      Function.Quotient.map₂ (QRel I) (QRel I) (QRel I)
         (QRel.refl I) (QRel.refl I) (· * ·) (fun a₁ a₂ b₁ b₂ ha hb => by
           simp only [QRel] at *
           have := I.add_closed (I.mul_closed b₁ ha) (I.mul_closed a₂ hb)
@@ -60,10 +60,10 @@ namespace M4R
   instance QuotientRing {α : Type _} [Ring α] (I : Ideal α) : Ring (QClass I) := Ring.construct
     {
       zero := toQuotient I 0
-      one := toQuotient I 1
-      add := QuotAdd I
-      neg := QuotNeg I
-      mul := QuotMul I
+      one  := toQuotient I 1
+      add  := QuotAdd I
+      neg  := QuotNeg I
+      mul  := QuotMul I
       add_zero := by
         apply Quot.ind; intros; apply Quot.sound; simp only [QRel]
         rw [add_zero, neg_add]; exact I.has_zero
