@@ -11,9 +11,14 @@ namespace M4R
     def is_maximal [Ring α] (I : Ideal α) : Prop :=
       I.proper_ideal ∧ ∀ {J : Ideal α}, I ⊆ J → J = I ∨ J = 1
 
-    theorem maximal_neq [Ring α] {I : Ideal α} (h : I.is_maximal) : ∀ {J : Ideal α}, I ⊊ J → J = 1 := by
-      intro J ⟨hIJ, x, hxI, hxJ⟩;
-      apply (h.right hIJ).resolve_left fun heq => by rw [heq] at hxJ; exact hxI hxJ
+    theorem maximal_neq [Ring α] {I : Ideal α} (h : I.is_maximal) : ∀ {J : Ideal α}, I ⊊ J → J = 1 :=
+      fun ⟨hIJ, x, hxI, hxJ⟩ => (h.right hIJ).resolve_left fun heq => by rw [heq] at hxJ; exact hxI hxJ
+
+    theorem zero_prime [IntegralDomain α] : (0 : Ideal α).is_prime :=
+      ⟨Ideal.proper_iff_notin.mpr ⟨1, (absurd · Ideal.one_notin_zero_ideal)⟩,
+        fun _ _ => NCIntegralDomain.integral'⟩
+    theorem one_not_prime [Ring α] : ¬(1 : Ideal α).is_prime := fun h => h.left rfl
+    theorem one_not_maximal [Ring α] : ¬(1 : Ideal α).is_maximal := fun h => h.left rfl
 
     instance ProperIdealNonTrivialRing [Ring α] {I : Ideal α} (hI : I.proper_ideal) : NonTrivialRing (QClass I) where
       toNonTrivial.one_neq_zero := by
@@ -103,12 +108,50 @@ namespace M4R
     theorem maximal_is_prime [Ring α] {I : Ideal α} (h : I.is_maximal) : I.is_prime :=
       IntegralDomainPrime (MaximalField h).to_is_IntegralDomain
 
+    structure chain (α : Type _) [Ring α] where
+      f        : Nat → Ideal α
+      hsubsets : ∀ n, f n ⊆ f n.succ
+
+    namespace chain
+      variable [Ring α] (c : chain α)
+
+      instance chain_coefun : CoeFun (chain α) (fun _ => Nat → Ideal α) where coe := f
+
+      def is_stable : Prop := ∃ N : Nat, ∀ n, N ≤ n → c n = c N
+
+      def is_prime : Prop := ∀ n, (c n).is_prime
+
+    end chain
   end Ideal
   namespace Ring
+
     def Spec (α : Type _) [Ring α] : Set (Ideal α) := {I | I.is_prime}
     def MaxSpec (α : Type _) [Ring α] : Set (Ideal α) := {I | I.is_maximal}
 
-    theorem MaxSpec_sub_Spec {α : Type _} [Ring α] : MaxSpec α ⊆ Spec α :=
+    theorem maxspec_sub_spec {α : Type _} [Ring α] : MaxSpec α ⊆ Spec α :=
       fun I => Ideal.maximal_is_prime
+
   end Ring
+  namespace Field
+    variable [Field α]
+
+    theorem ideal_0_or_1 (I : Ideal α) : I = 0 ∨ I = 1 := by
+      byCases h : ∃ x ∈ I, x ≠ 0
+      { let ⟨x, hx₁, hx₂⟩ := h;
+        exact Or.inr (Ideal.is_unit_ideal'.mpr ⟨x, nonzero_unit hx₂, hx₁⟩) }
+      { exact Or.inl (Ideal.is_zero_ideal.mpr fun x hx => of_not_not
+        ((not_and_iff_or_not.mp (not_exists.mp h x)).resolve_left (iff_not_not.mpr hx))) }
+
+    theorem zero_maximal : (0 : Ideal α).is_maximal :=
+      ⟨Ideal.proper_iff_notin.mpr ⟨1, Ideal.one_notin_zero_ideal⟩,
+        fun _ => ideal_0_or_1 _⟩
+
+    theorem spec_eq_zero : Ring.Spec α = Set.singleton 0 :=
+      Set.singleton.ext.mpr fun I => ⟨fun h => Or.elim (ideal_0_or_1 I) id fun h' =>
+        absurd (h' ▸ h : (1 : Ideal α).is_prime) Ideal.one_not_prime, (· ▸ Ideal.zero_prime)⟩
+
+    theorem maxspec_eq_zero : Ring.MaxSpec α = Set.singleton 0 :=
+      Set.subset.antisymm (spec_eq_zero ▸ Ring.maxspec_sub_spec) fun I => (· ▸ zero_maximal)
+
+  end Field
 end M4R

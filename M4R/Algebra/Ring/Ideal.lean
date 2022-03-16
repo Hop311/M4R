@@ -24,7 +24,7 @@ namespace M4R
         ⟨congrArg Set.inclusion, Set.elementExt⟩
 
     def ZeroIdeal (α : Type _) [Ring α] : Ideal α where
-      subset := Set.SingletonSet.mk 0
+      subset := Set.singleton 0
       has_zero := rfl
       add_closed := fun xz yz => by rw [xz, yz, add_zero]; rfl
       mul_closed := fun _ _ h => by rw [h, mul_zero]; trivial
@@ -130,6 +130,8 @@ namespace M4R
 
     theorem mem_unit_ideal [Ring α] (a : α) : a ∈ (1 : Ideal α) := trivial
     theorem mem_zero_ideal [Ring α] {a : α} : a ∈ (0 : Ideal α) ↔ a = 0 := Iff.rfl
+    theorem one_notin_zero_ideal [R : NonTrivialRing α] : 1 ∉ (0 : Ideal α) :=
+      (absurd · R.toNonTrivial.one_neq_zero)
 
     theorem in_unit_ideal [Ring α] (I : Ideal α) : I ⊆ 1 :=
       fun x _ => mem_unit_ideal x
@@ -157,6 +159,10 @@ namespace M4R
 
     theorem div_mem [Ring α] {I : Ideal α} {a : α} : a ∈ I ↔ ∃ b ∈ I, b ÷ a :=
       ⟨fun h => ⟨a, h, divides_self a⟩, fun ⟨b, hb, c, hbc⟩ => hbc ▸ I.mul_closed' hb c⟩
+
+    theorem proper_iff_notin [Ring α] {I : Ideal α} : I.proper_ideal ↔ ∃ x, x ∉ I :=
+      ⟨fun h => Classical.byContradiction fun h' => h (is_unit_ideal.mpr (of_not_not (not_exists.mp h' 1))),
+       fun ⟨x, hx⟩ h => (h ▸ hx : x ∉ (1 : Ideal α)) trivial⟩
 
     protected def intersection [Ring α] (I J : Ideal α) : Ideal α where
       subset := I.subset ∩ J.subset
@@ -231,7 +237,7 @@ namespace M4R
       theorem ideal_contained {I : Ideal α} (hI : S ⊆ I.subset) : from_set S ⊆ I :=
         Set.SoSIntersection.subset_of_mem ⟨I, hI, rfl⟩
 
-      theorem is_principal {a : α} : from_set (Set.SingletonSet.mk a) = principal a :=
+      theorem is_principal {a : α} : from_set (Set.singleton a) = principal a :=
         Ideal.antisymm (ideal_contained fun x hx => hx.symm ▸ generator_in_principal a)
           (contains_principal rfl)
 
@@ -285,18 +291,5 @@ namespace M4R
         exact this)
       mul_comm         := product.comm
     }
-
-    structure chain (α : Type _) [Ring α] where
-      f        : Nat → Ideal α
-      hsubsets : ∀ n, f n ⊆ f n.succ
-
-    namespace chain
-      variable [Ring α] (c : chain α)
-
-      instance chain_coefun : CoeFun (chain α) (fun _ => Nat → Ideal α) where coe := f
-
-      def is_stable : Prop := ∃ N : Nat, ∀ n, N ≤ n → c n = c N
-
-    end chain
   end Ideal
 end M4R

@@ -3,7 +3,7 @@ import M4R.Algebra.Ring.MaxPrimeIdeal
 namespace M4R
 
   class LocalRing (α : Type _) extends NonTrivialRing α where
-    loc : ∃ m : Ideal α, Ring.MaxSpec α = Set.SingletonSet.mk m
+    loc : ∃ m : Ideal α, Ring.MaxSpec α = Set.singleton m
   
   class SemilocalRing (α : Type _) extends NonTrivialRing α where
     semi_loc : ∃ fm : Finset (Ideal α), Ring.MaxSpec α = fm.toSet
@@ -14,7 +14,7 @@ namespace M4R
     variable {α : Type _} [LocalRing α]
 
     noncomputable def m : Ideal α := choose LocalRing.loc
-    theorem m_maxspec : Ring.MaxSpec α = Set.SingletonSet.mk m := choose_spec LocalRing.loc
+    theorem m_maxspec : Ring.MaxSpec α = Set.singleton m := choose_spec LocalRing.loc
     theorem m_max : (m : Ideal α).is_maximal := (m_maxspec ▸ rfl : m ∈ Ring.MaxSpec α)
     theorem m_proper : (m : Ideal α).proper_ideal := m_max.left
 

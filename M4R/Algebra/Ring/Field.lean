@@ -11,7 +11,7 @@ namespace M4R
 
   class NCIntegralDomain (α : Type _) extends NonTrivialNCRing α where
     integral : ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0
-  
+
   class IntegralDomain (α : Type _) extends NCIntegralDomain α, Ring α
 
   namespace NCField
@@ -44,6 +44,24 @@ namespace M4R
         exact inv_mul (integral ha hb)
 
   end NCField
+
+  namespace Field
+    open NCField Semiring
+
+    theorem nonzero_unit [Field α] {a : α} (ha : a ≠ 0) : isUnit a := ⟨inv ha, mul_inv ha⟩
+
+  end Field
+
+  namespace NCIntegralDomain
+
+    theorem integral' [NCIntegralDomain α] {a b : α} (h : a * b = 0) : a = 0 ∨ b = 0 := by
+      byCases ha : a = 0
+      { exact Or.inl ha }
+      { byCases hb : b = 0;
+        { exact Or.inr hb }
+        { exact absurd h (integral ha hb) } }
+
+  end NCIntegralDomain
 
   open NonTrivial NCField
 

@@ -9,9 +9,8 @@ namespace M4R
 
     /- Set instances -/
     def SetInhabited : Inhabited (Set α) where default := Set.Empty
-    def SingletonSet [Singleton α] : Set α := Set.Universal
-    protected def SingletonSet.mk {α : Type _} (a : α) : Set α := {x | x = a}
-    protected theorem SingletonSet.mem {α : Type _} (a : α) : ∀ x, x ∈ SingletonSet.mk a ↔ x = a := fun _ => Iff.rfl
+    protected def singleton {α : Type _} (a : α) : Set α := {x | x = a}
+    protected theorem singleton.mem {α : Type _} (a : α) : ∀ x, x ∈ Set.singleton a ↔ x = a := fun _ => Iff.rfl
 
     namespace equivalent
 
@@ -33,6 +32,9 @@ namespace M4R
           apply Iff.intro
           { intro hiff; apply funext; intro a; exact propext (hiff a) }
           { intro heq a; rw [heq]; exact Iff.refl (s₂ a) }
+
+    protected theorem singleton.ext {s : Set α} {a : α} : s = Set.singleton a ↔ ∀ x, x ∈ s ↔ x = a :=
+      Set.ext.symm.trans Iff.rfl
 
     protected theorem nonempty {s : Set α} : s ≠ ∅ ↔ Nonempty s :=
       ⟨fun h =>
