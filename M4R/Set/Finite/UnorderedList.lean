@@ -616,8 +616,8 @@ namespace M4R
       ⟨fun h => ⟨le.trans h (filter_le _ _), fun a m => of_mem_filter (mem_of_le h m)⟩,
         fun ⟨h, al⟩ => filter_eq_self.mpr al ▸ filter_le_filter p h⟩
 
-    def countp (p : α → Prop) [DecidablePred p] (s : UnorderedList α) : Nat :=
-      Quot.liftOn s (List.countp p) (fun l₁ l₂ => Perm.countp_eq p)
+    noncomputable def countp (p : α → Prop) (s : UnorderedList α) : Nat :=
+      Quot.liftOn s (List.countp p) (fun l₁ l₂ h => Perm.countp_eq p h)
 
     namespace countp
       variable (p : α → Prop)
@@ -956,6 +956,18 @@ namespace M4R
           apply le_inter ((le.add_le_add_right s).mpr (le_union_right s t))
           rw [append.comm]
           exact (le.add_le_add_right t).mpr (le_union_left s t))
+
+    noncomputable def dedup (s : UnorderedList α) : UnorderedList α :=
+      Quotient.liftOn s (fun l => (l.dedup : UnorderedList α))
+        fun _ _ p => Quot.sound p.dedup
+
+    @[simp] theorem dedup_zero : dedup (0 : UnorderedList α) = 0 := rfl
+
+    @[simp] theorem mem_dedup {a : α} {l : UnorderedList α} : a ∈ l.dedup ↔ a ∈ l :=
+      @Quotient.inductionOn _ _ (fun s : UnorderedList α => a ∈ s.dedup ↔ a ∈ s) l fun _ => List.mem_dedup
+
+    theorem nodup_dedup (l : UnorderedList α) : l.dedup.nodup :=
+      @Quotient.inductionOn _ _ (fun s : UnorderedList α => s.dedup.nodup) l List.nodup_dedup
 
   end UnorderedList
 end M4R

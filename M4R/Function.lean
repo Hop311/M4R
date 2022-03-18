@@ -11,6 +11,7 @@ namespace M4R
     def domain (f : α → β) := α
     def codomain (f : α → β) := β
     def image (f : α → β) : Set β := {y | ∃ x : α, f x = y}
+    def image' (f : α → β) (s : Set α) := {y | ∃ x ∈ s, f x = y}
     def inv_image (f : α → β) (s : Set β) : Set α := {x | f x ∈ s}
     def fibre (f : α → β) (b : β) : Set α := {x | f x = b}
     
@@ -135,4 +136,34 @@ namespace M4R
 
     end update
   end Function
+
+  namespace minimal
+    open Classical
+
+    private def lbp (s : Set Nat) (m n : Nat) : Prop := m = n + 1 ∧ ∀ k, k ≤ n → k ∉ s
+
+    private def wf_lbp {s : Set Nat} (hs : Nonempty s) : WellFounded (lbp s) :=
+      let ⟨n, hn⟩ := hs
+      ⟨fun a => have : (∀ m k, n ≤ k + m → Acc (lbp s) k) := fun m => by induction m with
+          | zero      => exact fun k kn => ⟨k, fun y r => absurd hn (r.right n (Nat.add_zero k ▸ kn))⟩
+          | succ m ih => exact fun k kn => ⟨_, fun y r => ih y (r.left ▸ Nat.succ_add _ _ ▸ Nat.add_succ _ _ ▸ kn)⟩
+        this _ _ (Nat.le_add_left _ _)⟩
+
+    protected noncomputable def find (s : Set Nat) (hs : Nonempty s) : {n // n ∈ s ∧ ∀ m, m < n → m ∉ s} :=
+      @WellFounded.fix Nat (fun k => (∀ n, n < k → n ∉ s) → {n // n ∈ s ∧ ∀ m, m < n → m ∉ s}) (lbp s) (wf_lbp hs)
+        (fun x h₁ h₂ => if hx : x ∈ s then ⟨x, hx, h₂⟩ else
+          have : ∀ n, n ≤ x → n ∉ s := fun n hn => Or.elim (Nat.lt_or_eq_of_le hn) (h₂ n) (· ▸ hx)
+          h₁ _ ⟨rfl, this⟩ fun n hn => this n (Nat.le_of_succ_le_succ hn))
+        0 fun n h => absurd h (Nat.not_lt_zero n)
+
+    theorem min_nat (s : Set Nat) (hs : Nonempty s) : ∃ n ∈ s, ∀ m ∈ s, n ≤ m :=
+      let ⟨n, hn, h⟩ := minimal.find s hs
+      ⟨n, hn, fun m hm => Nat.le_of_not_lt (mt (h m) (iff_not_not.mpr hm))⟩
+
+    theorem min_exists (s : Set α) (hs : Nonempty s) (f : α → Nat) : ∃ x ∈ s, ∀ y ∈ s, f x ≤ f y :=
+      let ⟨x, hx⟩ := hs
+      let ⟨n, ⟨y, hy, hyn⟩, hmin⟩ := min_nat (Function.image' f s) ⟨f x, x, hx, rfl⟩
+      ⟨y, hy, fun z hz => hyn ▸ hmin (f z) ⟨z, hz, rfl⟩⟩
+
+  end minimal
 end M4R

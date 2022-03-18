@@ -22,7 +22,7 @@ namespace M4R
     def length (f : Finset α) : Nat := f.elems.length
 
     protected def toSet (f : Finset α) : Set α := Set.toSet f
-    protected def ext_Set (f : Finset α) : ∀ x, x ∈ f ↔ x ∈ f.toSet := fun x => ⟨id, id⟩
+    protected def ext_toSet {f : Finset α} {x : α} : x ∈ f ↔ x ∈ f.toSet := ⟨id, id⟩
 
     @[simp] theorem val_inj {s t : Finset α} : s.elems = t.elems ↔ s = t :=
       ⟨match s, t with | ⟨_, _⟩, ⟨_, _⟩ => by rw [Finset.mk.injEq]; exact id, congrArg _⟩
@@ -41,6 +41,9 @@ namespace M4R
 
     instance EmptyFinsetEmptyCollection : EmptyCollection (Finset α) where
       emptyCollection := Finset.Empty
+
+    theorem empty_subset (f : Finset α) : (∅ : Finset α) ⊆ f :=
+      fun _ _ => by contradiction
 
     theorem eq_empty_of_forall_not_mem {s : Finset α} (h : ∀ x, x ∉ s) : s = ∅ :=
       Finset.ext fun a => ⟨fun ha => absurd ha (h a), fun _ => by contradiction⟩
@@ -114,6 +117,9 @@ namespace M4R
     theorem union_self (s : Finset α) : s ∪ s = s :=
       Finset.ext fun a => by rw [Finset.mem_union, or_self]; exact Iff.rfl
 
+    theorem union_toSet (s t : Finset α) : (s ∪ t).toSet = s.toSet ∪ t.toSet :=
+      Set.ext.mp fun _ => by rw [←Finset.ext_toSet, mem_union]; exact Iff.rfl
+
     noncomputable def intersection (s₁ s₂ : Finset α) : Finset α :=
       ⟨s₁.elems.ndinter s₂.elems, UnorderedList.nodup_ndinter s₂.elems s₁.nodup⟩
 
@@ -180,13 +186,16 @@ namespace M4R
       @[simp] theorem mem_cons {a : α} {s : Finset α} {h : a ∉ s} {b : α} : b ∈ @cons α a s h ↔ b = a ∨ b ∈ s :=
         UnorderedList.mem_cons
 
-      @[simp] theorem mem_cons_self (a : α) (s : Finset α) {h : a ∉ s} : a ∈ cons a s h :=
+      @[simp] theorem mem_cons_self {a : α} (s : Finset α) (h : a ∉ s) : a ∈ cons a s h :=
         mem_cons.mpr (Or.inl rfl)
 
       @[simp] theorem cons_val {a : α} {s : Finset α} (h : a ∉ s) : (cons a s h).elems = s.elems.cons a := rfl
 
       @[simp] theorem mk_cons {a : α} {s : UnorderedList α} (h : (s.cons a).nodup) :
         (⟨s.cons a, h⟩ : Finset α) = cons a ⟨s, (UnorderedList.nodup_cons.mp h).right⟩ (UnorderedList.nodup_cons.mp h).left := rfl
+
+      theorem cons_subset {a : α} (s : Finset α) (h : a ∉ s) : s ⊆ s.cons a h :=
+        fun _ => UnorderedList.mem_cons_of_mem
 
     end cons
 
@@ -281,6 +290,18 @@ namespace M4R
 
   end Set
 
+  namespace UnorderedList
+
+    noncomputable def to_finset (l : UnorderedList α) : Finset α := ⟨l.dedup, UnorderedList.nodup_dedup l⟩
+
+    @[simp] theorem to_finset_val (l : UnorderedList α) : l.to_finset.elems = l.dedup := rfl
+
+    @[simp] theorem mem_to_finset {a : α} {s : UnorderedList α} : a ∈ s.to_finset ↔ a ∈ s := UnorderedList.mem_dedup
+
+    @[simp] theorem to_finset_zero : to_finset (0 : UnorderedList α) = ∅ := rfl
+
+  end UnorderedList
+
   namespace Fintype
 
     protected instance Empty : Fintype (∅ : Set α) where
@@ -326,9 +347,11 @@ namespace M4R
   def infinite (s : Set α) : Prop := ¬ finite s
 
   def Finset.to_finite (f : Finset α) : finite (f.toSet) :=
-    finite.intro (Fintype.of_finset f f.ext_Set)
+    finite.intro (Fintype.of_finset f (fun _ => Finset.ext_toSet))
 
   namespace finite
+
+    theorem empty (α : Type _) : finite (∅ : Set α) := ⟨Fintype.Empty⟩
 
     theorem iff_exists_fintype {s : Set α} : finite s ↔ Nonempty (Fintype s) :=
       ⟨fun ⟨h⟩ => ⟨h⟩, fun ⟨h⟩ => ⟨h⟩⟩      
@@ -342,6 +365,9 @@ namespace M4R
     @[simp] theorem mem_to_finset {s : Set α} (hs : finite s) {a : α} : a ∈ hs.to_finset ↔ a ∈ s :=
       ⟨fun h => by let ⟨⟨x, hx⟩, _, h'⟩ := UnorderedList.map.mem_map.mp h; rw [←h']; exact hx,
       fun h => UnorderedList.map.mem_map.mpr ⟨⟨a, h⟩, hs.to_fintype.complete _, rfl⟩⟩
+
+    @[simp] theorem to_finset_toSet {s : Set α} (hs : finite s) : hs.to_finset.toSet = s :=
+      Set.ext.mp fun _ => by rw [←hs.mem_to_finset]; exact Iff.rfl
 
     @[simp] theorem mem_to_finset_val {s : Set α} (hs : finite s) {a : α} : a ∈ hs.to_finset.elems ↔ a ∈ s :=
       mem_to_finset hs
@@ -359,4 +385,17 @@ namespace M4R
       rw [Set.intersection.comm]; exact intersection ht s
 
   end finite
+  namespace infinite
+
+    theorem nonempty {s : Set α} (hs : infinite s) : ∃ x, x ∈ s :=
+      Classical.byContradiction fun h => hs (by
+        simp only [not_exists] at h
+        exact Set.empty.mpr h ▸ finite.empty α)
+
+    theorem not_in_finset {s : Set α} (hs : infinite s) (f : Finset α) : ∃ x ∈ s, x ∉ f :=
+      Classical.byContradiction fun h => hs (by
+        simp only [not_exists, not_and, iff_not_not] at h
+        exact finite.subset f.to_finite h)
+
+  end infinite
 end M4R

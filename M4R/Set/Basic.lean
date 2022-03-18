@@ -1,5 +1,5 @@
 import M4R.Set.Defs
-import M4R.Logic
+import M4R.Numbers
 
 namespace M4R
   namespace Set
@@ -11,6 +11,9 @@ namespace M4R
     def SetInhabited : Inhabited (Set α) where default := Set.Empty
     protected def singleton {α : Type _} (a : α) : Set α := {x | x = a}
     protected theorem singleton.mem {α : Type _} (a : α) : ∀ x, x ∈ Set.singleton a ↔ x = a := fun _ => Iff.rfl
+
+    theorem empty_subset (s : Set α) : ∅ ⊆ s := fun _ _ => by contradiction
+    theorem not_mem_empty (a : α) : a ∉ (∅ : Set α) := id
 
     namespace equivalent
 
@@ -36,6 +39,9 @@ namespace M4R
     protected theorem singleton.ext {s : Set α} {a : α} : s = Set.singleton a ↔ ∀ x, x ∈ s ↔ x = a :=
       Set.ext.symm.trans Iff.rfl
 
+    protected theorem empty {s : Set α} : s = ∅ ↔ ∀ x, x ∉ s := by
+      simp only [←Set.ext, Set.equivalent, not_mem_empty, iff_false]; exact Iff.rfl
+
     protected theorem nonempty {s : Set α} : s ≠ ∅ ↔ Nonempty s :=
       ⟨fun h =>
         have : ∃ x, x ∈ s := Classical.byContradiction fun hn =>
@@ -51,10 +57,10 @@ namespace M4R
 
       protected theorem refl (s : Set α) : s ⊆ s := by
         intro _ as; exact as
-        
+
       protected theorem antisymmIff {a b : Set α} : a = b ↔ a ⊆ b ∧ b ⊆ a := by
         rw [Subset.antisymm a b, ←Set.ext]; exact Iff.refl _
-      
+
       protected theorem antisymm {a b : Set α} (hab : a ⊆ b) (hba : b ⊆ a) : a = b :=
         Set.subset.antisymmIff.mpr ⟨hab, hba⟩
 
@@ -84,8 +90,15 @@ namespace M4R
         have : ∀ (t₁ t₂ : Set α), t₁ ∪ t₂ ⊆ t₂ ∪ t₁ := fun _ _ _ => Or.comm
         exact Set.subset.antisymm (this s₁ s₂) (this s₂ s₁)
 
+      protected theorem subset {s₁ s₂ s₃ : Set α} (h₁ : s₁ ⊆ s₃) (h₂ : s₂ ⊆ s₃) : s₁ ∪ s₂ ⊆ s₃ :=
+        fun x => (Or.elim · (@h₁ x) (@h₂ x))
+
+      protected theorem subset_union_left (s₁ s₂ : Set α) : s₁ ⊆ s₁ ∪ s₂ := fun _ => Or.inl
+
+      protected theorem subset_union_right (s₁ s₂ : Set α) : s₂ ⊆ s₁ ∪ s₂ := fun _ => Or.inr
+
     end union
-    
+
     namespace intersection
 
       protected theorem comm (s₁ s₂ : Set α) : s₁ ∩ s₂ = s₂ ∩ s₁ := by

@@ -1,4 +1,4 @@
-import M4R.Algebra.Ring.MaxPrimeIdeal
+import M4R.Algebra.Ring.Noetherian
 
 namespace M4R
 
@@ -27,7 +27,7 @@ namespace M4R
     instance to_SemilocalRing (α : Type _) [R : LocalRing α] : SemilocalRing α where
       toNonTrivialRing := R.toNonTrivialRing
       semi_loc := ⟨Finset.singleton m, Set.ext.mp fun x => by
-        rw [m_maxspec, ←Finset.ext_Set, Finset.mem_singleton]; exact Iff.rfl⟩
+        rw [m_maxspec, ←Finset.ext_toSet, Finset.mem_singleton]; exact Iff.rfl⟩
 
     def residue_field (α : Type u) [LocalRing α] := QClass (m : Ideal α)
 
@@ -36,4 +36,25 @@ namespace M4R
   namespace SemilocalRing
 
   end SemilocalRing
+
+  class NoetherianLocalRing (α : Type _) extends LocalRing α, NoetherianRing α
+  namespace NoetherianLocalRing
+    open LocalRing
+
+    protected theorem m_finitely_generated (α : Type _) [NoetherianLocalRing α] : (m : Ideal α).finitely_generated :=
+      NoetherianRing.ideal_finitely_generated m
+
+    protected theorem has_krull_dim (α : Type _) [NoetherianLocalRing α] : Ring.krull_dim.has_krull_dim α := by
+      sorry
+
+  end NoetherianLocalRing 
+
+/-
+Want to show:
+  Universally catenary rings ⊃ Cohen–Macaulay rings ⊃ Gorenstein rings ⊃ complete intersection rings ⊃ regular local rings
+-/
+  class RegularLocalRing (α : Type _) extends NoetherianLocalRing α where
+    regular : (NoetherianLocalRing.m_finitely_generated α).minimal_generator_count =
+                Ring.krull_dim.dim (NoetherianLocalRing.has_krull_dim α)
+
 end M4R

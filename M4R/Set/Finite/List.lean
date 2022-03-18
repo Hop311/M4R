@@ -52,6 +52,15 @@ namespace List
     ⟨eq_or_mem_of_mem_cons, fun h =>
       Or.elim h (fun h' => by rw [h']; exact mem_cons_self b l) (mem_cons_of_mem b)⟩
 
+  theorem length_pos_of_mem {a : α} : ∀ {l : List α}, a ∈ l → 0 < length l
+  | b::l, _ => Nat.zero_lt_succ _
+
+  theorem exists_mem_of_length_pos : ∀ {l : List α}, 0 < length l → ∃ a, a ∈ l
+  | b::l, _ => ⟨b, mem_cons_self _ _⟩
+
+  theorem length_pos_iff_exists_mem {l : List α} : 0 < length l ↔ ∃ a, a ∈ l :=
+    ⟨exists_mem_of_length_pos, fun ⟨a, h⟩ => length_pos_of_mem h⟩
+
   theorem forall_mem_nil (p : α → Prop) : ∀ x ∈ [], p x := fun _ _ => by contradiction
 
   theorem forall_mem_cons {p : α → Prop} {a : α} {l : List α} :
@@ -817,7 +826,7 @@ namespace List
   | x::xs => if p x then Nat.succ (countp p xs) else countp p xs
 
   section countp
-    variable (p : α → Prop) [DecidablePred p]
+    variable (p : α → Prop)
 
     @[simp] theorem countp_nil : countp p [] = 0 := rfl
 
@@ -835,6 +844,10 @@ namespace List
         simp only [filter'_cons_of_pos _ h, countp, ih, if_pos h, length]
         simp only [countp_cons_of_neg _ _ h, ih, filter'_cons_of_neg _ h]
 
+    theorem countp_pos {l : List α} : 0 < countp p l ↔ ∃ a ∈ l, p a := by
+      rw [countp_eq_length_filter', length_pos_iff_exists_mem]
+      simp only [mem_filter']; exact Iff.rfl
+
   end countp
   
   theorem Sublist.countp_le {l₁ l₂ : List α} (s : l₁ <+ l₂) : countp p l₁ ≤ countp p l₂ := by
@@ -847,6 +860,14 @@ namespace List
     @Sublist.countp_le α (Eq a) _ _ h
 
   namespace count
+
+    @[simp] theorem count_nil (a : α) : count a [] = 0 := rfl
+
+    @[simp] theorem count_cons_of_pos (a : α) (l : List α) : count a (a::l) = count a l + 1 :=
+      countp_cons_of_pos _ l rfl
+
+    @[simp] theorem count_cons_of_neg {a b : α} (h : a ≠ b) (l : List α) : count a (b::l) = count a l :=
+      countp_cons_of_neg _ l h
 
     @[simp] theorem count_repeat (a : α) (n : Nat) : count a (repeat a n) = n := by
       simp only [count] rw [countp_eq_length_filter', filter'_eq_self.mpr, repeat.length_repeat]
@@ -864,16 +885,11 @@ namespace List
           rw [←count_repeat a n]
           exact h.count_le a⟩
 
+    theorem count_pos {a : α} {l : List α} : 0 < count a l ↔ a ∈ l := by
+      simp only [count, countp_pos]
+      exact ⟨fun ⟨_, h₁, h₂⟩ => h₂ ▸ h₁, fun h => ⟨a, h, rfl⟩⟩
+
   end count
-
-  theorem length_pos_of_mem {a : α} : ∀ {l : List α}, a ∈ l → 0 < length l
-  | b::l, _ => Nat.zero_lt_succ _
-
-  theorem exists_mem_of_length_pos : ∀ {l : List α}, 0 < length l → ∃ a, a ∈ l
-  | b::l, _ => ⟨b, mem_cons_self _ _⟩
-
-  theorem length_pos_iff_exists_mem {l : List α} : 0 < length l ↔ ∃ a, a ∈ l :=
-    ⟨exists_mem_of_length_pos, fun ⟨a, h⟩ => length_pos_of_mem h⟩
 
   section bag_inter
 
@@ -907,4 +923,59 @@ namespace List
         exact Sublist.sublist_cons_of_sublist b (bag_inter_sublist_left l₁ l₂) }
 
   end bag_inter
+  section pw_filter
+    variable (r : α → α → Prop)
+
+    noncomputable def pw_filter : List α → List α
+    | []      => []
+    | x :: xs =>
+      let xs := pw_filter xs
+      if ∀ y ∈ xs, r x y then x :: xs else xs
+
+    @[simp] theorem pw_filter_nil : pw_filter r [] = [] := rfl
+
+    @[simp] theorem pw_filter_cons_of_pos {r} {a : α} {l : List α} (h : ∀ b ∈ pw_filter r l, r a b) :
+      pw_filter r (a :: l) = a :: pw_filter r l := if_pos h
+
+    @[simp] theorem pw_filter_cons_of_neg {r} {a : α} {l : List α} (h : ¬ ∀ b ∈ pw_filter r l, r a b) :
+      pw_filter r (a :: l) = pw_filter r l := if_neg h
+
+    theorem pw_filter_sublist : ∀ (l : List α), pw_filter r l <+ l
+    | []     => Sublist.nil_sublist _
+    | x :: l => by
+      byCases h : ∀ y ∈ pw_filter r l, r x y
+      { exact pw_filter_cons_of_pos h ▸ (pw_filter_sublist l).cons_cons _ }
+      { exact pw_filter_cons_of_neg h ▸ Sublist.sublist_cons_of_sublist _ (pw_filter_sublist l) }
+
+    theorem pw_filter_subset (l : List α) : pw_filter r l ⊆ l :=
+      (pw_filter_sublist r _).subset
+
+    theorem forall_mem_pw_filter {r} (neg_trans : ∀ {x y z}, r x z → r x y ∨ r y z)
+      (a : α) (l : List α) : (∀ b ∈ pw_filter r l, r a b) ↔ ∀ b ∈ l, r a b :=
+        ⟨by
+          induction l with
+          | nil => intros; contradiction
+          | cons x l ih =>
+            byCases h : ∀ y ∈ pw_filter r l, r x y
+            { simp only [pw_filter_cons_of_pos h, forall_mem_cons, and_imp]
+              exact fun r h => ⟨r, ih h⟩ }
+            { simp only [pw_filter_cons_of_neg h, forall_mem_cons]
+              exact fun ha => ⟨by
+                simp only [not_forall] at h; let ⟨y, hy, hxy⟩ := h
+                exact (neg_trans (ha y hy)).resolve_right hxy, ih ha⟩ },
+        fun h b hb => h b (pw_filter_subset r l hb)⟩
+
+  end pw_filter
+  section dedup
+
+    noncomputable def dedup : List α → List α := pw_filter (· ≠ ·)
+
+    @[simp] theorem mem_dedup {a : α} {l : List α} : a ∈ dedup l ↔ a ∈ l :=
+      ⟨(pw_filter_subset (· ≠ ·) l ·), fun ha => by
+        have := not_iff_not.mpr (@forall_mem_pw_filter α (· ≠ ·) (fun hxz => by
+          rw [←not_and_iff_or_not]; exact fun ⟨hxy, hyz⟩ => hxz (hxy.trans hyz)) a l)
+        simp only [not_forall, iff_not_not] at this
+        let ⟨y, hy, hay⟩ := this.mpr ⟨a, ha, rfl⟩; exact hay ▸ hy⟩
+
+  end dedup
 end List

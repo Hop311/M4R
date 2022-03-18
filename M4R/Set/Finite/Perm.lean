@@ -476,10 +476,29 @@ namespace M4R
       l₁.diff t₁ ~ l₂.diff t₂ :=
         ht.diff_left l₂ ▸ hl.diff_right _
 
-    theorem countp_eq (p : α → Prop) [DecidablePred p]
-      {l₁ l₂ : List α} (s : l₁ ~ l₂) : l₁.countp p = l₂.countp p := by
-        rw [List.countp_eq_length_filter', List.countp_eq_length_filter'];
-        exact (s.filter' _).length_eq
+    theorem countp_eq (p : α → Prop) {l₁ l₂ : List α} (s : l₁ ~ l₂) : l₁.countp p = l₂.countp p := by
+      rw [List.countp_eq_length_filter', List.countp_eq_length_filter'];
+      exact (s.filter' _).length_eq
+
+    theorem count_eq {l₁ l₂ : List α} (p : l₁ ~ l₂) (a) : l₁.count a = l₂.count a :=
+      p.countp_eq _
+
+
+    theorem perm_iff_count {l₁ l₂ : List α} : l₁ ~ l₂ ↔ ∀ a, l₁.count a = l₂.count a :=
+      ⟨count_eq, fun h => by
+        induction l₁ generalizing l₂ with
+        | nil => cases l₂ with
+          | nil => exact Perm.refl _
+          | cons b l₂ => have := h b; simp only [List.count.count_nil,
+            List.count.count_cons_of_pos] at this; contradiction
+        | cons a l₁ ih =>
+          have : a ∈ l₂ := List.count.count_pos.mp ((List.count.count_cons_of_pos a l₁ ▸ h a :
+            List.count a l₁ + 1 = List.count a l₂) ▸ Nat.succ_pos _)
+          exact ((ih fun b => by
+            have h₁ := h b; rw [(cons_erase this).count_eq] at h₁
+            byCases h₂ : b = a
+            { simp only [h₂, List.count.count_cons_of_pos] at h₁ ⊢; exact Nat.succ.inj h₁ }
+            { simp only [List.count.count_cons_of_neg h₂] at h₁; exact h₁ }).cons a).trans (cons_erase this).symm⟩
 
     section bag_inter
 
@@ -538,5 +557,12 @@ namespace M4R
           ht.bag_inter_left l₂ ▸ hl.bag_inter_right _
 
     end bag_inter
+    
+    theorem dedup {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.dedup ~ l₂.dedup :=
+      perm_iff_count.mpr fun a => by
+        byCases h : a ∈ l₁
+        { simp only [List.mem_dedup, List.nodup_dedup, List.count_eq_one_of_mem, h, p.subset h] }
+        { simp only [List.mem_dedup, List.count_eq_zero_of_not_mem, h, mt (p.mem_iff a).mpr h] }
+
   end Perm
 end M4R

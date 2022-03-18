@@ -108,20 +108,6 @@ namespace M4R
     theorem maximal_is_prime [Ring α] {I : Ideal α} (h : I.is_maximal) : I.is_prime :=
       IntegralDomainPrime (MaximalField h).to_is_IntegralDomain
 
-    structure chain (α : Type _) [Ring α] where
-      f        : Nat → Ideal α
-      hsubsets : ∀ n, f n ⊆ f n.succ
-
-    namespace chain
-      variable [Ring α] (c : chain α)
-
-      instance chain_coefun : CoeFun (chain α) (fun _ => Nat → Ideal α) where coe := f
-
-      def is_stable : Prop := ∃ N : Nat, ∀ n, N ≤ n → c n = c N
-
-      def is_prime : Prop := ∀ n, (c n).is_prime
-
-    end chain
   end Ideal
   namespace Ring
 

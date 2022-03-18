@@ -225,7 +225,7 @@ namespace M4R
 
       theorem contains_set : S ⊆ (from_set S).subset :=
         Set.SoSIntersection.subset fun s ⟨I, hIS, hIs⟩ => hIs ▸ hIS
-      
+
       variable {S}
 
       theorem contains_mem {a : α} (ha : a ∈ S) : a ∈ from_set S :=
@@ -236,6 +236,9 @@ namespace M4R
 
       theorem ideal_contained {I : Ideal α} (hI : S ⊆ I.subset) : from_set S ⊆ I :=
         Set.SoSIntersection.subset_of_mem ⟨I, hI, rfl⟩
+
+      theorem self (I : Ideal α) : from_set I.subset = I :=
+        Ideal.antisymm (ideal_contained (Subset.refl _)) (contains_set _)
 
       theorem is_principal {a : α} : from_set (Set.singleton a) = principal a :=
         Ideal.antisymm (ideal_contained fun x hx => hx.symm ▸ generator_in_principal a)
@@ -248,7 +251,84 @@ namespace M4R
       theorem mem {a : α} : a ∈ from_set S ↔ ∀ I : Ideal α, S ⊆ I.subset → a ∈ I := by
         simp only [from_set, sIntersection.mem]; exact Iff.rfl
 
+      theorem subset {T : Set α} (h : S ⊆ T) : from_set S ⊆ from_set T :=
+        fun x hx => mem.mpr fun I hTI => mem.mp hx I (Subset.trans h hTI)
+
+      theorem induction (p : α → Prop) {a : α} (ha : a ∈ from_set S) (h₀ : p 0) (h₁ : ∀ x ∈ S, p x)
+        (h₂ : ∀ x y, p x → p y → p (x + y)) (h₃ : ∀ x y, p y → p (x * y)) : p a :=
+          mem.mp ha ⟨p, h₀, h₂ _ _, h₃⟩ h₁
+
+      theorem mem_finite_gen {a : α} : a ∈ from_set S ↔ ∃ f : Finset α, f.toSet ⊆ S ∧ a ∈ from_set f.toSet :=
+        ⟨fun h => induction (fun x => ∃ f : Finset α, f.toSet ⊆ S ∧ x ∈ from_set f.toSet) h
+          ⟨∅, Set.empty_subset _, Ideal.has_zero (from_set ∅)⟩
+          (fun x hx => ⟨Finset.singleton x, fun y hy => Finset.in_singleton hy ▸ hx,
+            contains_mem (Finset.self_singleton x)⟩)
+          (fun x y ⟨fx, hfxS, hxfx⟩ ⟨fy, hfyS, hyfy⟩ => ⟨fx ∪ fy,
+            Finset.union_toSet fx fy ▸ Set.union.subset hfxS hfyS,
+            mem.mpr fun I hI => I.add_closed
+              (mem.mp hxfx I (Subset.trans (Finset.union_toSet fx fy ▸ Set.union.subset_union_left _ _) hI))
+              (mem.mp hyfy I (Subset.trans (Finset.union_toSet fx fy ▸ Set.union.subset_union_right _ _) hI))⟩)
+          (fun x y ⟨f, hfS, hyf⟩ => ⟨f, hfS, Ideal.mul_closed (from_set _) x hyf⟩),
+        fun ⟨f, hfS, haf⟩ => subset hfS haf⟩
+
+      theorem repeat (S : Set α) : from_set (from_set S).subset = from_set S :=
+        Ideal.antisymm (ideal_contained (Subset.refl (from_set S).subset)) (contains_set _)
+
     end from_set
+
+    def finitely_generated [Ring α] (I : Ideal α) : Prop := ∃ f : Finset α, I = from_set f.toSet
+
+    namespace finitely_generated
+      variable [Ring α] {I : Ideal α} (h : I.finitely_generated)
+
+      noncomputable def generating_set : Finset α := Classical.choose h
+      
+      theorem generating_set_def : I = from_set (generating_set h).toSet := Classical.choose_spec h
+
+      theorem generating_set_subset : (generating_set h).toSet ⊆ I.subset :=
+        fun x hx => generating_set_def h ▸ from_set.contains_set _ hx
+
+      theorem has_minimal_generating_set : ∃ f : Finset α, I = from_set f.toSet ∧
+        ∀ g : Finset α, I = from_set g.toSet → f.length ≤ g.length :=
+          let ⟨f, hf⟩ := h
+          minimal.min_exists ({fs | I = from_set fs.toSet} : Set (Finset α)) ⟨f, hf⟩ Finset.length
+
+      noncomputable def minimal_generator_count : Nat := (Classical.choose (has_minimal_generating_set h)).length
+
+    end finitely_generated
+
+    section
+      open from_set
+
+      theorem iff_finite_subbasis [Ring α] {I : Ideal α} : I.finitely_generated ↔
+        ∀ S : Set α, I = from_set S → ∃ f : Finset α, f.toSet ⊆ S ∧ I = from_set f.toSet :=
+          ⟨fun h S hS => by
+            let ⟨f, hfS, hf⟩ := @Finset.cons_induction α
+              (fun fs => fs.toSet ⊆ I.subset → ∃ f, f.toSet ⊆ S ∧ fs.toSet ⊆ (from_set (Finset.toSet f)).subset)
+              (fun _ => ⟨∅, fun _ _ => by contradiction, fun _ h => False.elim
+                (Finset.mem_empty.mp (Finset.ext_toSet.mpr h))⟩) (fun a s ha h₁ h₂ =>
+                  let ⟨f₁, hf₁S, hsf₁⟩ := h₁ (fun x hx => h₂ (Finset.cons_subset s ha hx))
+                  let ⟨f₂, hf₂S, haf₂⟩ := from_set.mem_finite_gen.mp (hS ▸ h₂ (Finset.mem_cons_self s ha) : a ∈ from_set S)
+                  ⟨f₁ ∪ f₂, Finset.union_toSet f₁ f₂ ▸ Set.union.subset hf₁S hf₂S, fun x hx =>
+                    Or.elim (Finset.mem_cons.mp hx) (Finset.union_toSet f₁ f₂ ▸ · ▸
+                      from_set.subset (Set.union.subset_union_right f₁.toSet f₂.toSet) haf₂)
+                      fun h => Finset.union_toSet f₁ f₂ ▸ from_set.subset
+                      (Set.union.subset_union_left f₁.toSet f₂.toSet) (hsf₁ h)⟩)
+                h.generating_set h.generating_set_subset
+            exact ⟨f, hfS, Ideal.antisymm (fun x hx => by
+              have := from_set.subset hf
+              rw [from_set.repeat, ←h.generating_set_def] at this
+              exact this hx) (hS ▸ from_set.subset hfS)⟩,
+          fun h => let ⟨f, h₁, h₂⟩ := h I.subset (from_set.self I).symm; ⟨f, h₂⟩⟩
+      
+      theorem iff_finite_subbasis' [Ring α] {I : Ideal α} : I.finitely_generated ↔
+        ∀ S : Set α, infinite S → I = from_set S → ∃ f : Finset α, f.toSet ⊆ S ∧ I = from_set f.toSet :=
+          iff_finite_subbasis.trans ⟨fun h S _ => h S, fun h S hIS => by
+            byCases hS : finite S
+            { exact ⟨hS.to_finset, fun _ => hS.mem_to_finset.mp, hS.to_finset_toSet.symm ▸ hIS⟩ }
+            { exact h S hS hIS }⟩
+
+    end
 
     protected noncomputable def product [Ring α] (I J : Ideal α) : Ideal α :=
       from_set {x | ∃ i ∈ I, ∃ j ∈ J, x = i * j}

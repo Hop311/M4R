@@ -6,7 +6,7 @@ inductive M4R.Pairwise (r : α → α → Prop) : List α → Prop
 | nil  : Pairwise r []
 | cons : ∀ {x : α} {l : List α}, (∀ a ∈ l, r x a) → Pairwise r l → Pairwise r (x::l)
     
-def List.nodup : List α → Prop := M4R.Pairwise (fun x y => x ≠ y)
+def List.nodup : List α → Prop := M4R.Pairwise (· ≠ ·)
 
 namespace M4R
   namespace Pairwise
@@ -173,6 +173,12 @@ namespace List
       propext ((not_iff_not.mpr this).trans Nat.not_lt)
     rw [this]; exact Iff.rfl
 
+  theorem count_eq_one_of_mem {a : α} {l : List α} (d : nodup l) (h : a ∈ l) : count a l = 1 :=
+    Nat.le_antisymm (nodup_iff_count_le_one.mp d a) (count.count_pos.mpr h)
+
+  theorem count_eq_zero_of_not_mem {a : α} {l : List α} (h : a ∉ l) : count a l = 0 :=
+    Decidable.byContradiction $ λ h' => h $ count.count_pos.mp (Nat.pos_iff_ne_zero.mpr h')
+
   theorem nodup_erase_eq_filter' (a : α) {l : List α} (d : nodup l) : l.erase a = filter' (· ≠ a) l := by
     induction d with
     | nil => rfl
@@ -182,4 +188,14 @@ namespace List
         apply Eq.symm; rw [filter'_eq_self]; exact fun a ha => (m a ha).symm }
       { rw [erase_cons_tail _ h, filter'_cons_of_pos, ih]; exact h }
 
+  theorem pairwise_of_pw_filter (r : α → α → Prop) : ∀ (l : List α), Pairwise r (pw_filter r l)
+  | []     => Pairwise.nil
+  | x :: l => by
+    byCases h : ∀ y ∈ pw_filter r l, r x y
+    { rw [List.pw_filter_cons_of_pos h]
+      exact Pairwise.cons h (pairwise_of_pw_filter r l) }
+    { rw [List.pw_filter_cons_of_neg h]
+      exact pairwise_of_pw_filter r l }
+
+  theorem nodup_dedup : ∀ l : List α, l.dedup.nodup := pairwise_of_pw_filter _
 end List

@@ -58,10 +58,13 @@ namespace M4R
     protected instance toAbelianGroup [AbelianGroup α] (s : SubGroup α) : AbelianGroup ↑s.subset where
       add_comm := s.toCommMonoid.add_comm
 
-  end SubGroup
+    def is_normal [Group α] (s : SubGroup α) : Prop :=
+      ∀ a : α, a ∈ s → ∀ g, -g + a + g ∈ s
 
-  def SubGroup.is_normal [Group α] (s : SubGroup α) : Prop :=
-    ∀ a : α, a ∈ s → ∀ g, -g + a + g ∈ s
+    theorem abelian_is_normal [AbelianGroup α] (s : SubGroup α) : s.is_normal :=
+      fun a ha g => CommMonoid.add_comm _ _ ▸ add_assoc _ _ _ ▸ add_neg _ ▸ (zero_add _).symm ▸ ha
+
+  end SubGroup
 
   namespace QuotientGroup
     variable [Group α] (s : SubGroup α)
