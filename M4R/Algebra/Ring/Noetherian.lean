@@ -27,25 +27,6 @@ namespace M4R
 
   open Ideal
 
-  def Ring.is_noetherian (α : Type _) [Ring α] : Prop := ∀ c : chain α, c.is_stable
-
-  class NoetherianRing (α : Type _) extends Ring α where
-    noetherian : Ring.is_noetherian α
-
-  namespace NoetherianRing
-
-    theorem ideal_finitely_generated [NoetherianRing α] (I : Ideal α) : I.finitely_generated := by
-      apply Ideal.iff_finite_subbasis'.mpr
-      intro S hS hIS
-      let c : chain α := {
-          f        := sorry
-          hsubsets := sorry
-        }
-      have := NoetherianRing.noetherian c
-      sorry
-
-  end NoetherianRing
-
   namespace Ring
     namespace krull_dim
       open Ideal
@@ -81,4 +62,23 @@ namespace M4R
 
     end krull_dim
   end Ring
+
+  def Ring.is_noetherian (α : Type _) [Ring α] : Prop := ∀ c : chain α, c.is_stable
+
+  class NoetherianRing (α : Type _) extends Ring α where
+    noetherian : Ring.is_noetherian α
+
+  namespace NoetherianRing
+
+    theorem ideal_finitely_generated [NoetherianRing α] (I : Ideal α) : I.finitely_generated := by
+      apply Ideal.iff_finite_subbasis'.mpr
+      intro S hS hIS
+      let c : chain α := {
+          f        := sorry
+          hsubsets := sorry
+        }
+      have := NoetherianRing.noetherian c
+      sorry
+
+  end NoetherianRing
 end M4R

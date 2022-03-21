@@ -100,7 +100,12 @@ namespace M4R
   end UnorderedList.sum
   namespace UnorderedList.map_sum
 
+    @[simp] theorem map_def [CommMonoid β] (f : α → β) (s : UnorderedList α) : (∑ s.map f) = ∑ f in s := rfl
+
     @[simp] theorem empty [CommMonoid β] (f : α → β) : (∑ f in (0 : UnorderedList α)) = 0 := rfl
+
+    @[simp] theorem map_id [CommMonoid α] (s : UnorderedList α) : (∑ id in s) = ∑ s := by
+      simp only [map_sum, map_fold_add, map_fold, UnorderedList.map.map_id s] rfl
 
     theorem cons [CommMonoid β] (f : α → β) (a : α) (s : UnorderedList α) : (∑ f in s.cons a) = (∑ f in s) + (f a) :=
       map_fold_add.cons 0 f a s
@@ -177,7 +182,12 @@ namespace M4R
 
   namespace Finset.map_sum
 
+    @[simp] theorem map_def [CommMonoid β] (f : α → β) (s : Finset α) : (∑ s.map f) = ∑ f in s := rfl
+
     @[simp] theorem empty [CommMonoid β] (f : α → β) : (∑ f in (∅ : Finset α)) = 0 := rfl
+
+    @[simp] theorem map_id [CommMonoid α] (s : Finset α) : (∑ id in s) = ∑ s :=
+      UnorderedList.map_sum.map_id s.elems
 
     theorem cons [CommMonoid β] (f : α → β) {a : α} {s : Finset α} (ha : a ∉ s) : (∑ f in s.cons a ha) = (∑ f in s) + (f a) :=
       UnorderedList.map_sum.cons f a s.elems

@@ -111,6 +111,9 @@ namespace M4R
       theorem inter_eq_self_of_subset_right {s t : Set α} (h : t ⊆ s) : s ∩ t = t := by
         apply Set.ext.mp fun x => ⟨And.right, fun h' => ⟨h h', h'⟩⟩
 
+      theorem subset_inter_left (s t : Set α) : s ∩ t ⊆ s := fun _ => And.left
+      theorem subset_inter_right (s t : Set α) : s ∩ t ⊆ t := fun _ => And.right
+
     end intersection
 
     namespace minus

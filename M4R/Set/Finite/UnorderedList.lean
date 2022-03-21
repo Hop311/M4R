@@ -19,6 +19,9 @@ namespace M4R
       Quot.liftOn s (fun l => a ∈ l) (fun l₁ l₂ (p : l₁ ~ l₂) => propext (p.mem_iff _))
     instance UnorderedListMem : Mem α (UnorderedList α) where mem := UnorderedList.mem
 
+    protected def toSet (l : UnorderedList α) : Set α := Set.toSet l
+    protected def ext_toSet {l : UnorderedList α} {x : α} : x ∈ l ↔ x ∈ l.toSet := ⟨id, id⟩
+
     def nodup (s : UnorderedList α) : Prop :=
       Quot.liftOn s List.nodup (fun l₁ l₂ p => propext p.nodupIff)
 
@@ -159,6 +162,10 @@ namespace M4R
       theorem map_comp (f : α → β) (g : β → γ) (s : UnorderedList α) : (s.map f).map g = s.map (g ∘ f) :=
         @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => (l.map f).map g = l.map (g ∘ f)) s
           (fun l => congrArg List.to_UnorderedList (l.map_comp f g))
+
+      theorem map_id (s : UnorderedList α) : s.map id = s :=
+        @Quotient.ind _ _ (fun (l : UnorderedList α) => l.map id = l) (fun l =>
+          congrArg List.to_UnorderedList (List.map_id l)) s
 
     end map
 

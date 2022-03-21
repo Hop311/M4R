@@ -258,8 +258,11 @@ namespace M4R
         (h₂ : ∀ x y, p x → p y → p (x + y)) (h₃ : ∀ x y, p y → p (x * y)) : p a :=
           mem.mp ha ⟨p, h₀, h₂ _ _, h₃⟩ h₁
 
-      theorem mem_finite_gen {a : α} : a ∈ from_set S ↔ ∃ f : Finset α, f.toSet ⊆ S ∧ a ∈ from_set f.toSet :=
-        ⟨fun h => induction (fun x => ∃ f : Finset α, f.toSet ⊆ S ∧ x ∈ from_set f.toSet) h
+      theorem to_finset (l : UnorderedList α) : from_set l.toSet = from_set l.to_finset.toSet :=
+        congrArg from_set (UnorderedList.to_finset_toSet l)
+
+      theorem mem_finite_gen {S} {a : α} : a ∈ from_set S ↔ ∃ f : Finset α, f.toSet ⊆ S ∧ a ∈ from_set f.toSet :=
+        ⟨(induction (fun x => ∃ f : Finset α, f.toSet ⊆ S ∧ x ∈ from_set f.toSet) ·
           ⟨∅, Set.empty_subset _, Ideal.has_zero (from_set ∅)⟩
           (fun x hx => ⟨Finset.singleton x, fun y hy => Finset.in_singleton hy ▸ hx,
             contains_mem (Finset.self_singleton x)⟩)
@@ -268,8 +271,35 @@ namespace M4R
             mem.mpr fun I hI => I.add_closed
               (mem.mp hxfx I (Subset.trans (Finset.union_toSet fx fy ▸ Set.union.subset_union_left _ _) hI))
               (mem.mp hyfy I (Subset.trans (Finset.union_toSet fx fy ▸ Set.union.subset_union_right _ _) hI))⟩)
-          (fun x y ⟨f, hfS, hyf⟩ => ⟨f, hfS, Ideal.mul_closed (from_set _) x hyf⟩),
+          (fun x y ⟨f, hfS, hyf⟩ => ⟨f, hfS, Ideal.mul_closed (from_set _) x hyf⟩)),
         fun ⟨f, hfS, haf⟩ => subset hfS haf⟩
+
+      open Classical
+
+      theorem mem_as_sum_finset {f : Finset α} {a : α} : a ∈ from_set f.toSet ↔ ∃ c : α → α, a = ∑ x in f, c x * x :=
+        ⟨fun h => induction (fun a => ∃ c : α → α, a = ∑ x in f, c x * x) h
+          ⟨fun _ => 0, (Finset.map_sum.eq_zero (fun x _ => zero_mul x)).symm⟩
+          (fun x hx => ⟨fun y => if y = x then 1 else 0, by
+            rw [Finset.erase_cons f hx, Finset.map_sum.cons]
+            simp only [ite_true]; rw [Finset.map_sum.eq_zero (fun y hy => by
+              simp only [(Finset.mem_erase.mp hy).left, ite_false]; exact zero_mul y), zero_add, one_mul]⟩)
+          (fun x y ⟨cx, hcx⟩ ⟨cy, hcy⟩ => ⟨fun z => cx z + cy z, hcx ▸ hcy ▸ Finset.map_sum.distrib _ _ _ ▸
+            congrArg f.map_sum (funext fun _ => (mul_distrib_right _ _ _).symm)⟩)
+          (fun r s ⟨c, hc⟩ => ⟨fun z => r * c z, hc ▸ Finset.map_sum.mul_sum _ _ _ ▸
+            congrArg f.map_sum (funext fun _ => (mul_assoc _ _ _).symm)⟩),
+        fun ⟨c, h⟩ => h ▸ Finset.map_sum.prop_sum (· ∈ from_set f.toSet) (fun x => c x * x) f
+          (from_set f.toSet).has_zero
+          (fun x hx => (from_set f.toSet).mul_closed (c x) (from_set.contains_mem hx))
+          fun _ _ => (from_set f.toSet).add_closed⟩
+
+      theorem mem_as_sum {a : α} : a ∈ from_set S ↔ ∃ (f : Finset α) (c : α → α), f.toSet ⊆ S ∧ a = ∑ x in f, c x * x :=
+        propext mem_finite_gen ▸ ⟨fun ⟨f, hfS, haf⟩ => let ⟨c, hc⟩ := mem_as_sum_finset.mp haf; ⟨f, c, hfS, hc⟩,
+        fun ⟨f, c, hf, ha⟩ => ⟨f, hf, ha ▸ Finset.induction (fun fs =>
+          (∑ x in fs, c x * x) ∈ from_set fs.toSet) (from_set ∅).has_zero
+          (fun x s hx ih => by
+            simp only; exact Finset.map_sum.sum_insert _ hx ▸ (from_set (s.insert x).toSet).add_closed
+              ((from_set (s.insert x).toSet).mul_closed _ (from_set.contains_mem (Finset.mem_insert_self x s)))
+              (from_set.subset (fun _ => Finset.mem_insert_of_mem : s ⊆ s.insert x) ih)) f⟩⟩
 
       theorem repeat (S : Set α) : from_set (from_set S).subset = from_set S :=
         Ideal.antisymm (ideal_contained (Subset.refl (from_set S).subset)) (contains_set _)
@@ -280,10 +310,11 @@ namespace M4R
 
     namespace finitely_generated
       variable [Ring α] {I : Ideal α} (h : I.finitely_generated)
+      open Classical
 
-      noncomputable def generating_set : Finset α := Classical.choose h
+      noncomputable def generating_set : Finset α := choose h
       
-      theorem generating_set_def : I = from_set (generating_set h).toSet := Classical.choose_spec h
+      theorem generating_set_def : I = from_set (generating_set h).toSet := choose_spec h
 
       theorem generating_set_subset : (generating_set h).toSet ⊆ I.subset :=
         fun x hx => generating_set_def h ▸ from_set.contains_set _ hx
@@ -293,7 +324,7 @@ namespace M4R
           let ⟨f, hf⟩ := h
           minimal.min_exists ({fs | I = from_set fs.toSet} : Set (Finset α)) ⟨f, hf⟩ Finset.length
 
-      noncomputable def minimal_generator_count : Nat := (Classical.choose (has_minimal_generating_set h)).length
+      noncomputable def minimal_generator_count : Nat := (choose (has_minimal_generating_set h)).length
 
     end finitely_generated
 
@@ -348,11 +379,20 @@ namespace M4R
       theorem subset_inter [Ring α] {I J : Ideal α} : I * J ⊆ I ∩ J := fun x hx =>
         mem.mp hx (I ∩ J) fun x ⟨i, hi, j, hj, hxij⟩ => hxij ▸ ⟨I.mul_closed' hi j, J.mul_closed i hj⟩
 
-      protected theorem assoc [Ring α] (I J K : Ideal α) : I * J * K = I * (J * K) := by
-        apply Ideal.ext'.mpr; intro x
-        rw [mem, mem]; apply propext_iff.mpr; apply forall_congr;
-        intro L; apply propext
+      theorem subset_left [Ring α] {I J : Ideal α} : I * J ⊆ I :=
+        Subset.trans subset_inter (Set.intersection.subset_inter_left _ _)
+
+      theorem subset_right [Ring α] {I J : Ideal α} : I * J ⊆ J :=
+        Subset.trans subset_inter (Set.intersection.subset_inter_right _ _)
+
+      theorem triple [Ring α] (I J K : Ideal α) : I * J * K = from_set {x | ∃ i ∈ I, ∃ j ∈ J, ∃ k ∈ K, x = i * j * k} := by
         sorry
+
+      protected theorem assoc [Ring α] (I J K : Ideal α) : I * J * K = I * (J * K) := by
+        rw [triple, product.comm, triple]
+        exact congrArg from_set (Set.ext.mp fun x =>
+          ⟨fun ⟨i, hi, j, hj, k, hk, hijk⟩ => ⟨j, hj, k, hk, i, hi, Semiring.mul_comm _ _ ▸ mul_assoc _ _ _ ▸ hijk⟩,
+            fun ⟨j, hj, k, hk, i, hi, hjki⟩ => ⟨i, hi, j, hj, k, hk, mul_assoc _ _ _ ▸ Semiring.mul_comm _ _ ▸ hjki⟩⟩)
 
     end product
 

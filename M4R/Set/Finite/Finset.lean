@@ -272,6 +272,13 @@ namespace M4R
         simp only [mem_erase, mem_insert, and_or_distrib_left, false_and, not_and_self, false_or]
         exact ⟨And.right, fun h' => ⟨fun h'' => by rw [h''] at h'; exact absurd h' h, h'⟩⟩
 
+      theorem erase_cons {a : α} (s : Finset α) (hs : a ∈ s) : s = (s.erase a).cons a (not_mem_erase a s) :=
+        Finset.ext fun x => by
+          byCases hx : x = a
+          { simp only [hx, hs, true_iff]; exact mem_cons_self _ _ }
+          { simp only [mem_cons, hx, false_or, mem_erase, ne_eq, true_and];
+            exact Iff.rfl }
+
     end erase
   end Finset
 
@@ -299,6 +306,9 @@ namespace M4R
     @[simp] theorem mem_to_finset {a : α} {s : UnorderedList α} : a ∈ s.to_finset ↔ a ∈ s := UnorderedList.mem_dedup
 
     @[simp] theorem to_finset_zero : to_finset (0 : UnorderedList α) = ∅ := rfl
+
+    theorem to_finset_toSet (l : UnorderedList α) : l.toSet = l.to_finset.toSet :=
+      Set.ext.mp fun _ => mem_to_finset.symm
 
   end UnorderedList
 

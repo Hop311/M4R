@@ -3,23 +3,36 @@ import M4R.Algebra.Ring.RMorphism
 namespace M4R
   open NCSemiring Semiring
 
-  namespace Finset.map_sum
+  namespace UnorderedList.map_sum
 
-    theorem mul_sum [NCSemiring β] (b : β) (f : α → β) (s : Finset α) :
+    theorem mul_sum [NCSemiring β] (b : β) (f : α → β) (s : UnorderedList α) :
       b * (∑ f in s) = ∑ (b * f ·) in s := by
         let h := NCSemiring.MulHomLeft b
         have : b * (∑ f in s) = h (∑ f in s) := rfl
-        rw [this, h.map_sum]; rfl
+        rw [this, h.map_sum']; rfl
 
-    theorem sum_mul [NCSemiring β] (b : β) (f : α → β) (s : Finset α) :
+    theorem sum_mul [NCSemiring β] (b : β) (f : α → β) (s : UnorderedList α) :
       (∑ f in s) * b = ∑ (f · * b) in s := by
         let h := NCSemiring.MulHomRight b
         have : (∑ f in s) * b = h (∑ f in s) := rfl
-        rw [this, h.map_sum]; rfl
+        rw [this, h.map_sum']; rfl
 
-    theorem div_sum [Semiring β] (b : β) (f : α → β) (s : Finset α) (h : ∀ a ∈ s, b ÷ f a) :
+    theorem div_sum [Semiring β] (b : β) (f : α → β) (s : UnorderedList α) (h : ∀ a ∈ s, b ÷ f a) :
       b ÷ (∑ f in s) :=
         prop_sum (b ÷ ·) f s (divides_zero b) h (fun _ _ => divides_add)
+
+  end UnorderedList.map_sum
+
+  namespace Finset.map_sum
+
+    theorem mul_sum [NCSemiring β] (b : β) (f : α → β) (s : Finset α) :
+      b * (∑ f in s) = ∑ (b * f ·) in s := UnorderedList.map_sum.mul_sum b f s
+
+    theorem sum_mul [NCSemiring β] (b : β) (f : α → β) (s : Finset α) :
+      (∑ f in s) * b = ∑ (f · * b) in s := UnorderedList.map_sum.sum_mul b f s
+
+    theorem div_sum [Semiring β] (b : β) (f : α → β) (s : Finset α) (h : ∀ a ∈ s, b ÷ f a) :
+      b ÷ (∑ f in s) := UnorderedList.map_sum.div_sum b f s h
 
   end Finset.map_sum
 
@@ -146,7 +159,12 @@ namespace M4R
   end UnorderedList.prod
   namespace UnorderedList.map_prod
 
+    @[simp] theorem map_def [Semiring β] (f : α → β) (s : UnorderedList α) : (∏ s.map f) = ∏ f in s := rfl
+
     @[simp] theorem empty [Semiring β] (f : α → β) : (∏ f in (0 : UnorderedList α)) = 1 := rfl
+
+    @[simp] theorem map_id [Semiring α] (s : UnorderedList α) : (∏ id in s) = ∏ s := by
+      simp only [map_prod, map_fold_mul, map_fold, UnorderedList.map.map_id s] rfl
 
     theorem cons [Semiring β] (f : α → β) (a : α) (s : UnorderedList α) : (∏ f in s.cons a) = (∏ f in s) * (f a) :=
       map_fold_mul.cons 1 f a s
@@ -223,7 +241,12 @@ namespace M4R
 
   namespace Finset.map_prod
 
+    @[simp] theorem map_def [Semiring β] (f : α → β) (s : Finset α) : (∏ s.map f) = ∏ f in s := rfl
+
     @[simp] theorem empty [Semiring β] (f : α → β) : (∏ f in (∅ : Finset α)) = 1 := rfl
+
+    @[simp] theorem map_id [Semiring α] (s : Finset α) : (∏ id in s) = ∏ s :=
+      UnorderedList.map_prod.map_id s.elems
 
     theorem cons [Semiring β] (f : α → β) {a : α} {s : Finset α} (ha : a ∉ s) : (∏ f in s.cons a ha) = (∏ f in s) * (f a) :=
       UnorderedList.map_prod.cons f a s.elems

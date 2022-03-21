@@ -69,11 +69,15 @@ namespace M4R
     protected theorem congr_fun [Monoid α] [Monoid β] {f g : α →₊ β} (h : f = g) (x : α) : f x = g x :=
       congrArg (· x) h
 
+    theorem map_sum' [CommMonoid β] [CommMonoid γ] (g : β →₊ γ) (f : α → β) (s : UnorderedList α) :
+      g (∑ f in s) = ∑ (g ∘ f) in s :=
+        @UnorderedList.induction_on α (fun t => g (∑ f in t) = ∑ (g ∘ f) in t) s g.preserve_zero (by
+          intro _ _ ih; rw [UnorderedList.map_sum.cons, UnorderedList.map_sum.cons,
+            MHomomorphism.preserve_add, ih])
+
     theorem map_sum [CommMonoid β] [CommMonoid γ] (g : β →₊ γ) (f : α → β) (s : Finset α) :
       g (∑ f in s) = ∑ (g ∘ f) in s :=
-        @Finset.induction_on α (fun t => g (∑ f in t) = ∑ (g ∘ f) in t) s g.preserve_zero (by
-          intro _ _ h ih; rw [Finset.map_sum.sum_insert _ h, Finset.map_sum.sum_insert _ h,
-            MHomomorphism.preserve_add, ih])
+        map_sum' g f s
 
     protected theorem ext [Monoid α] [Monoid β] : ∀ {f g : α →₊ β}, f = g ↔ f.hom = g.hom
     | ⟨_, _, _⟩, ⟨_, _, _⟩ =>
