@@ -1,10 +1,13 @@
-import M4R.Algebra
+import M4R.Algebra.Ring.IdealZorn
+import M4R.Algebra.Ring.Localisation
+import M4R.Algebra.Ring.Radical
 
 namespace M4R
   open Monoid NCSemiring Semiring
 
   variable {A : Type _} [Ring A] {I : Ideal A}
 
+  -- Theorem 1.1
   theorem t1_1 (hI : I.proper_ideal) : ∃ J : Ideal A, I ⊆ J ∧ J.is_maximal :=
     let ⟨m, hm₁, hm₂⟩ := Ideal.ideal_zorn {J | I ⊆ J ∧ J.proper_ideal} (by
       intro c cs hc
@@ -22,6 +25,11 @@ namespace M4R
       | inr h => exact Or.inr (of_not_not h)
     ⟩⟩
 
+  theorem Ideal.exists_prime_ideal (α) [NonTrivialRing α] : ∃ I : Ideal α, I.is_prime :=
+    let ⟨I, _, hI⟩ := t1_1 (Ideal.zero_ideal_proper α)
+    ⟨I, Ideal.maximal_is_prime hI⟩
+
+  -- Theorem 1.2
   theorem t1_2 (I) (S : MultiplicativeSet A) (hIS : Set.disjoint I.subset S.subset) :
     ∃ J : Ideal A, I ⊆ J ∧ Set.disjoint J.subset S.subset ∧ J.is_prime :=
       let ⟨m, hm₁, hm₂⟩ := Ideal.ideal_zorn {J | I ⊆ J ∧ Set.disjoint J.subset S.subset} (by
@@ -76,12 +84,14 @@ namespace M4R
         exact absurd ⟨1, rfl⟩ (Set.disjoint.elementwise.mp hJS x
           (sIntersection.mem.mp hx J ⟨Subset.trans (radical.sub_self I) hIJ, hJ⟩)))
 
+  -- Theorem 1.3
   theorem t1_3 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
     ⋂₀ fI.toSet = ∏ fI := by
       sorry
 
   open QuotientRing
 
+  -- Theorem 1.3
   def t1_4 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
     QClass (⋂₀ fI.toSet) ≅ᵣ MultiProd (fun i : fI => QClass i.val) := by
       sorry

@@ -284,5 +284,8 @@ namespace M4R
       (h₁ : ∀ a ∈ s, p (f a)) (h₂ : ∀ b₁ b₂, p b₁ → p b₂ → p (b₁ + b₂)) :
         p (∑ f in s) := UnorderedList.map_sum.prop_sum p f s h₀ h₁ h₂
 
+    theorem sum_term [CommMonoid β] (f : α → β) (s : Finset α) {a : α} (ha : a ∈ s) : (∑ f in s) = (∑ f in s.erase a) + f a := by
+      conv => lhs rw [s.erase_cons ha, cons]
+
   end Finset.map_sum
 end M4R

@@ -166,4 +166,13 @@ namespace M4R
       ⟨y, hy, fun z hz => hyn ▸ hmin (f z) ⟨z, hz, rfl⟩⟩
 
   end minimal
+  namespace maximal
+
+    theorem max_exists (s : Set α) (hs : Nonempty s) (f : α → Nat) (hf : ∃ n, ∀ y ∈ s, f y ≤ n) :
+      ∃ x ∈ s, ∀ y ∈ s, f y ≤ f x := by
+        let ⟨n, hn⟩ := hf
+        let ⟨x, xs, hx⟩ := minimal.min_exists s hs (fun a => n - f a)
+        exact ⟨x, xs, fun y ys => (Nat.sub_le_sub (hn y ys) (hn x xs)).mpr (hx y ys)⟩
+
+  end maximal
 end M4R

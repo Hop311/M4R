@@ -97,8 +97,8 @@ namespace Nat
     this
 
   theorem sub_sub : ∀ (n m k : Nat), n - m - k = n - (m + k)
-  | n, m, Nat.zero   => by rw [add_zero, Nat.sub_zero]
-  | n, m, Nat.succ k => by rw [add_succ, sub_succ, sub_succ, sub_sub n m k]
+  | n, m, zero   => by rw [add_zero, Nat.sub_zero]
+  | n, m, succ k => by rw [add_succ, sub_succ, sub_succ, sub_sub n m k]
 
   theorem add_sub_of_le {n m : Nat} (h : n ≤ m) : n + (m - n) = m := by
     let ⟨k, hk⟩ := le.dest h
@@ -131,12 +131,12 @@ namespace Nat
     ⟨fun h => by rw [←h, sub_add_cancel ab], fun h => by rw [h, add_sub_cancel]⟩
 
   theorem mul_pred_left : ∀ (n m : Nat), n.pred * m = n * m - m
-  | Nat.zero  , m => by simp
-  | Nat.succ n, m => by rw [pred_succ, succ_mul, add_sub_cancel]
+  | zero  , m => by simp
+  | succ n, m => by rw [pred_succ, succ_mul, add_sub_cancel]
 
   theorem mul_sub_right_distrib : ∀ (n m k : Nat), (n - m) * k = n * k - m * k
-  | n, Nat.zero  , k => by simp
-  | n, Nat.succ m, k => by rw [sub_succ, mul_pred_left, mul_sub_right_distrib, succ_mul, sub_sub]
+  | n, zero  , k => by simp
+  | n, succ m, k => by rw [sub_succ, mul_pred_left, mul_sub_right_distrib, succ_mul, sub_sub]
 
   theorem mul_sub_left_distrib (n m k : Nat) : n * (m - k) = n * m - n * k := by
     rw [Nat.mul_comm, mul_sub_right_distrib, Nat.mul_comm m n, Nat.mul_comm n k]
@@ -289,6 +289,44 @@ namespace Nat
       | succ k => rw [Nat.pred_succ, Nat.add_comm]; rfl
 
   end choose
+
+  theorem le_succ_pred (n : Nat) : n ≤ n.pred.succ := by
+    byCases h : n > 0
+    { exact Nat.le_of_eq (succ_pred_eq_of_pos h).symm }
+    { exact Nat.eq_zero_of_le_zero (Nat.le_of_not_gt h) ▸ Nat.zero_le _ }
+
+  theorem pred_le_iff {n m : Nat} : n.pred ≤ m ↔ n ≤ m.succ :=
+    ⟨fun h => Nat.le_trans (le_succ_pred n) (succ_le_succ h),
+     fun h => by cases n with
+      | zero   => exact Nat.zero_le m
+      | succ n => exact Nat.le_of_succ_le_succ h⟩
+  
+  theorem le_pred_iff {n m : Nat} (hm : m > 0) : n ≤ m.pred ↔ n.succ ≤ m :=
+    ⟨fun h => succ_pred_eq_of_pos hm ▸ Nat.succ_le_succ h,
+     fun h => by cases m with
+      | zero   => exact absurd hm (Nat.lt_irrefl 0)
+      | succ m => exact Nat.le_of_succ_le_succ h⟩
+  
+  theorem sub_le_iff_right {a b c : Nat} : a - c ≤ b ↔ a ≤ b + c := by
+    induction c generalizing b with
+    | zero      => rw [Nat.sub_zero, Nat.add_zero]; exact Iff.rfl
+    | succ c ih => rw [sub_succ, add_succ, ←succ_add, pred_le_iff]; exact ih
+
+  theorem le_zero {n : Nat} : n ≤ 0 ↔ n = 0 :=
+    ⟨Nat.eq_zero_of_le_zero, (· ▸ Nat.le_refl n)⟩
+
+  theorem le_sub_iff_right {a b c : Nat} (h : c ≤ b) : a ≤ b - c ↔ a + c ≤ b := by
+    induction c generalizing a with
+    | zero      => rw [Nat.sub_zero, Nat.add_zero]; exact Iff.rfl
+    | succ c ih =>
+      rw [sub_succ, add_succ, ←succ_add, le_pred_iff (sub_pos_of_lt h)]
+      exact ih (Nat.le_trans (Nat.le_succ c) h)
+
+  theorem sub_le_sub {a b c : Nat} (ha : a ≤ c) (hb : b ≤ c) : a ≤ b ↔ c - b ≤ c - a := by
+    rw [sub_le_iff_right, Nat.add_comm, ←add_sub_assoc ha, le_sub_iff_right
+      (Nat.le_trans ha (Nat.le_add_left c b)), Nat.add_comm]
+    exact ⟨(Nat.add_le_add_right · c), Nat.le_of_add_le_add_right⟩
+
 end Nat
 
 namespace Int

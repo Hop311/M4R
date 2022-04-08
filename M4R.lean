@@ -1,5 +1,5 @@
 
-import M4R.Matsumura
+import M4R.Algebra
 
 open M4R
 

@@ -1,4 +1,4 @@
-import M4R.Algebra.Ring.MaxPrimeIdeal
+import M4R.Algebra.Ring.Matsumura
 
 namespace M4R
 
@@ -37,11 +37,20 @@ namespace M4R
       structure strict_infinite_chain (α : Type _) [Ring α] extends prime_chain α where
         hstrict_inf : tochain.strict_infinite
 
-      structure strict_stable_chain (α : Type _) [Ring α] extends chain α where
+      structure strict_stable_chain (α : Type _) [Ring α] extends prime_chain α where
         hstrict_stab : tochain.strict_stable
 
       noncomputable def strict_stable_chain.length [Ring α] (c : strict_stable_chain α) : Nat :=
         Classical.choose c.hstrict_stab
+
+      theorem strict_stable_chain.nonempty (α) [NonTrivialRing α] : Nonempty (strict_stable_chain α) :=
+        let ⟨I, hI⟩ := Ideal.exists_prime_ideal α
+        ⟨{
+          f            := fun _ => I
+          hsubsets     := fun _ => Subset.refl _
+          hprime       := fun _ => hI
+          hstrict_stab := ⟨0, fun _ => (absurd · (Nat.not_lt_zero _)), fun _ _ => rfl⟩
+        }⟩
 
       def krull_dim_infinite (α : Type _) [Ring α] : Prop := Nonempty (strict_infinite_chain α) ∨
         (∀ n, ∃ c : strict_stable_chain α, n ≤ c.length)
@@ -55,8 +64,11 @@ namespace M4R
         { rw [←not_exists, not_iff_not]; exact ⟨fun ⟨c, hc⟩ => ⟨c, hc⟩, fun ⟨c, hc⟩ => ⟨c, hc⟩⟩ }
         { exact ⟨fun ⟨c, hc⟩ => ⟨c.length.succ, fun d => Nat.lt_succ_of_le (hc d)⟩,
           fun ⟨c, hc⟩ => by
-            -- need the fact that any non trivial ring contains a prime ideal
-            sorry⟩ }
+            let ⟨I, hI⟩ := Ideal.exists_prime_ideal α
+            let ⟨x, _, hx⟩ := maximal.max_exists (@Set.Universal (strict_stable_chain α))
+              ⟨Classical.choice (strict_stable_chain.nonempty α), trivial⟩
+              strict_stable_chain.length ⟨c, fun x _ => Nat.le_of_lt (hc x)⟩
+            exact ⟨x, (hx · trivial)⟩⟩ }
 
       noncomputable def dim [Ring α] (h : has_krull_dim α) : Nat := (Classical.choose h.right).length
 

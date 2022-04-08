@@ -61,20 +61,31 @@ namespace M4R
     protected theorem mem_singleton {a a' : α} : a' ∈ Finset.singleton a ↔ a' = a :=
       ⟨Finset.in_singleton, fun h => h.symm ▸ Finset.self_singleton a⟩
 
-    protected def map (f : α → β) (s : Finset α) : UnorderedList β := s.elems.map f
-    protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=
-      ⟨s.elems.map f, s.elems.nodup_map hf s.nodup⟩
+    section map
+      protected def map (f : α → β) (s : Finset α) : UnorderedList β := s.elems.map f
+      protected def map_inj {f : α → β} (hf : Function.injective f) (s : Finset α) : Finset β :=
+        ⟨s.elems.map f, s.elems.nodup_map hf s.nodup⟩
 
-    protected theorem map_mem {f : α → β} {b : β} {s : Finset α} : b ∈ s.map f ↔ ∃ a, a ∈ s ∧ f a = b :=
-      UnorderedList.map.mem_map
-    protected theorem map_inj_mem {f : α → β} {hf : Function.injective f} {b : β} {s : Finset α} :
-      b ∈ s.map_inj hf ↔ ∃ a, a ∈ s ∧ f a = b  :=
+      protected theorem map_mem {f : α → β} {b : β} {s : Finset α} : b ∈ s.map f ↔ ∃ a, a ∈ s ∧ f a = b :=
         UnorderedList.map.mem_map
-    protected theorem map_inj_mem' {f : α → β} {hf : Function.injective f} {b : β} {s : Finset α} :
-      b ∈ s.map_inj hf ↔ ∃ a, a ∈ s ∧ f a = b ∧ ∀ a', f a' = b → a' = a :=
-        ⟨fun h => by cases Finset.map_inj_mem.mp h with | intro a ha =>
-          exact ⟨a, ha.left, ha.right, fun a' ha' => by rw [←ha.right] at ha'; exact hf ha'⟩,
-        fun ⟨a, b, c, _⟩ => Finset.map_inj_mem.mpr ⟨a, b, c⟩⟩
+      protected theorem map_inj_mem {f : α → β} {hf : Function.injective f} {b : β} {s : Finset α} :
+        b ∈ s.map_inj hf ↔ ∃ a, a ∈ s ∧ f a = b  :=
+          UnorderedList.map.mem_map
+      protected theorem map_inj_mem' {f : α → β} {hf : Function.injective f} {b : β} {s : Finset α} :
+        b ∈ s.map_inj hf ↔ ∃ a, a ∈ s ∧ f a = b ∧ ∀ a', f a' = b → a' = a :=
+          ⟨fun h => by cases Finset.map_inj_mem.mp h with | intro a ha =>
+            exact ⟨a, ha.left, ha.right, fun a' ha' => by rw [←ha.right] at ha'; exact hf ha'⟩,
+          fun ⟨a, b, c, _⟩ => Finset.map_inj_mem.mpr ⟨a, b, c⟩⟩
+
+      protected theorem mem_map_inj {f : α → β} {hf : Function.injective f} {a : α} {s : Finset α} : a ∈ s ↔ f a ∈ s.map_inj hf :=
+        ⟨fun h => Finset.map_inj_mem.mpr ⟨a, h, rfl⟩,
+        fun h => let ⟨b, hb, _, hu⟩ := Finset.map_inj_mem'.mp h; hu a rfl ▸ hb⟩
+      protected theorem not_mem_map_inj {f : α → β} {hf : Function.injective f} {a : α} {s : Finset α} :
+        a ∉ s ↔ f a ∉ s.map_inj hf := not_iff_not.mpr Finset.mem_map_inj
+
+      protected theorem map_empty (f : α → β) : Finset.map f ∅ = 0 := rfl
+      protected theorem map_inj_empty {f : α → β} (hf : Function.injective f) : Finset.map_inj hf ∅ = ∅ := rfl
+    end map
 
     @[simp] theorem val_le_iff {s₁ s₂ : Finset α} : s₁.elems ≤ s₂.elems ↔ s₁ ⊆ s₂ :=
       UnorderedList.le.le_iff_subset s₁.nodup
@@ -199,6 +210,19 @@ namespace M4R
 
     end cons
 
+    protected theorem map_cons (f : α → β) (s : Finset α) {a : α} (ha : a ∉ s) : (s.cons a ha).map f = (s.map f).cons (f a) :=
+      UnorderedList.map.cons f a s
+    protected theorem map_inj_cons {f : α → β} (hf : Function.injective f) (s : Finset α) {a : α} (ha : a ∉ s) :
+      (s.cons a ha).map_inj hf = (s.map_inj hf).cons (f a) (Finset.not_mem_map_inj.mp ha) := by
+        apply Finset.ext; intro x; rw [mem_cons]
+        exact ⟨fun h =>
+          let ⟨b, hb, he⟩ := Finset.map_inj_mem.mp h
+          Or.imp (· ▸ he.symm : _) (he ▸ Finset.mem_map_inj.mp ·) (mem_cons.mp hb),
+        fun h =>
+          Or.elim h (· ▸ Finset.mem_map_inj.mp (mem_cons_self s ha)) (fun h =>
+            let ⟨b, hb, he⟩ := Finset.map_inj_mem.mp h
+            Finset.map_inj_mem.mpr ⟨b, mem_cons.mpr (Or.inr hb), he⟩)⟩
+
     section insert
 
       noncomputable def insert (a : α) (s : Finset α) : Finset α :=
@@ -310,6 +334,19 @@ namespace M4R
     theorem to_finset_toSet (l : UnorderedList α) : l.toSet = l.to_finset.toSet :=
       Set.ext.mp fun _ => mem_to_finset.symm
 
+    theorem to_finset_ext {s t : UnorderedList α} : s.to_finset = t.to_finset ↔ ∀ a, a ∈ s ↔ a ∈ t := by
+      rw [Finset.ext_iff]; apply forall_congr'; intro
+      rw [mem_to_finset, mem_to_finset]; exact Iff.rfl
+
+    theorem to_finset_cons_of_pos {l : UnorderedList α} {a : α} (ha : a ∈ l) : (l.cons a).to_finset = l.to_finset := by
+      apply to_finset_ext.mpr; intro; rw [UnorderedList.mem_cons]
+      exact ⟨fun h => Or.elim h (· ▸ ha) id, Or.inr⟩
+    theorem to_finset_cons_of_neg {l : UnorderedList α} {a : α} (ha : a ∉ l) :
+      (l.cons a).to_finset = l.to_finset.cons a (mt mem_to_finset.mp ha) := by
+        apply Finset.ext; intro
+        rw [mem_to_finset, UnorderedList.mem_cons, Finset.mem_cons, mem_to_finset]
+        exact Iff.rfl
+
   end UnorderedList
 
   namespace Fintype
@@ -382,7 +419,11 @@ namespace M4R
     @[simp] theorem mem_to_finset_val {s : Set α} (hs : finite s) {a : α} : a ∈ hs.to_finset.elems ↔ a ∈ s :=
       mem_to_finset hs
 
-    theorem subset {s t : Set α} (ht : finite t) (h : s ⊆ t) : finite s := 
+    theorem to_finset_ext {s t : Set α} {hs : finite s} {ht : finite t} : hs.to_finset = ht.to_finset ↔ ∀ a, a ∈ s ↔ a ∈ t := by
+      rw [Finset.ext_iff]; apply forall_congr'; intro
+      rw [mem_to_finset, mem_to_finset]; exact Iff.rfl
+
+    theorem subset {s t : Set α} (ht : finite t) (h : s ⊆ t) : finite s :=
       finite.intro (@Fintype.subset _ s t ht.to_fintype h)
 
     theorem union {s t : Set α} (hs : finite s) (ht : finite t) : finite (s ∪ t) :=

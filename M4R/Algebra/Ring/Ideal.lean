@@ -164,6 +164,9 @@ namespace M4R
       ⟨fun h => Classical.byContradiction fun h' => h (is_unit_ideal.mpr (of_not_not (not_exists.mp h' 1))),
        fun ⟨x, hx⟩ h => (h ▸ hx : x ∉ (1 : Ideal α)) trivial⟩
 
+    theorem zero_ideal_proper (α) [NonTrivialRing α] : (ZeroIdeal α).proper_ideal :=
+      proper_iff_notin.mpr ⟨1, NonTrivial.one_neq_zero⟩
+
     protected def intersection [Ring α] (I J : Ideal α) : Ideal α where
       subset := I.subset ∩ J.subset
       has_zero := ⟨I.has_zero, J.has_zero⟩
@@ -361,8 +364,10 @@ namespace M4R
 
     end
 
+    abbrev product_gen [Ring α] (I J : Ideal α) : Set α := {x | ∃ i ∈ I, ∃ j ∈ J, x = i * j}
+
     protected noncomputable def product [Ring α] (I J : Ideal α) : Ideal α :=
-      from_set {x | ∃ i ∈ I, ∃ j ∈ J, x = i * j}
+      from_set (product_gen I J)
     noncomputable instance IdealMul [Ring α] : Mul (Ideal α) where mul := Ideal.product
 
     namespace product
@@ -372,8 +377,8 @@ namespace M4R
           ⟨fun ⟨i, hi, j, hj, hij⟩ => ⟨j, hj, i, hi, Semiring.mul_comm i j ▸ hij⟩,
           fun ⟨j, hj, i, hi, hji⟩ => ⟨i, hi, j, hj, Semiring.mul_comm j i ▸ hji⟩⟩)
 
-      theorem mem [Ring α] {I J : Ideal α} {a : α} : a ∈ I * J ↔ ∀ K : Ideal α,
-        ↑({x | ∃ i ∈ I, ∃ j ∈ J, x = i * j} : Set α) ⊆ K.subset → a ∈ K := by
+      theorem mem [Ring α] {I J : Ideal α} {a : α} :
+        a ∈ I * J ↔ ∀ K : Ideal α, product_gen I J ⊆ K.subset → a ∈ K := by
           rw [←from_set.mem]; exact Iff.rfl
 
       theorem subset_inter [Ring α] {I J : Ideal α} : I * J ⊆ I ∩ J := fun x hx =>
@@ -385,8 +390,73 @@ namespace M4R
       theorem subset_right [Ring α] {I J : Ideal α} : I * J ⊆ J :=
         Subset.trans subset_inter (Set.intersection.subset_inter_right _ _)
 
-      theorem triple [Ring α] (I J K : Ideal α) : I * J * K = from_set {x | ∃ i ∈ I, ∃ j ∈ J, ∃ k ∈ K, x = i * j * k} := by
-        sorry
+      private abbrev triple_product_gen [Ring α] (I J K : Ideal α) : Set α := {x | ∃ i ∈ I, ∃ j ∈ J, ∃ k ∈ K, x = i * j * k}
+      private abbrev mult_fibre [Ring α] (f : Finset α) (k y : α) : Set α := {x | x ∈ f ∧ x * k = y}
+
+      theorem triple [Ring α] (I J K : Ideal α) : I * J * K = from_set (triple_product_gen I J K) :=
+        Ideal.ext'.mpr fun x => ⟨fun hx =>
+          let ⟨fx, cx, hfx, hcx⟩ := from_set.mem_as_sum.mp hx
+          hcx ▸ @Finset.cons_induction α (fun f => f.toSet ⊆ product_gen (I * J) K →
+            ∀ c : α → α, (∑ a in f, c a * a) ∈ from_set (triple_product_gen I J K))
+            (fun hf c => Finset.map_sum.empty _ ▸ (from_set (triple_product_gen I J K)).has_zero)
+            (fun a f ha ih hf c => Finset.map_sum.cons _ _ ▸ (from_set (triple_product_gen I J K)).add_closed
+              (ih (Subset.trans (Finset.cons_subset f ha) hf) c)
+              (let ⟨ij, hij, k, hk, h⟩ := hf (Finset.mem_cons_self f ha)
+              let ⟨fij, cij, hfij, hcij⟩ := from_set.mem_as_sum.mp hij
+              -- need finset made up of elems of `fij` multiplied by `k`
+              -- coefficient of `x` is sum of coefficients `cij (i * j)` (where `i * j ∈ fij`) such that `i * j * k = x`
+              (from_set (triple_product_gen I J K)).mul_closed _ (from_set.mem_as_sum.mpr ⟨(fij.map (· * k)).to_finset,
+                fun x => (∑ cij in (finite.subset fij.to_finite (fun _ => And.left : mult_fibre fij k x ⊆ fij.toSet)).to_finset),
+                fun z hz =>
+                  let ⟨b, hb₁, hb₂⟩ := Finset.map_mem.mp (UnorderedList.to_finset_toSet _ ▸ hz : z ∈ (fij.map (· * k)).toSet)
+                  let ⟨i, hi, j, hj, hij⟩ := hfij hb₁
+                  ⟨i, hi, j, hj, k, hk, by rw [←hb₂, hij]⟩,
+                by
+                  rw [h, hcij]
+                  exact @Finset.cons_induction α (fun f => (∑ x in f, cij x * x) * k = ∑ x in (f.map (· * k)).to_finset,
+                    (∑ cij in (finite.subset f.to_finite (fun _ => And.left : mult_fibre f k x ⊆ f.toSet)).to_finset) * x)
+                    (by simp only [Finset.map_empty, UnorderedList.to_finset_zero, Finset.map_sum.empty, zero_mul])
+                    (fun x s hx ih => by
+                      simp only [Finset.map_sum.cons, mul_distrib_right, ih, Finset.map_cons, mul_assoc]
+                      byCases h : x * k ∈ s.map (· * k)
+                      { rw [UnorderedList.to_finset_cons_of_pos h, Finset.map_sum.sum_term _ _ (UnorderedList.mem_to_finset.mpr h),
+                          Finset.map_sum.sum_term _ _ (UnorderedList.mem_to_finset.mpr h), add_assoc, ←mul_distrib_right];
+                        have hxs : x ∉ (finite.subset s.to_finite (fun _ => And.left : mult_fibre s k (x * k) ⊆ s.toSet)).to_finset :=
+                          fun h => hx ((finite.mem_to_finset _).mp h).left
+                        have : (finite.subset (s.cons x hx).to_finite (fun _ => And.left : mult_fibre (s.cons x hx) k (x * k) ⊆ (s.cons x hx).toSet)).to_finset =
+                          (finite.subset s.to_finite (fun _ => And.left : mult_fibre s k (x * k) ⊆ s.toSet)).to_finset.cons x hxs := by
+                            apply Finset.ext; intro; rw [finite.mem_to_finset, Finset.mem_cons]
+                            exact ⟨fun ⟨h₁, h₂⟩ => Or.imp_right (fun h => (finite.mem_to_finset _).mpr ⟨h, h₂⟩) (Finset.mem_cons.mp h₁),
+                              (Or.elim · (fun h => ⟨h.symm ▸ Finset.mem_cons_self s hx, congrArg (· * k) h⟩)
+                                (fun h => have ⟨h₁, h₂⟩ := (finite.mem_to_finset _).mp h; ⟨Finset.mem_cons.mpr (Or.inr h₁), h₂⟩))⟩
+                        rw [this, Finset.map_sum.cons]
+                        exact congrArg (· + _) (Finset.map_sum.congr rfl fun b hb => congrArg (· * b) (Finset.map_sum.congr
+                          (finite.to_finset_ext.mpr fun c => ⟨(And.imp_left (fun h => Finset.mem_cons.mpr (Or.inr h)) ·),
+                            fun ⟨h₁, h₂⟩ => ⟨(Finset.mem_cons.mp h₁).resolve_left (fun h =>
+                              (Finset.mem_erase.mp hb).left (h ▸ h₂.symm)), h₂⟩⟩) (fun _ _ => rfl))) }
+                      { rw [UnorderedList.to_finset_cons_of_neg h, Finset.map_sum.cons]
+                        have : (finite.subset (s.cons x hx).to_finite (fun _ => And.left :
+                          mult_fibre (s.cons x hx) k (x * k) ⊆ (s.cons x hx).toSet)).to_finset = Finset.singleton x := by
+                            apply Finset.ext; intro b; rw [Finset.mem_singleton, finite.mem_to_finset]
+                            exact ⟨fun ⟨h₁, h₂⟩ => (Finset.mem_cons.mp h₁).resolve_right fun hb => h (Finset.map_mem.mpr ⟨b, hb, h₂⟩),
+                              fun hb => ⟨hb.symm ▸ Finset.mem_cons_self s hx, congrArg (· * k) hb⟩⟩
+                        rw [this, Finset.map_sum.singleton]
+                        exact congrArg (· + cij x * (x * k)) (Finset.map_sum.congr rfl fun y hy => congrArg (· * y)
+                          (Finset.map_sum.congr (finite.to_finset_ext.mpr fun z => ⟨(And.imp_left (fun h => Finset.mem_cons.mpr (Or.inr h)) ·),
+                            fun ⟨h₁, h₂⟩ => ⟨(Finset.mem_cons.mp h₁).resolve_left (fun h' => h (Finset.map_mem.mpr ((h' ▸ h₂ : x * k = y) ▸
+                              Finset.map_mem.mp (UnorderedList.mem_to_finset.mp hy)))), h₂⟩⟩) (fun _ _ => rfl))) }) fij⟩))) fx hfx cx,
+          fun hx =>
+            let ⟨fx, cx, hfx, hcx⟩ := from_set.mem_as_sum.mp hx
+            hcx ▸ @Finset.cons_induction α (fun f => f.toSet ⊆ triple_product_gen I J K →
+              ∀ c : α → α, (∑ x in f, c x * x) ∈ I * J * K)
+              (fun _ _ => Finset.map_sum.empty _ ▸ (I * J * K).has_zero)
+              (fun a f ha ih hf c => Finset.map_sum.cons _ _ ▸ (I * J * K).add_closed
+                (ih (Subset.trans (Finset.cons_subset f ha) hf) c)
+                ((I * J * K).mul_closed _
+                  (let ⟨i, hi, j, hj, k, hk, he⟩ := hf (Finset.mem_cons_self f ha)
+                  from_set.mem_as_sum.mpr ⟨Finset.singleton a, fun _ => 1, fun b hb =>
+                    ⟨i * j, from_set.contains_set _ ⟨i, hi, j, hj, rfl⟩, k, hk, Finset.mem_singleton.mp hb ▸ he⟩,
+                    by rw [Finset.map_sum.singleton, one_mul]⟩))) fx hfx cx⟩
 
       protected theorem assoc [Ring α] (I J K : Ideal α) : I * J * K = I * (J * K) := by
         rw [triple, product.comm, triple]
