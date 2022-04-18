@@ -37,7 +37,7 @@ namespace M4R
     @[simp] theorem cons_eq (a : α) (l : List α) : ↑(a::l) = (↑l : UnorderedList α).cons a := rfl
 
     @[simp] theorem nodup_cons {a : α} {s : UnorderedList α} : nodup (s.cons a) ↔ a ∉ s ∧ nodup s :=
-      @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => nodup (l.cons a) ↔ a ∉ l ∧ nodup l) s
+      @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => nodup (l.cons a) ↔ a ∉ l ∧ nodup l) s
         fun l => List.nodup_cons
 
     protected def Empty {α : Type _} : UnorderedList α := List.to_UnorderedList []
@@ -52,8 +52,7 @@ namespace M4R
 
     protected theorem induction {p : UnorderedList α → Prop} (h₁ : p 0)
       (h₂ : ∀ ⦃a : α⦄ {s : UnorderedList α}, p s → p (s.cons a)) (s : UnorderedList α) : p s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) p s
-          (fun l => by induction l with
+        @Quotient.inductionOn _ _ p s (fun l => by induction l with
           | nil => exact h₁
           | cons _ _ ih => exact h₂ ih)
 
@@ -62,7 +61,7 @@ namespace M4R
         UnorderedList.induction h₁ h₂ s
 
     @[simp] theorem mem_cons {a b : α} {s : UnorderedList α} : a ∈ s.cons b ↔ a = b ∨ a ∈ s :=
-      @Quotient.ind (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => a ∈ l.cons b ↔ a = b ∨ a ∈ l)
+      @Quotient.ind _ _ (fun (l : UnorderedList α) => a ∈ l.cons b ↔ a = b ∨ a ∈ l)
         (fun l => Iff.refl _) s
 
     theorem mem_cons_of_mem {a b : α} {s : UnorderedList α} (h : a ∈ s) : a ∈ s.cons b :=
@@ -71,13 +70,15 @@ namespace M4R
     @[simp] theorem mem_cons_self (a : α) (s : UnorderedList α) : a ∈ s.cons a :=
       mem_cons.mpr (Or.inl rfl)
 
+    theorem length_cons (a : α) (s : UnorderedList α) : (s.cons a).length = s.length + 1 :=
+      @Quotient.ind _ _ (fun (l : UnorderedList α) => (l.cons a).length = l.length + 1) (fun _ => rfl) s
+
     @[simp] theorem zero_subset {s : UnorderedList α} : 0 ⊆ s := by
       intro _ _; contradiction
-    
+
     @[simp] theorem subset_zero {s : UnorderedList α} : s ⊆ 0 → s = 0 :=
-      @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => l ⊆ 0 → l = 0) s
-        (fun l => by
-          induction l with
+      @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => l ⊆ 0 → l = 0) s
+        (fun l => by induction l with
           | nil => simp
           | cons a l ih => intro h; have := h (mem_cons_self a ↑l); contradiction)
 
@@ -89,12 +90,12 @@ namespace M4R
       instance UnorderedListAdd : Add (UnorderedList α) where add := UnorderedList.append
 
       theorem comm (s t : UnorderedList α) : s + t = t + s := 
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
-          (fun (l₁ l₂ : UnorderedList α) => l₁ + l₂ = l₂ + l₁) s t fun _ _ => Quot.sound Perm.append_comm
+        @Quotient.inductionOn₂ _ _ _ _ (fun (l₁ l₂ : UnorderedList α) => l₁ + l₂ = l₂ + l₁) s t
+          fun _ _ => Quot.sound Perm.append_comm
 
       @[simp] theorem add_zero (s : UnorderedList α) : s + 0 = s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (a : UnorderedList α) => a + 0 = a) s
-          (fun l => Quot.sound (by simp; exact Perm.refl _))
+        @Quotient.inductionOn _ _ (fun (a : UnorderedList α) => a + 0 = a) s
+          (fun l => Quot.sound (by simp only [List.append_nil]; exact Perm.refl _))
 
       @[simp] theorem zero_add (s : UnorderedList α) : 0 + s = s := by
         rw [comm, add_zero]
@@ -103,7 +104,7 @@ namespace M4R
       theorem cons' (a : α) (s : UnorderedList α) : s.cons a = s + [a] := by rw [comm, cons]
 
       theorem assoc (s t u : UnorderedList α) : s + t + u = s + (t + u) :=
-        @Quotient.inductionOn₃ (List α) (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₃ _ _ _ _ _ _
           (fun (a b c : UnorderedList α) => a + b + c = a + (b + c)) s t u
           (fun a b c => Quot.sound (by rw [List.append_assoc]; exact Perm.refl _))
 
@@ -113,8 +114,8 @@ namespace M4R
         simp only [cons]; rw [←assoc, comm _ s, assoc]
 
       @[simp] theorem mem_add {a : α} {s t : UnorderedList α} : a ∈ s + t ↔ a ∈ s ∨ a ∈ t :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
-          (fun (l₁ l₂ : UnorderedList α) => a ∈ l₁ + l₂ ↔ a ∈ l₁ ∨ a ∈ l₂) s t fun l₁ l₂ => List.mem_append
+        @Quotient.inductionOn₂ _ _ _ _ (fun (l₁ l₂ : UnorderedList α) => a ∈ l₁ + l₂ ↔ a ∈ l₁ ∨ a ∈ l₂)
+          s t fun l₁ l₂ => List.mem_append
 
     end append
 
@@ -132,35 +133,32 @@ namespace M4R
     protected def map (f : α → β) (s : UnorderedList α) : UnorderedList β :=
       Quot.liftOn s (fun l : List α => ↑(l.map f))
         (fun l₁ l₂ p => Quot.sound (p.map f))
-    
+
     @[simp] theorem map_nil (f : α → β) : UnorderedList.map f 0 = 0 := rfl
-    
+
     namespace map
 
       @[simp] theorem cons (f : α → β) (a : α) (s : UnorderedList α) : (s.cons a).map f = (s.map f).cons (f a) :=
-        @Quotient.ind (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => (l.cons a).map f = (l.map f).cons (f a))
-          (fun _ => rfl) s
+        @Quotient.ind _ _ (fun (l : UnorderedList α) => (l.cons a).map f = (l.map f).cons (f a)) (fun _ => rfl) s
 
       @[simp] theorem singleton (f : α → β) (a : α) : (UnorderedList.singleton a).map f = UnorderedList.singleton (f a) := rfl
 
       @[simp] theorem add (f : α → β) (l₁ l₂ : UnorderedList α) : (l₁ + l₂).map f = (l₁.map f) + (l₂.map f) :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (s t : UnorderedList α) => (s + t).map f = (s.map f) + (t.map f)) l₁ l₂
           (fun s t => congrArg List.to_UnorderedList (List.map_append f s t))
 
       @[simp] theorem mem_map {f : α → β} {b : β} {s : UnorderedList α} : b ∈ s.map f ↔ ∃ a, a ∈ s ∧ f a = b :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           b ∈ l.map f ↔ ∃ a, a ∈ l ∧ f a = b) s (fun _ => List.mem_map)
 
       theorem congr {f g : α → β} {s t : UnorderedList α} (h₁ : s = t) (h₂ : ∀ x ∈ t, f x = g x) :
-        s.map f = t.map g := by
-          rw [h₁]
-          exact @Quotient.inductionOn (List α) (Perm.PermSetoid α)
+        s.map f = t.map g := h₁ ▸ @Quotient.inductionOn _ _
             (fun (l : UnorderedList α) => (∀ x ∈ l, f x = g x) → l.map f = l.map g) t
             (fun l hl => congrArg List.to_UnorderedList (List.map_congr rfl hl)) h₂
 
       theorem map_comp (f : α → β) (g : β → γ) (s : UnorderedList α) : (s.map f).map g = s.map (g ∘ f) :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => (l.map f).map g = l.map (g ∘ f)) s
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => (l.map f).map g = l.map (g ∘ f)) s
           (fun l => congrArg List.to_UnorderedList (l.map_comp f g))
 
       theorem map_id (s : UnorderedList α) : s.map id = s :=
@@ -171,7 +169,7 @@ namespace M4R
 
     theorem nodup_map_on {f : α → β} {s : UnorderedList α} (H : ∀ x ∈ s, ∀ y ∈ s, f x = f y → x = y) :
       nodup s → nodup (s.map f) :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           (∀ (x : α), x ∈ l → ∀ (y : α), y ∈ l → f x = f y → x = y) → nodup l → nodup (l.map f))
             s (fun _ => List.nodup_map_on) H
 
@@ -180,7 +178,7 @@ namespace M4R
         nodup_map_on (fun x _ y _ h => hf h)
 
     theorem nodup_ext {s t : UnorderedList α} : nodup s → nodup t → (s = t ↔ ∀ a, a ∈ s ↔ a ∈ t) :=
-      @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+      @Quotient.inductionOn₂ _ _ _ _
         (fun (s' t' : UnorderedList α) => nodup s' → nodup t' → (s' = t' ↔ ∀ a, a ∈ s' ↔ a ∈ t')) s t
         (fun l₁ l₂ h₁ h₂ => Quotient.eq.trans (Perm.ext h₁ h₂))
 
@@ -189,7 +187,7 @@ namespace M4R
     | cons {a b as bs} : r a b → rel r as bs → rel r (as.cons a) (bs.cons b)
 
     def pmap {p : α → Prop} (f : ∀ a, p a → β) (s : UnorderedList α) : (∀ a ∈ s, p a) → UnorderedList β :=
-      @Quotient.recOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => (∀ a ∈ l, p a) → UnorderedList β) s
+      @Quotient.recOn _ _ (fun (l : UnorderedList α) => (∀ a ∈ l, p a) → UnorderedList β) s
         (fun l H => ↑(l.pmap f H)) (fun l₁ l₂ pp => by
           apply funext; intro h₂; have h₁ : ∀ a, a ∈ ↑l₁ → p a := fun a h => h₂ a (pp.subset h)
           have : ∀ (s₂ e H), @Eq.rec (UnorderedList α) l₁
@@ -202,44 +200,46 @@ namespace M4R
 
     theorem nodup_pmap {p : α → Prop} {f : ∀ a, p a → β} {s : UnorderedList α} {H : ∀ a ∈ s, p a}
     (hf : ∀ a ha b hb, f a ha = f b hb → a = b) : nodup s → nodup (pmap f s H) :=
-      @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+      @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
         (h : ∀ a ∈ l, p a) → nodup l → nodup (pmap f l h)) s (fun l hl => List.nodup_pmap hf) H
 
     @[simp] theorem mem_pmap {p : α → Prop} {f : ∀ a, p a → β}
       {s : UnorderedList α} {H : ∀ a ∈ s, p a} {b : β} : b ∈ pmap f s H ↔ ∃ (a : α) (h : a ∈ s), f a (H a h) = b :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           (H' : ∀ a ∈ l, p a) → b ∈ pmap f l H' ↔ ∃ (a : α) (h : a ∈ l), f a (H' a h) = b) s
           (fun l h => List.mem_pmap) H
 
+    theorem pmap_empty {p : α → Prop} (f : ∀ a, p a → β) : pmap f 0 (fun _ _ => by contradiction) = 0 := rfl
+
     section filter
-    
+
       noncomputable def filter (p : α → Prop) (s : UnorderedList α) : UnorderedList α :=
         Quot.liftOn s (fun l => (l.filter' p : UnorderedList α))
           (fun l₁ l₂ h => Quot.sound (h.filter' p))
 
       @[simp] theorem filter_add (s t : UnorderedList α) : filter p (s + t) = filter p s + filter p t :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => filter p (l₁ + l₂) = filter p l₁ + filter p l₂) s t
           (fun l₁ l₂ => congrArg List.to_UnorderedList (List.filter'_append _ _))
 
       theorem nodup_filter (p : α → Prop) {l : UnorderedList α} : nodup l → nodup (filter p l) :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (s : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (s : UnorderedList α) =>
           nodup s → nodup (filter p s)) l fun l => List.nodup_filter' p
 
       @[simp] theorem filter_cons_of_pos {a : α} (s : UnorderedList α) :
         p a → filter p (s.cons a) = (filter p s).cons a :=
-          @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+          @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
             p a → filter p (l.cons a) = (filter p l).cons a) s
             fun l h => congrArg List.to_UnorderedList (List.filter'_cons_of_pos l h)
 
       @[simp] theorem filter_cons_of_neg {a : α} (s : UnorderedList α) :
         ¬ p a → filter p (s.cons a) = filter p s :=
-          @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+          @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
             ¬ p a → filter p (l.cons a) = filter p l) s
             fun l h => congrArg List.to_UnorderedList (List.filter'_cons_of_neg l h)
 
       @[simp] theorem mem_filter {a : α} {s : UnorderedList α} : a ∈ filter p s ↔ a ∈ s ∧ p a :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           a ∈ filter p l ↔ a ∈ l ∧ p a) s fun l => List.mem_filter'
 
       theorem of_mem_filter {a : α} {s : UnorderedList α} (h : a ∈ filter p s) : p a :=
@@ -256,18 +256,18 @@ namespace M4R
       @[simp] theorem coe_ndinsert (a : α) (l : List α) : ndinsert a l = (l.insert a : List α) := rfl
 
       @[simp] theorem ndinsert_of_mem {a : α} {s : UnorderedList α} : a ∈ s → ndinsert a s = s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => a ∈ l → ndinsert a l = l)
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => a ∈ l → ndinsert a l = l)
           s fun l h => congrArg List.to_UnorderedList (List.insert_of_mem h)
 
       @[simp] theorem ndinsert_of_not_mem {a : α} {s : UnorderedList α} : a ∉ s → ndinsert a s = s.cons a :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           a ∉ l → ndinsert a l = l.cons a) s fun l h => congrArg List.to_UnorderedList (List.insert_of_not_mem h)
 
       @[simp] theorem ndinsert_zero (a : α) : ndinsert a 0 = UnorderedList.singleton a :=
         ndinsert_of_not_mem (fun _ => by contradiction)
 
       @[simp] theorem mem_ndinsert {a b : α} {s : UnorderedList α} : a ∈ ndinsert b s ↔ a = b ∨ a ∈ s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           a ∈ ndinsert b l ↔ a = b ∨ a ∈ l) s fun l => List.mem_insert_iff
 
       @[simp] theorem mem_ndinsert_self (a : α) (s : UnorderedList α) : a ∈ ndinsert a s :=
@@ -277,7 +277,7 @@ namespace M4R
         mem_ndinsert.mpr (Or.inr h)
 
       theorem nodup_ndinsert (a : α) {s : UnorderedList α} : nodup s → nodup (ndinsert a s) :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => nodup l → nodup (ndinsert a l))
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => nodup l → nodup (ndinsert a l))
           s fun l => List.nodup_insert
 
     end ndinsert
@@ -285,28 +285,26 @@ namespace M4R
     section ndunion
 
       noncomputable def ndunion (s t : UnorderedList α) : UnorderedList α :=
-        @Quotient.liftOn₂ (List α) (List α) (UnorderedList α) (Perm.PermSetoid α) (Perm.PermSetoid α) s t
-          (fun l₁ l₂ => ↑(l₁ ∪ l₂)) (fun _ _ _ _ p₁ p₂ => Quot.sound (p₁.union p₂))
+        @Quotient.liftOn₂ _ _ _ _ _ s t (fun l₁ l₂ => ↑(l₁ ∪ l₂)) (fun _ _ _ _ p₁ p₂ => Quot.sound (p₁.union p₂))
 
       @[simp] theorem coe_ndunion (l₁ l₂ : List α) : @ndunion α l₁ l₂ = (l₁ ∪ l₂ : List α) := rfl
 
       @[simp] theorem zero_ndunion (s : UnorderedList α) : ndunion 0 s = s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => ndunion 0 l = l) s
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => ndunion 0 l = l) s
           fun _ => rfl
 
       @[simp] theorem cons_ndunion (s t : UnorderedList α) (a : α) :
         ndunion (s.cons a) t = ndinsert a (ndunion s t) :=
-          @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
-            (fun (l₁ l₂ : UnorderedList α) => ndunion (l₁.cons a) l₂ = ndinsert a (ndunion l₁ l₂)) s t
-            fun _ _ => rfl
+          @Quotient.inductionOn₂ _ _ _ _ (fun (l₁ l₂ : UnorderedList α) =>
+            ndunion (l₁.cons a) l₂ = ndinsert a (ndunion l₁ l₂)) s t fun _ _ => rfl
 
       @[simp] theorem mem_ndunion {s t : UnorderedList α} {a : α} : a ∈ ndunion s t ↔ a ∈ s ∨ a ∈ t :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α) 
+        @Quotient.inductionOn₂ _ _ _ _ 
           (fun (l₁ l₂ : UnorderedList α) => a ∈ ndunion l₁ l₂ ↔ a ∈ l₁ ∨ a ∈ l₂) s t
           (fun l₁ l₂ => List.mem_union)
 
       theorem nodup_ndunion (s : UnorderedList α) {t : UnorderedList α} : nodup t → nodup (ndunion s t) :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => nodup l₂ → nodup (ndunion l₁ l₂)) s t
           (fun l₁ l₂ => List.nodup_union l₁)
 
@@ -340,16 +338,16 @@ namespace M4R
       instance UnorderedListle : LE (UnorderedList α) where le := UnorderedList.le
 
       protected theorem refl (a : UnorderedList α) : a ≤ a :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => l ≤ l) a
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => l ≤ l) a
           Perm.Subperm.refl
-      
+
       protected theorem trans {a b c : UnorderedList α} : a ≤ b → b ≤ c → a ≤ c :=
-        @Quotient.inductionOn₃ (List α) (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₃ _ _ _ _ _ _
           (fun (l₁ l₂ l₃ : UnorderedList α) => l₁ ≤ l₂ → l₂ ≤ l₃ → l₁ ≤ l₃) a b c
           (fun l₁ l₂ l₃ => Perm.Subperm.trans)
 
       protected theorem antisymm {a b : UnorderedList α} : a ≤ b → b ≤ a → a = b :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => l₁ ≤ l₂ → l₂ ≤ l₁ → l₁ = l₂) a b
           (fun l₁ l₂ h₁ h₂ => Quot.sound (Perm.Subperm.antisymm h₁ h₂))
 
@@ -360,7 +358,7 @@ namespace M4R
       variable {s t : UnorderedList α} {a : α}
 
       theorem subset_of_le : s ≤ t → s ⊆ t :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => l₁ ≤ l₂ → l₁ ⊆ l₂) s t
           (fun l₁ l₂ h => Perm.Subperm.subset (le.subperm.mp h))
 
@@ -376,13 +374,13 @@ namespace M4R
       theorem le_zero : s ≤ 0 ↔ s = 0 := ⟨fun h => le.antisymm h (zero_le _), le.of_eq⟩
 
       theorem le_iff_subset {s t : UnorderedList α} : nodup s → (s ≤ t ↔ s ⊆ t) :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => nodup l₁ → (l₁ ≤ l₂ ↔ l₁ ⊆ l₂)) s t
           fun l₁ l₂ d => ⟨subset_of_le, Perm.Subperm.subperm_of_subset_nodup d⟩
 
       theorem le_induction_on {C : UnorderedList α → UnorderedList α → Prop}
         (h : s ≤ t) (H : ∀ {l₁ l₂ : List α}, l₁ <+ l₂ → C l₁ l₂) : C s t :=
-          @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+          @Quotient.inductionOn₂ _ _ _ _
             (fun (l₁ l₂ : UnorderedList α) => l₁ ≤ l₂ → C l₁ l₂) s t
             (fun l₁ l₂ ⟨l, p, s'⟩ => by simp; rw [←list_perm_eq p]; exact H s') h
 
@@ -391,14 +389,14 @@ namespace M4R
           h List.nodup_of_sublist
 
       theorem cons_self (s : UnorderedList α) (a : α) : s ≤ s.cons a :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => l ≤ l.cons a)
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => l ≤ l.cons a)
           s fun l => (List.Sublist.sublist_cons a l).subperm
 
       theorem cons_of_le {s t : UnorderedList α} (a : α) (h : s ≤ t) : s ≤ t.cons a :=
         le.trans h (cons_self t a)
 
       theorem cons_le_cons_iff (a : α) {s t : UnorderedList α} : s.cons a ≤ t.cons a ↔ s ≤ t :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => l₁.cons a ≤ l₂.cons a ↔ l₁ ≤ l₂) s t
           fun l₁ l₂ => Perm.Subperm.subperm_cons a
 
@@ -414,7 +412,7 @@ namespace M4R
         cons_of_le a⟩
 
       theorem add_right (s t : UnorderedList α) : s ≤ s + t :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           s ≤ s + l) t (fun l => by
             induction l with
             | nil => exact (by simp; exact le.refl _ : s ≤ s + 0)
@@ -430,7 +428,7 @@ namespace M4R
         fun ⟨u, e⟩ => e.symm ▸ add_right s u⟩
 
       theorem add_le_add_left (s : UnorderedList α) {t u : UnorderedList α} : s + t ≤ s + u ↔ t ≤ u :=
-        @Quotient.inductionOn₃ (List α) (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₃ _ _ _ _ _ _
           (fun (l₁ l₂ l₃ : UnorderedList α) => l₁ + l₂ ≤ l₁ + l₃ ↔ l₂ ≤ l₃) s t u
           fun l₁ l₂ l₃ => Perm.Subperm.subperm_append_left l₁
 
@@ -442,15 +440,15 @@ namespace M4R
         (add_le_add_left s).mp
 
       @[simp] theorem filter_le (p : α → Prop) (s : UnorderedList α) : filter p s ≤ s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           filter p l ≤ l) s fun l => (List.filter'_sublist _).subperm
 
       theorem not_cons_self (s : UnorderedList α) (a : α) : ¬ (s.cons a ≤ s) :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => ¬ (l.cons a ≤ l)) s
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => ¬ (l.cons a ≤ l)) s
           (fun l => Perm.Subperm.not_cons_self l a)
 
       theorem ne_iff_cons {s t : UnorderedList α} (h : s ≤ t) : s ≠ t ↔ ∃ a, s.cons a ≤ t :=
-        ⟨@Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        ⟨@Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => l₁ ≤ l₂ → l₁ ≠ l₂ → ∃ a, l₁.cons a ≤ l₂) s t
           (fun l₁ l₂ h' he =>
             have p' : ¬ l₁ ~ l₂ := by intro p; exact he (Quot.sound p)
@@ -472,20 +470,20 @@ namespace M4R
       @[simp] theorem erase_zero (a : α) : (0 : UnorderedList α).erase a = 0 := rfl
 
       @[simp] theorem erase_cons_head (a : α) (s : UnorderedList α) : (s.cons a).erase a = s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => (l.cons a).erase a = l)
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => (l.cons a).erase a = l)
           s fun l => congrArg List.to_UnorderedList (List.erase_cons_head a l)
 
       @[simp] theorem erase_cons_tail {a b : α} (s : UnorderedList α) (h : b ≠ a) :
         (s.cons b).erase a = (s.erase a).cons b :=
-          @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => (l.cons b).erase a = (l.erase a).cons b)
+          @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => (l.cons b).erase a = (l.erase a).cons b)
             s fun l => congrArg List.to_UnorderedList (List.erase_cons_tail l h)
 
       @[simp] theorem erase_of_not_mem {a : α} {s : UnorderedList α} : a ∉ s → s.erase a = s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           a ∉ l → l.erase a = l) s fun l h => congrArg List.to_UnorderedList (List.erase_of_not_mem h)
 
       @[simp] theorem cons_erase {s : UnorderedList α} {a : α} : a ∈ s → (s.erase a).cons a = s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           a ∈ l → (l.erase a).cons a = l) s fun l h => Quot.sound (Perm.cons_erase h).symm
 
       theorem le_cons_erase (s : UnorderedList α) (a : α) : s ≤ (s.erase a).cons a :=
@@ -493,7 +491,7 @@ namespace M4R
         else by rw [erase_of_not_mem h]; apply le.cons_self
 
       theorem erase_le (a : α) (s : UnorderedList α) : s.erase a ≤ s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           l.erase a ≤ l) s fun l => (List.erase_sublist a l).subperm
 
       theorem erase_le_iff_le_cons {s t : UnorderedList α} {a : α} : s.erase a ≤ t ↔ s ≤ t.cons a :=
@@ -507,7 +505,7 @@ namespace M4R
           fun h' => (h'.erase _).subperm
 
       theorem nodup_erase_eq_filter (a : α) {s : UnorderedList α} : nodup s → s.erase a = filter (· ≠ a) s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           nodup l → l.erase a = filter (· ≠ a) l) s
           (fun l d => congrArg (List.to_UnorderedList) (List.nodup_erase_eq_filter' a d))
 
@@ -528,21 +526,20 @@ namespace M4R
         (fun _ _ _ _ p₁ p₂ => Quot.sound (p₁.diff p₂))
 
     namespace sub
-    
+
       noncomputable instance : Sub (UnorderedList α) where sub := UnorderedList.sub
 
       @[simp] protected theorem sub_zero (s : UnorderedList α) : s - 0 = s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α)
-          (fun (l : UnorderedList α) => l - 0 = l) s fun l => rfl
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => l - 0 = l) s fun l => rfl
 
       @[simp] theorem sub_cons (a : α) (s t : UnorderedList α) : s - t.cons a = s.erase a - t :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => l₁ - l₂.cons a = l₁.erase a - l₂) s t
           fun l₁ l₂ => congrArg List.to_UnorderedList (List.diff_cons _ _ _)
 
       theorem sub_le_iff_le_add_right {s t : UnorderedList α} : s - t ≤ u ↔ s ≤ u + t := by
         revert s
-        exact @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        exact @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           ∀ s, s - l ≤ u ↔ s ≤ u + l) t (fun l => by
             induction l with
             | nil => exact fun s => (by simp only [sub.sub_zero, append.add_zero]; exact Iff.rfl : s - 0 ≤ u ↔ s ≤ u + 0)
@@ -554,16 +551,16 @@ namespace M4R
 
       theorem sub_le_iff_le_add_left {s t : UnorderedList α} : s - t ≤ u ↔ s ≤ t + u := by
         rw [sub_le_iff_le_add_right, append.comm]; exact Iff.rfl
-    
+
       theorem le_sub_add (s t : UnorderedList α) : s ≤ (s - t) + t :=
         sub_le_iff_le_add_right.mp (le.refl _)
-      
+
       theorem le_add_sub (s t : UnorderedList α) : s ≤ t + (s - t) :=
         sub_le_iff_le_add_left.mp (le.refl _)
 
       theorem add_sub_le_left {s t : UnorderedList α}: s + t - s ≤ t :=
         sub_le_iff_le_add_left.mpr (le.refl _)
-  
+
       theorem sub_le_sub_right {s t : UnorderedList α} (h : s ≤ t) (u : UnorderedList α) : s - u ≤ t - u :=
         sub_le_iff_le_add_left.mpr (le.trans h (le_add_sub t u))
 
@@ -581,19 +578,19 @@ namespace M4R
       @[simp] theorem zero : @card α 0 = 0 := rfl
 
       @[simp] theorem add (s t : UnorderedList α) : card (s + t) = card s + card t :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => card (l₁ + l₂) = card l₁ + card l₂) s t
             List.length_append
 
       @[simp] theorem cons (a : α) (s : UnorderedList α) : card (s.cons a) = card s + 1 :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α)
+        @Quotient.inductionOn _ _
           (fun (l : UnorderedList α) => card (l.cons a) = card l + 1) s fun l => rfl
 
       @[simp] theorem singleton (a : α) : card (UnorderedList.singleton a) = 1 := by
         simp only [singleton_eq_cons, zero, cons]
 
       theorem eq_one {s : UnorderedList α} : card s = 1 ↔ ∃ a, s = UnorderedList.singleton a :=
-        ⟨@Quotient.inductionOn (List α) (Perm.PermSetoid α)
+        ⟨@Quotient.inductionOn _ _
           (fun (l : UnorderedList α) => card l = 1 → ∃ a, l = UnorderedList.singleton a) s
           (fun l h => (List.length_eq_one.mp h).imp fun _ => congrArg List.to_UnorderedList),
         fun ⟨a, e⟩ => e.symm ▸ rfl⟩
@@ -603,14 +600,14 @@ namespace M4R
           List.Sublist.length_le_of_sublist
 
       theorem pos_iff_exists_mem {s : UnorderedList α} : 0 < card s ↔ ∃ a, a ∈ s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α)
+        @Quotient.inductionOn _ _
           (fun (l : UnorderedList α) => 0 < card l ↔ ∃ a, a ∈ l) s
           (fun l => List.length_pos_iff_exists_mem)
 
     end card
 
     theorem filter_eq_self {s : UnorderedList α} : filter p s = s ↔ ∀ a ∈ s, p a :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           filter p l = l ↔ ∀ a ∈ l, p a) s fun l => Iff.trans ⟨fun h =>
             List.Sublist.eq_of_sublist_of_length_eq (List.filter'_sublist _) (@congrArg _ _ _ _ card h),
             congrArg List.to_UnorderedList⟩ List.filter'_eq_self
@@ -635,19 +632,19 @@ namespace M4R
 
       @[simp] theorem cons_of_pos {p} {a : α} (s : UnorderedList α) :
         p a → countp p (s.cons a) = countp p s + 1 :=
-          @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+          @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
             p a → countp p (l.cons a) = countp p l + 1) s (List.countp_cons_of_pos p)
 
       @[simp] theorem cons_of_neg {p} {a : α} (s : UnorderedList α) :
         ¬ p a → countp p (s.cons a) = countp p s :=
-          @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+          @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
             ¬ p a → countp p (l.cons a) = countp p l) s (List.countp_cons_of_neg p)
 
       theorem cons (b : α) (s) : countp p (s.cons b) = countp p s + (if p b then 1 else 0) := by
         byCases h : p b; simp [h]; simp [h]
 
       theorem countp_eq_card_filter (s : UnorderedList α) : countp p s = card (filter p s) :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α)
+        @Quotient.inductionOn _ _
           (fun (l : UnorderedList α) => countp p l = card (filter p l)) s
             fun l => List.countp_eq_length_filter' _ _
 
@@ -706,7 +703,7 @@ namespace M4R
 
       @[simp] theorem sub (a : α) (s t : UnorderedList α) : count a (s - t) = count a s - count a t := by
         revert s;
-        exact @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        exact @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           ∀ (s : UnorderedList α), count a (s - l) = count a s - count a l) t
           (fun l => by
             induction l with
@@ -721,7 +718,7 @@ namespace M4R
     end count
 
     theorem nodup_iff_count_le_one {s : UnorderedList α} : nodup s ↔ ∀ a, count a s ≤ 1 :=
-      @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+      @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
         nodup l ↔ ∀ a, count a l ≤ 1) s fun l => List.nodup_iff_count_le_one
 
     theorem sub.mem_sub_of_nodup {a : α} {s t : UnorderedList α} (d : nodup s) :
@@ -745,7 +742,7 @@ namespace M4R
     section ndinsert
 
       @[simp] theorem le_ndinsert_self (a : α) (s : UnorderedList α) : s ≤ ndinsert a s :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           l ≤ ndinsert a l) s fun l => (List.Sublist.insert _ _).subperm
 
       theorem ndinsert_le {a : α} {s t : UnorderedList α} : ndinsert a s ≤ t ↔ s ≤ t ∧ a ∈ t :=
@@ -761,7 +758,7 @@ namespace M4R
     section ndunion
 
       theorem ndunion_le {s t u : UnorderedList α} : ndunion s t ≤ u ↔ s ⊆ u ∧ t ≤ u :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) =>
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           ndunion l t ≤ u ↔ l ⊆ u ∧ t ≤ u) s (fun l => by
             induction l with
             | nil => simp
@@ -773,7 +770,7 @@ namespace M4R
                   h₁ (mem_cons_self a ↑l)⟩⟩)
 
       theorem le_ndunion_right (s t : UnorderedList α) : t ≤ ndunion s t :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => l₂ ≤ ndunion l₁ l₂) s t
           fun l₁ l₂ => Perm.Subperm.union_left l₂ l₁
 
@@ -842,32 +839,32 @@ namespace M4R
       noncomputable instance UnorderedListIntersection : Intersection (UnorderedList α) where intersection := inter
 
       @[simp] theorem inter_zero (s : UnorderedList α) : s ∩ 0 = 0 :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => l ∩ 0 = 0) s
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => l ∩ 0 = 0) s
           fun l => congrArg List.to_UnorderedList l.bag_inter_nil
 
       @[simp] theorem zero_inter (s : UnorderedList α) : 0 ∩ s = 0 :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => 0 ∩ l = 0) s
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => 0 ∩ l = 0) s
           fun l => congrArg List.to_UnorderedList l.nil_bag_inter
 
       @[simp] theorem cons_inter_of_pos {a : α} (s : UnorderedList α) {t : UnorderedList α} :
         a ∈ t → (s.cons a) ∩ t = (s ∩ t.erase a).cons a :=
-          @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+          @Quotient.inductionOn₂ _ _ _ _
             (fun (l₁ l₂ : UnorderedList α) => a ∈ l₂ → (l₁.cons a) ∩ l₂ = (l₁ ∩ l₂.erase a).cons a) s t
               (fun _ _ h => congrArg List.to_UnorderedList (List.cons_bag_inter_of_pos _ h))
 
       @[simp] theorem cons_inter_of_neg {a} (s : UnorderedList α) {t} :
         a ∉ t → (s.cons a) ∩ t = s ∩ t :=
-          @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+          @Quotient.inductionOn₂ _ _ _ _
             (fun (l₁ l₂ : UnorderedList α) => a ∉ l₂ → (l₁.cons a) ∩ l₂ = l₁ ∩ l₂) s t
             fun _ _ h => congrArg List.to_UnorderedList (List.cons_bag_inter_of_neg _ h)
 
       theorem inter_le_left (s t : UnorderedList α) : s ∩ t ≤ s :=
-        @Quotient.inductionOn₂ (List α) (List α) (Perm.PermSetoid α) (Perm.PermSetoid α)
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => l₁ ∩ l₂ ≤ l₁) s t fun _ _ =>
             (List.bag_inter_sublist_left _ _).subperm
 
       theorem inter_le_right (s : UnorderedList α) : ∀ t, s ∩ t ≤ t :=
-        @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α) => ∀ t, l ∩ t ≤ t) s
+        @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => ∀ t, l ∩ t ≤ t) s
           (fun l => by
             induction l with
             | nil => exact fun t => (zero_inter t).symm ▸ le.zero_le _
@@ -881,7 +878,7 @@ namespace M4R
                 exact ih t })
 
       theorem le_inter {s t : UnorderedList α} (h₁ : s ≤ t) (h₂ : s ≤ u) : s ≤ t ∩ u := by
-        revert s u; exact @Quotient.inductionOn (List α) (Perm.PermSetoid α) (fun (l : UnorderedList α)
+        revert s u; exact @Quotient.inductionOn _ _ (fun (l : UnorderedList α)
           => ∀ {u s : UnorderedList α}, s ≤ l → s ≤ u → s ≤ l ∩ u) t (fun l => by
             induction l with
             | nil => intro _ _ h _; simp only [list_coe_eq, empty_eq, zero_inter]; exact h
@@ -906,7 +903,7 @@ namespace M4R
     end inter
 
     namespace sub
-      
+
       theorem sub_add_eq_sub_sub (s t u : UnorderedList α) : s - (t + u) = s - t - u :=
         le.antisymm (by
           apply sub.sub_le_iff_le_add_left.mpr; rw [append.assoc]

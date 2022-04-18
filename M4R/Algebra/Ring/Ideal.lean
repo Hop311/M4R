@@ -58,6 +58,12 @@ namespace M4R
     protected theorem antisymm [Ring α] {I J : Ideal α} (h₁ : I ⊆ J) (h₂ : J ⊆ I) : I = J := by
       rw [←Ideal.ext]; simp only [Ideal.equivalent]; rw [←Set.ext]; simp only [Set.equivalent];
       exact fun x => ⟨fun h => h₁ h, fun h => h₂ h⟩
+    protected theorem subsetneq [Ring α] {I J : Ideal α} : I ⊊ J ↔ I ⊆ J ∧ I ≠ J :=
+      ⟨(And.imp_right (fun h₁ h₂ => let ⟨x, hxI, hxJ⟩ := h₁
+        absurd ((Ideal.ext'.mp h₂ x).mpr hxJ) hxI) ·),
+      fun ⟨h₁, h₂⟩ => ⟨h₁, Classical.byContradiction fun h => by
+        simp only [not_exists, not_and] at h
+        exact h₂ (Ideal.ext'.mpr fun x => ⟨(h₁ ·), fun hx => of_not_not (mt (h x) (iff_not_not.mpr hx))⟩)⟩⟩
 
     protected def add [Ring α] (I J : Ideal α) : Ideal α where
       subset := {x | ∃ i ∈ I, ∃ j ∈ J, i + j = x }
@@ -86,6 +92,9 @@ namespace M4R
 
       protected theorem subset [Ring α] (I J : Ideal α) : I ⊆ I + J :=
         fun x hx => ⟨x, hx, 0, J.has_zero, add_zero x⟩
+
+      protected theorem subset' [Ring α] (I J : Ideal α) : J ⊆ I + J :=
+        add.comm I J ▸ add.subset J I
 
       protected theorem of_subset [Ring α] {I J : Ideal α} (h : I ⊆ J) : I + J = J := by
         apply Ideal.antisymm
@@ -145,8 +154,10 @@ namespace M4R
 
     theorem principal_in [Ring α] (I : Ideal α) : ∀ a ∈ I, principal a ⊆ I := by
       intro _ aI _ ⟨y, ayx⟩; rw [←ayx]; exact mul_closed' _ aI _;
-    theorem unit_principal [Ring α] : ∀ {u}, isUnit u → principal u = (1 : Ideal α) := by
-      intro u hu; exact Ideal.antisymm (in_unit_ideal _) (fun y _ => unit_divides u y hu);
+    theorem unit_principal [Ring α] {u : α} (hu : isUnit u) : principal u = 1 :=
+      Ideal.antisymm (in_unit_ideal _) (fun y _ => unit_divides u y hu)
+    theorem unit_not_principal [Ring α] {u : α} (hu : ¬isUnit u) : (principal u).proper_ideal :=
+      fun h => absurd (by rw [h]; trivial : 1 ∈ principal u) hu
 
     theorem is_unit_ideal' [Ring α] {I : Ideal α} : I = 1 ↔ ∃ x, isUnit x ∧ x ∈ I :=
       ⟨(· ▸ ⟨1, isUnit_1, trivial⟩), fun ⟨x, hx, hxI⟩ =>
@@ -163,7 +174,8 @@ namespace M4R
     theorem proper_iff_notin [Ring α] {I : Ideal α} : I.proper_ideal ↔ ∃ x, x ∉ I :=
       ⟨fun h => Classical.byContradiction fun h' => h (is_unit_ideal.mpr (of_not_not (not_exists.mp h' 1))),
        fun ⟨x, hx⟩ h => (h ▸ hx : x ∉ (1 : Ideal α)) trivial⟩
-
+    theorem proper_iff_1_notin [Ring α] {I : Ideal α} : I.proper_ideal ↔ 1 ∉ I :=
+      not_iff_not.mpr is_unit_ideal
     theorem zero_ideal_proper (α) [NonTrivialRing α] : (ZeroIdeal α).proper_ideal :=
       proper_iff_notin.mpr ⟨1, NonTrivial.one_neq_zero⟩
 
@@ -234,6 +246,9 @@ namespace M4R
       theorem contains_mem {a : α} (ha : a ∈ S) : a ∈ from_set S :=
         contains_set S ha
 
+      theorem contains_mem_mul (a : α) {b : α} (hb : b ∈ S) : a * b ∈ from_set S :=
+        (from_set S).mul_closed a (contains_mem hb)
+
       theorem contains_principal {a : α} (ha : a ∈ S) : principal a ⊆ from_set S :=
         fun x ⟨b, hx⟩ => hx ▸ (from_set S).mul_closed' (contains_mem ha) b
 
@@ -256,6 +271,9 @@ namespace M4R
 
       theorem subset {T : Set α} (h : S ⊆ T) : from_set S ⊆ from_set T :=
         fun x hx => mem.mpr fun I hTI => mem.mp hx I (Subset.trans h hTI)
+
+      theorem empty : from_set (∅ : Set α) = 0 :=
+        Ideal.ext'.mpr fun x => ⟨(mem.mp · 0 (fun _ _ => by contradiction)), (· ▸ (from_set ∅).has_zero)⟩
 
       theorem induction (p : α → Prop) {a : α} (ha : a ∈ from_set S) (h₀ : p 0) (h₁ : ∀ x ∈ S, p x)
         (h₂ : ∀ x y, p x → p y → p (x + y)) (h₃ : ∀ x y, p y → p (x * y)) : p a :=
@@ -312,6 +330,9 @@ namespace M4R
     def finitely_generated [Ring α] (I : Ideal α) : Prop := ∃ f : Finset α, I = from_set f.toSet
 
     namespace finitely_generated
+
+      theorem zero [Ring α] : (0 : Ideal α).finitely_generated := ⟨∅, from_set.empty.symm⟩
+
       variable [Ring α] {I : Ideal α} (h : I.finitely_generated)
       open Classical
 
@@ -342,7 +363,7 @@ namespace M4R
               (fun _ => ⟨∅, fun _ _ => by contradiction, fun _ h => False.elim
                 (Finset.mem_empty.mp (Finset.ext_toSet.mpr h))⟩) (fun a s ha h₁ h₂ =>
                   let ⟨f₁, hf₁S, hsf₁⟩ := h₁ (fun x hx => h₂ (Finset.cons_subset s ha hx))
-                  let ⟨f₂, hf₂S, haf₂⟩ := from_set.mem_finite_gen.mp (hS ▸ h₂ (Finset.mem_cons_self s ha) : a ∈ from_set S)
+                  let ⟨f₂, hf₂S, haf₂⟩ := from_set.mem_finite_gen.mp (hS ▸ h₂ (s.mem_cons_self ha) : a ∈ from_set S)
                   ⟨f₁ ∪ f₂, Finset.union_toSet f₁ f₂ ▸ Set.union.subset hf₁S hf₂S, fun x hx =>
                     Or.elim (Finset.mem_cons.mp hx) (Finset.union_toSet f₁ f₂ ▸ · ▸
                       from_set.subset (Set.union.subset_union_right f₁.toSet f₂.toSet) haf₂)
@@ -364,7 +385,7 @@ namespace M4R
 
     end
 
-    abbrev product_gen [Ring α] (I J : Ideal α) : Set α := {x | ∃ i ∈ I, ∃ j ∈ J, x = i * j}
+    private abbrev product_gen [Ring α] (I J : Ideal α) : Set α := {x | ∃ i ∈ I, ∃ j ∈ J, x = i * j}
 
     protected noncomputable def product [Ring α] (I J : Ideal α) : Ideal α :=
       from_set (product_gen I J)
@@ -427,11 +448,11 @@ namespace M4R
                           (finite.subset s.to_finite (fun _ => And.left : mult_fibre s k (x * k) ⊆ s.toSet)).to_finset.cons x hxs := by
                             apply Finset.ext; intro; rw [finite.mem_to_finset, Finset.mem_cons]
                             exact ⟨fun ⟨h₁, h₂⟩ => Or.imp_right (fun h => (finite.mem_to_finset _).mpr ⟨h, h₂⟩) (Finset.mem_cons.mp h₁),
-                              (Or.elim · (fun h => ⟨h.symm ▸ Finset.mem_cons_self s hx, congrArg (· * k) h⟩)
-                                (fun h => have ⟨h₁, h₂⟩ := (finite.mem_to_finset _).mp h; ⟨Finset.mem_cons.mpr (Or.inr h₁), h₂⟩))⟩
+                              (Or.elim · (fun h => ⟨h.symm ▸ s.mem_cons_self hx, congrArg (· * k) h⟩)
+                                (fun h => have ⟨h₁, h₂⟩ := (finite.mem_to_finset _).mp h; ⟨Finset.mem_cons_self' hx h₁, h₂⟩))⟩
                         rw [this, Finset.map_sum.cons]
                         exact congrArg (· + _) (Finset.map_sum.congr rfl fun b hb => congrArg (· * b) (Finset.map_sum.congr
-                          (finite.to_finset_ext.mpr fun c => ⟨(And.imp_left (fun h => Finset.mem_cons.mpr (Or.inr h)) ·),
+                          (finite.to_finset_ext.mpr fun c => ⟨(And.imp_left (Finset.mem_cons_self' hx ·) ·),
                             fun ⟨h₁, h₂⟩ => ⟨(Finset.mem_cons.mp h₁).resolve_left (fun h =>
                               (Finset.mem_erase.mp hb).left (h ▸ h₂.symm)), h₂⟩⟩) (fun _ _ => rfl))) }
                       { rw [UnorderedList.to_finset_cons_of_neg h, Finset.map_sum.cons]
@@ -439,10 +460,10 @@ namespace M4R
                           mult_fibre (s.cons x hx) k (x * k) ⊆ (s.cons x hx).toSet)).to_finset = Finset.singleton x := by
                             apply Finset.ext; intro b; rw [Finset.mem_singleton, finite.mem_to_finset]
                             exact ⟨fun ⟨h₁, h₂⟩ => (Finset.mem_cons.mp h₁).resolve_right fun hb => h (Finset.map_mem.mpr ⟨b, hb, h₂⟩),
-                              fun hb => ⟨hb.symm ▸ Finset.mem_cons_self s hx, congrArg (· * k) hb⟩⟩
+                              fun hb => ⟨hb.symm ▸ s.mem_cons_self hx, congrArg (· * k) hb⟩⟩
                         rw [this, Finset.map_sum.singleton]
                         exact congrArg (· + cij x * (x * k)) (Finset.map_sum.congr rfl fun y hy => congrArg (· * y)
-                          (Finset.map_sum.congr (finite.to_finset_ext.mpr fun z => ⟨(And.imp_left (fun h => Finset.mem_cons.mpr (Or.inr h)) ·),
+                          (Finset.map_sum.congr (finite.to_finset_ext.mpr fun z => ⟨(And.imp_left (Finset.mem_cons_self' hx ·) ·),
                             fun ⟨h₁, h₂⟩ => ⟨(Finset.mem_cons.mp h₁).resolve_left (fun h' => h (Finset.map_mem.mpr ((h' ▸ h₂ : x * k = y) ▸
                               Finset.map_mem.mp (UnorderedList.mem_to_finset.mp hy)))), h₂⟩⟩) (fun _ _ => rfl))) }) fij⟩))) fx hfx cx,
           fun hx =>
@@ -453,7 +474,7 @@ namespace M4R
               (fun a f ha ih hf c => Finset.map_sum.cons _ _ ▸ (I * J * K).add_closed
                 (ih (Subset.trans (Finset.cons_subset f ha) hf) c)
                 ((I * J * K).mul_closed _
-                  (let ⟨i, hi, j, hj, k, hk, he⟩ := hf (Finset.mem_cons_self f ha)
+                  (let ⟨i, hi, j, hj, k, hk, he⟩ := hf (f.mem_cons_self ha)
                   from_set.mem_as_sum.mpr ⟨Finset.singleton a, fun _ => 1, fun b hb =>
                     ⟨i * j, from_set.contains_set _ ⟨i, hi, j, hj, rfl⟩, k, hk, Finset.mem_singleton.mp hb ▸ he⟩,
                     by rw [Finset.map_sum.singleton, one_mul]⟩))) fx hfx cx⟩
@@ -463,6 +484,318 @@ namespace M4R
         exact congrArg from_set (Set.ext.mp fun x =>
           ⟨fun ⟨i, hi, j, hj, k, hk, hijk⟩ => ⟨j, hj, k, hk, i, hi, Semiring.mul_comm _ _ ▸ mul_assoc _ _ _ ▸ hijk⟩,
             fun ⟨j, hj, k, hk, i, hi, hjki⟩ => ⟨i, hi, j, hj, k, hk, mul_assoc _ _ _ ▸ Semiring.mul_comm _ _ ▸ hjki⟩⟩)
+
+      open Classical
+
+      private noncomputable abbrev choose_i [Ring α] {I J K : Ideal α} {f : Finset α} (hf : f.toSet ⊆ product_gen I (J + K))
+        {x : α} (hx : x ∈ f) : α := choose (hf hx)
+      private noncomputable abbrev choose_j [Ring α] {I J K : Ideal α} {f : Finset α} (hf : f.toSet ⊆ product_gen I (J + K))
+        {x : α} (hx : x ∈ f) : α := choose (choose_spec (choose_spec (hf hx)).right).left
+      private noncomputable abbrev choose_k [Ring α] {I J K : Ideal α} {f : Finset α} (hf : f.toSet ⊆ product_gen I (J + K))
+        {x : α} (hx : x ∈ f) : α := choose (choose_spec (choose_spec (choose_spec (hf hx)).right).left).right
+      private theorem choose_hi [Ring α] {I J K : Ideal α} {f : Finset α} (hf : f.toSet ⊆ product_gen I (J + K))
+        {x : α} (hx : x ∈ f) : choose_i hf hx ∈ I := (choose_spec (hf hx)).left
+      private theorem choose_hj [Ring α] {I J K : Ideal α} {f : Finset α} (hf : f.toSet ⊆ product_gen I (J + K))
+        {x : α} (hx : x ∈ f) : choose_j hf hx ∈ J := (choose_spec (choose_spec (choose_spec (hf hx)).right).left).left
+      private theorem choose_hk [Ring α] {I J K : Ideal α} {f : Finset α} (hf : f.toSet ⊆ product_gen I (J + K))
+        {x : α} (hx : x ∈ f) : choose_k hf hx ∈ K := (choose_spec (choose_spec (choose_spec (choose_spec (hf hx)).right).left).right).left
+      private theorem choose_heq [Ring α] {I J K : Ideal α} {f : Finset α} (hf : f.toSet ⊆ product_gen I (J + K))
+        {x : α} (hx : x ∈ f) : x = choose_i hf hx * (choose_j hf hx + choose_k hf hx) := by
+          rw [(choose_spec (choose_spec (choose_spec (choose_spec (hf hx)).right).left).right).right,
+            ←(choose_spec (choose_spec (hf hx)).right).right]
+
+      private noncomputable abbrev distrib_gens_left [Ring α] {I J K : Ideal α} {f : Finset α}
+        (hf : f.toSet ⊆ product_gen I (J + K)) : Finset α :=
+          (f.elems.pmap (fun x hx => choose_i hf hx * choose_j hf hx) (fun _ => id)).to_finset
+      private noncomputable abbrev distrib_gens_right [Ring α] {I J K : Ideal α} {f : Finset α}
+        (hf : f.toSet ⊆ product_gen I (J + K)) : Finset α :=
+          (f.elems.pmap (fun x hx => choose_i hf hx * choose_k hf hx) (fun _ => id)).to_finset
+
+      private theorem distrib_gens_left_subset [Ring α] {I J K : Ideal α} {f : Finset α}
+        (hf : f.toSet ⊆ product_gen I (J + K)) : (distrib_gens_left hf).toSet ⊆ product_gen I J := fun b hb =>
+          let ⟨y, hy, he⟩ := UnorderedList.mem_pmap.mp (UnorderedList.mem_to_finset.mp hb)
+          ⟨choose_i hf hy, choose_hi hf hy, choose_j hf hy, choose_hj hf hy, he.symm⟩
+      private theorem distrib_gens_right_subset [Ring α] {I J K : Ideal α} {f : Finset α}
+        (hf : f.toSet ⊆ product_gen I (J + K)) : (distrib_gens_right hf).toSet ⊆ product_gen I K := fun b hb =>
+          let ⟨y, hy, he⟩ := UnorderedList.mem_pmap.mp (UnorderedList.mem_to_finset.mp hb)
+          ⟨choose_i hf hy, choose_hi hf hy, choose_k hf hy, choose_hk hf hy, he.symm⟩
+
+      private abbrev distrib_gens_left_coeff_set [Ring α] {I J K : Ideal α} {f : Finset α}
+        (hf : f.toSet ⊆ product_gen I (J + K)) (x : α) : Set α :=
+          {y | if hy : y ∈ f then choose_i hf hy * choose_j hf hy = x else False}
+      /-- All elements `y` of `distrib_gens_left_coeff_set hf x` satisfy `y ∈ f`. -/
+      private theorem distrib_gens_left_coeff_subset [Ring α] {I J K : Ideal α} {f : Finset α}
+        {hf : f.toSet ⊆ product_gen I (J + K)} {x : α} (hx : x ∈ distrib_gens_left hf) :
+          distrib_gens_left_coeff_set hf x ⊆ f.toSet :=
+            fun b (hb : if hy : b ∈ f then _ else False) => by
+              byCases hb' : b ∈ f; { exact hb' } { simp only [hb', dite_false] at hb }
+      /-- All elements `y` of `distrib_gens_left_coeff_set hf x` satisfy `choose_i y * choose_k y = x`. -/
+      private theorem distrib_gens_left_coeff_eq [Ring α] {I J K : Ideal α} {f : Finset α}
+        {hf : f.toSet ⊆ product_gen I (J + K)} {x : α} (hx : x ∈ distrib_gens_left hf) {y : α}
+          (hy : y ∈ distrib_gens_left_coeff_set hf x) : choose_i hf (distrib_gens_left_coeff_subset hx hy) *
+            choose_j hf (distrib_gens_left_coeff_subset hx hy) = x := by
+              have hy' : y ∈ f := distrib_gens_left_coeff_subset hx hy
+              have : if hy : y ∈ f then choose_i hf hy * choose_j hf hy = x else False := hy
+              simp only [hy', dite_true] at this
+              exact this
+      private theorem to_distrib_gens_left_coeff [Ring α] {I J K : Ideal α} {f : Finset α}
+        {hf : f.toSet ⊆ product_gen I (J + K)} {x : α} (hx : x ∈ distrib_gens_left hf) {y : α}
+          (hy : y ∈ f) (he : choose_i hf hy * choose_j hf hy = x) : y ∈ distrib_gens_left_coeff_set hf x :=
+            (by simp only [hy, dite_true, he] : if hy : y ∈ f then choose_i hf hy * choose_j hf hy = x else False)
+      private noncomputable abbrev distrib_gens_left_coeff [Ring α] {I J K : Ideal α} {f : Finset α}
+        (hf : f.toSet ⊆ product_gen I (J + K)) (c : α → α) : α → α := fun x =>
+          if hx : x ∈ distrib_gens_left hf then
+            ∑ c in (finite.subset f.to_finite (distrib_gens_left_coeff_subset hx)).to_finset
+          else 0
+
+      private abbrev distrib_gens_right_coeff_set [Ring α] {I J K : Ideal α} {f : Finset α}
+        (hf : f.toSet ⊆ product_gen I (J + K)) (x : α) : Set α :=
+          {y | if hy : y ∈ f then choose_i hf hy * choose_k hf hy = x else False}
+      /-- All elements `y` of `distrib_gens_right_coeff_set hf x` satisfy `y ∈ f`. -/
+      private theorem distrib_gens_right_coeff_subset [Ring α] {I J K : Ideal α} {f : Finset α}
+        {hf : f.toSet ⊆ product_gen I (J + K)} {x : α} (hx : x ∈ distrib_gens_right hf) :
+          distrib_gens_right_coeff_set hf x ⊆ f.toSet :=
+            fun b (hb : if hy : b ∈ f then _ else False) => by
+              byCases hb' : b ∈ f; { exact hb' } { simp only [hb', dite_false] at hb }
+      /-- All elements `y` of `distrib_gens_right_coeff_set hf x` satisfy `choose_i y * choose_k y = x`. -/
+      private theorem distrib_gens_right_coeff_eq [Ring α] {I J K : Ideal α} {f : Finset α}
+        {hf : f.toSet ⊆ product_gen I (J + K)} {x : α} (hx : x ∈ distrib_gens_right hf) {y : α}
+          (hy : y ∈ distrib_gens_right_coeff_set hf x) : choose_i hf (distrib_gens_right_coeff_subset hx hy) *
+            choose_k hf (distrib_gens_right_coeff_subset hx hy) = x := by
+              have hy' : y ∈ f := distrib_gens_right_coeff_subset hx hy
+              have : if hy : y ∈ f then choose_i hf hy * choose_k hf hy = x else False := hy
+              simp only [hy', dite_true] at this
+              exact this
+      private theorem to_distrib_gens_right_coeff [Ring α] {I J K : Ideal α} {f : Finset α}
+        {hf : f.toSet ⊆ product_gen I (J + K)} {x : α} (hx : x ∈ distrib_gens_right hf) {y : α}
+          (hy : y ∈ f) (he : choose_i hf hy * choose_k hf hy = x) : y ∈ distrib_gens_right_coeff_set hf x :=
+            (by simp only [hy, dite_true, he] : if hy : y ∈ f then choose_i hf hy * choose_k hf hy = x else False)
+      private noncomputable abbrev distrib_gens_right_coeff [Ring α] {I J K : Ideal α} {f : Finset α}
+        (hf : f.toSet ⊆ product_gen I (J + K)) (c : α → α) : α → α := fun x =>
+          if hx : x ∈ distrib_gens_right hf then
+            ∑ c in (finite.subset f.to_finite (distrib_gens_right_coeff_subset hx)).to_finset
+          else 0
+
+      private theorem product_gen_subset [Ring α] (I : Ideal α) {J K : Ideal α} (h : J ⊆ K) :
+        product_gen I J ⊆ product_gen I K := fun x ⟨i, hi, j, hj, he⟩ => ⟨i, hi, j, h hj, he⟩
+      private noncomputable abbrev distrib_coeff [Ring α] (fij fik : Finset α) (cij cik : α → α) (x : α) : α :=
+        if x ∈ fij then if x ∈ fik then cij x + cik x else cij x else cik x
+      private noncomputable abbrev distrib_coeff_empty_left [Ring α] (fik : Finset α) (cij cik : α → α) (x : α) :
+        distrib_coeff ∅ fik cij cik x = cik x := by simp only [distrib_coeff, Finset.mem_empty, ite_false]
+      private noncomputable abbrev distrib_coeff_only_left [Ring α] {fij fik : Finset α} (cij cik : α → α)
+        {x : α} (hij : x ∈ fij) (hik : x ∉ fik) : distrib_coeff fij fik cij cik x = cij x := by
+          simp only [distrib_coeff, hij, ite_true, hik, ite_false]
+
+      protected theorem distrib [Ring α] (I J K : Ideal α) : I * (J + K) = I * J + I * K :=
+        Ideal.ext'.mpr fun a =>
+          ⟨fun ha =>
+            let ⟨fa, ca, hfa, hca⟩ := from_set.mem_as_sum.mp ha
+            let fij := distrib_gens_left hfa
+            let cij := distrib_gens_left_coeff hfa ca
+            let fik := distrib_gens_right hfa
+            let cik := distrib_gens_right_coeff hfa ca
+            ⟨(∑ x in fij, cij x * x), from_set.mem_as_sum.mpr ⟨fij, cij, distrib_gens_left_subset hfa, rfl⟩,
+             (∑ x in fik, cik x * x), from_set.mem_as_sum.mpr ⟨fik, cik, distrib_gens_right_subset hfa, rfl⟩,
+              hca ▸ @Finset.cons_induction α (fun f => (hf : f.toSet ⊆ product_gen I (J + K)) →
+                (∑ x in distrib_gens_left hf, distrib_gens_left_coeff hf ca x * x) +
+                (∑ x in distrib_gens_right hf, distrib_gens_right_coeff hf ca x * x) = ∑ x in f, ca x * x)
+                (fun hf => by rw [(by rfl : distrib_gens_left hf = ∅), Finset.map_sum.empty, zero_add]; rfl)
+                (fun b f hb ih hfb => by
+                  have hf : f.toSet ⊆ product_gen I (J + K) := fun x hx => hfb (Finset.mem_cons_self' hb hx)
+                  rw [Finset.map_sum.cons, ←ih hf]
+                  let i := choose_i hfb (f.mem_cons_self hb)
+                  let j := choose_j hfb (f.mem_cons_self hb)
+                  let k := choose_k hfb (f.mem_cons_self hb)
+                  have h₁ : (∑ x in distrib_gens_left hfb, distrib_gens_left_coeff hfb ca x * x) =
+                    (∑ x in distrib_gens_left hf, distrib_gens_left_coeff hf ca x * x) + ca b * (i * j) := by
+                      byCases h : i * j ∈ distrib_gens_left hf
+                      { have heq : distrib_gens_left hfb = distrib_gens_left hf := by
+                          apply Finset.ext; intro
+                          simp only [UnorderedList.mem_to_finset, UnorderedList.mem_pmap]
+                          exact ⟨fun ⟨a, ha, hea⟩ => Or.elim (Finset.mem_cons.mp ha)
+                            (fun ha =>
+                              let ⟨c, hc, hec⟩ := UnorderedList.mem_pmap.mp (UnorderedList.mem_to_finset.mp h)
+                              ⟨c, hc, by rw [hec, ←hea]; subst ha; rfl⟩)
+                            fun ha => ⟨a, ha, hea⟩,
+                            fun ⟨a, ha, hea⟩ => ⟨a, Finset.mem_cons_self' hb ha, hea⟩⟩
+                        rw [heq, Finset.map_sum.sum_term _ _ h, Finset.map_sum.sum_term _ _ h, add_assoc, ←mul_distrib_right]
+                        have h' : i * j ∈ distrib_gens_left hfb := heq ▸ h
+                        have : distrib_gens_left_coeff hfb ca (i * j) = distrib_gens_left_coeff hf ca (i * j) + ca b := by
+                          have : (finite.subset (f.cons b hb).to_finite (distrib_gens_left_coeff_subset h')).to_finset =
+                            (finite.subset f.to_finite (distrib_gens_left_coeff_subset h)).to_finset.cons b fun hb' =>
+                              hb (distrib_gens_left_coeff_subset h ((finite.mem_to_finset _).mp hb')) := by
+                                apply Finset.ext; intro
+                                rw [finite.mem_to_finset, Finset.mem_cons, finite.mem_to_finset]
+                                exact ⟨fun hx => Or.imp_right
+                                  (to_distrib_gens_left_coeff h · (distrib_gens_left_coeff_eq h' hx))
+                                  (Finset.mem_cons.mp (distrib_gens_left_coeff_subset h' hx)),
+                                (Or.elim · (fun hx => hx.symm ▸ to_distrib_gens_left_coeff h' (f.mem_cons_self hb) rfl)
+                                  fun hx => to_distrib_gens_left_coeff h'
+                                    (Finset.mem_cons_self' hb (distrib_gens_left_coeff_subset h hx))
+                                    (distrib_gens_left_coeff_eq h hx))⟩
+                          simp only [distrib_gens_left_coeff, h, h', dite_true, this, Finset.map_sum.cons]
+                        rw [this]
+                        exact congrArg (· + _) (Finset.map_sum.congr rfl (fun c hc => congrArg (· * c) (by
+                          have ⟨he, hc⟩ := Finset.mem_erase.mp hc
+                          have hcb : c ∈ distrib_gens_left hfb := heq ▸ hc
+                          simp only [distrib_gens_left_coeff, hc, hcb, dite_true]
+                          exact Finset.map_sum.congr (finite.to_finset_ext.mpr fun d =>
+                            ⟨fun hd => to_distrib_gens_left_coeff hc ((Finset.mem_cons.mp
+                              (distrib_gens_left_coeff_subset hcb hd)).resolve_left (fun h => by
+                                subst h; exact he (distrib_gens_left_coeff_eq hcb hd).symm))
+                              (distrib_gens_left_coeff_eq hcb hd),
+                            fun hd => to_distrib_gens_left_coeff hcb (Finset.mem_cons_self' hb
+                              (distrib_gens_left_coeff_subset hc hd))
+                              (distrib_gens_left_coeff_eq hc hd)⟩) fun _ _ => rfl))) }
+                      { have heq : distrib_gens_left hfb = (distrib_gens_left hf).cons (i * j) h := by
+                          apply Finset.ext; intro
+                          simp only [Finset.mem_cons, UnorderedList.mem_to_finset, UnorderedList.mem_pmap]
+                          exact ⟨fun ⟨a, ha, hea⟩ => Or.imp
+                              (fun ha => by subst ha; exact hea.symm)
+                              (fun ha => ⟨a, ha, hea⟩) (Finset.mem_cons.mp ha),
+                            (Or.elim · (fun ha => ⟨b, f.mem_cons_self hb, ha.symm⟩)
+                              fun ⟨a, ha, hea⟩ => ⟨a, Finset.mem_cons_self' hb ha, hea⟩)⟩
+                        rw [heq, Finset.map_sum.cons]
+                        have hij : i * j ∈ distrib_gens_left hfb := UnorderedList.mem_to_finset.mpr
+                          (UnorderedList.mem_pmap.mpr ⟨b, f.mem_cons_self hb, rfl⟩)
+                        have : distrib_gens_left_coeff hfb ca (i * j) = ca b := by
+                          simp only [distrib_gens_left_coeff, hij, dite_true]
+                          have : (finite.subset (f.cons b hb).to_finite (distrib_gens_left_coeff_subset hij)).to_finset = Finset.singleton b := by
+                            apply Finset.ext; intro c; rw [Finset.mem_singleton, finite.mem_to_finset]
+                            exact ⟨fun hc => (Finset.mem_cons.mp (distrib_gens_left_coeff_subset hij hc)).resolve_right fun h' =>
+                                h (UnorderedList.mem_to_finset.mpr (UnorderedList.mem_pmap.mpr ⟨c, h', distrib_gens_left_coeff_eq hij hc⟩)),
+                              fun hc => by subst hc; exact to_distrib_gens_left_coeff hij (f.mem_cons_self hb) rfl⟩
+                          rw [this, Finset.map_sum.singleton]
+                        rw [this]
+                        exact congrArg (· + _) (Finset.map_sum.congr rfl (fun c hc => congrArg (· * c)
+                          (by
+                            have hcb : c ∈ distrib_gens_left hfb := heq ▸ Finset.mem_cons_self' h hc
+                            simp only [distrib_gens_left_coeff, hc, hcb, dite_true]
+                            exact Finset.map_sum.congr (finite.to_finset_ext.mpr fun d =>
+                              ⟨fun hd => have := distrib_gens_left_coeff_eq hcb hd
+                                Or.elim (Finset.mem_cons.mp (distrib_gens_left_coeff_subset hcb hd))
+                                  (fun hd' => by subst hd'; exact absurd (this ▸ hc) h)
+                                  fun hd' => to_distrib_gens_left_coeff hc hd' this,
+                              fun hd => to_distrib_gens_left_coeff hcb (Finset.mem_cons_self' hb
+                                (distrib_gens_left_coeff_subset hc hd)) (distrib_gens_left_coeff_eq hc hd)⟩)
+                              (fun _ _ => rfl)))) }
+                  have h₂ : (∑ x in distrib_gens_right hfb, distrib_gens_right_coeff hfb ca x * x) =
+                    (∑ x in distrib_gens_right hf, distrib_gens_right_coeff hf ca x * x) + ca b * (i * k) := by
+                      byCases h : i * k ∈ distrib_gens_right hf
+                      { have heq : distrib_gens_right hfb = distrib_gens_right hf := by
+                          apply Finset.ext; intro
+                          simp only [UnorderedList.mem_to_finset, UnorderedList.mem_pmap]
+                          exact ⟨fun ⟨a, ha, hea⟩ => Or.elim (Finset.mem_cons.mp ha)
+                            (fun ha =>
+                              let ⟨c, hc, hec⟩ := UnorderedList.mem_pmap.mp (UnorderedList.mem_to_finset.mp h)
+                              ⟨c, hc, by rw [hec, ←hea]; subst ha; rfl⟩)
+                            fun ha => ⟨a, ha, hea⟩,
+                            fun ⟨a, ha, hea⟩ => ⟨a, Finset.mem_cons_self' hb ha, hea⟩⟩
+                        rw [heq, Finset.map_sum.sum_term _ _ h, Finset.map_sum.sum_term _ _ h, add_assoc, ←mul_distrib_right]
+                        have h' : i * k ∈ distrib_gens_right hfb := heq ▸ h
+                        have : distrib_gens_right_coeff hfb ca (i * k) = distrib_gens_right_coeff hf ca (i * k) + ca b := by
+                          have : (finite.subset (f.cons b hb).to_finite (distrib_gens_right_coeff_subset h')).to_finset =
+                            (finite.subset f.to_finite (distrib_gens_right_coeff_subset h)).to_finset.cons b fun hb' =>
+                              hb (distrib_gens_right_coeff_subset h ((finite.mem_to_finset _).mp hb')) := by
+                                apply Finset.ext; intro
+                                rw [finite.mem_to_finset, Finset.mem_cons, finite.mem_to_finset]
+                                exact ⟨fun hx => Or.imp_right
+                                  (to_distrib_gens_right_coeff h · (distrib_gens_right_coeff_eq h' hx))
+                                  (Finset.mem_cons.mp (distrib_gens_right_coeff_subset h' hx)),
+                                (Or.elim · (fun hx => hx.symm ▸ to_distrib_gens_right_coeff h' (f.mem_cons_self hb) rfl)
+                                  fun hx => to_distrib_gens_right_coeff h'
+                                    (Finset.mem_cons_self' hb (distrib_gens_right_coeff_subset h hx))
+                                    (distrib_gens_right_coeff_eq h hx))⟩
+                          simp only [distrib_gens_right_coeff, h, h', dite_true, this, Finset.map_sum.cons]
+                        rw [this]
+                        exact congrArg (· + _) (Finset.map_sum.congr rfl (fun c hc => congrArg (· * c) (by
+                          have ⟨he, hc⟩ := Finset.mem_erase.mp hc
+                          have hcb : c ∈ distrib_gens_right hfb := heq ▸ hc
+                          simp only [distrib_gens_right_coeff, hc, hcb, dite_true]
+                          exact Finset.map_sum.congr (finite.to_finset_ext.mpr fun d =>
+                            ⟨fun hd => to_distrib_gens_right_coeff hc ((Finset.mem_cons.mp
+                              (distrib_gens_right_coeff_subset hcb hd)).resolve_left (fun h => by
+                                subst h; exact he (distrib_gens_right_coeff_eq hcb hd).symm))
+                              (distrib_gens_right_coeff_eq hcb hd),
+                            fun hd => to_distrib_gens_right_coeff hcb (Finset.mem_cons_self' hb
+                              (distrib_gens_right_coeff_subset hc hd))
+                              (distrib_gens_right_coeff_eq hc hd)⟩) fun _ _ => rfl))) }
+                      { have heq : distrib_gens_right hfb = (distrib_gens_right hf).cons (i * k) h := by
+                          apply Finset.ext; intro
+                          simp only [Finset.mem_cons, UnorderedList.mem_to_finset, UnorderedList.mem_pmap]
+                          exact ⟨fun ⟨a, ha, hea⟩ => Or.imp
+                              (fun ha => by subst ha; exact hea.symm)
+                              (fun ha => ⟨a, ha, hea⟩) (Finset.mem_cons.mp ha),
+                            (Or.elim · (fun ha => ⟨b, f.mem_cons_self hb, ha.symm⟩)
+                              fun ⟨a, ha, hea⟩ => ⟨a, Finset.mem_cons_self' hb ha, hea⟩)⟩
+                        rw [heq, Finset.map_sum.cons]
+                        have hik : i * k ∈ distrib_gens_right hfb := UnorderedList.mem_to_finset.mpr
+                          (UnorderedList.mem_pmap.mpr ⟨b, f.mem_cons_self hb, rfl⟩)
+                        have : distrib_gens_right_coeff hfb ca (i * k) = ca b := by
+                          simp only [distrib_gens_right_coeff, hik, dite_true]
+                          have : (finite.subset (f.cons b hb).to_finite (distrib_gens_right_coeff_subset hik)).to_finset = Finset.singleton b := by
+                            apply Finset.ext; intro c; rw [Finset.mem_singleton, finite.mem_to_finset]
+                            exact ⟨fun hc => (Finset.mem_cons.mp (distrib_gens_right_coeff_subset hik hc)).resolve_right fun h' =>
+                                h (UnorderedList.mem_to_finset.mpr (UnorderedList.mem_pmap.mpr ⟨c, h', distrib_gens_right_coeff_eq hik hc⟩)),
+                              fun hc => by subst hc; exact to_distrib_gens_right_coeff hik (f.mem_cons_self hb) rfl⟩
+                          rw [this, Finset.map_sum.singleton]
+                        rw [this]
+                        exact congrArg (· + _) (Finset.map_sum.congr rfl (fun c hc => congrArg (· * c)
+                          (by
+                            have hcb : c ∈ distrib_gens_right hfb := heq ▸ Finset.mem_cons_self' h hc
+                            simp only [distrib_gens_right_coeff, hc, hcb, dite_true]
+                            exact Finset.map_sum.congr (finite.to_finset_ext.mpr fun d =>
+                              ⟨fun hd => have := distrib_gens_right_coeff_eq hcb hd
+                                Or.elim (Finset.mem_cons.mp (distrib_gens_right_coeff_subset hcb hd))
+                                  (fun hd' => by subst hd'; exact absurd (this ▸ hc) h)
+                                  fun hd' => to_distrib_gens_right_coeff hc hd' this,
+                              fun hd => to_distrib_gens_right_coeff hcb (Finset.mem_cons_self' hb
+                                (distrib_gens_right_coeff_subset hc hd)) (distrib_gens_right_coeff_eq hc hd)⟩)
+                              (fun _ _ => rfl)))) }
+                  rw [h₁, h₂, add_assoc, add_left_comm (ca b * (i * j)), ←add_assoc,
+                    ←mul_distrib_left, ←mul_distrib_left, choose_heq hfb (f.mem_cons_self hb)]) fa hfa⟩,
+          fun ha =>
+            let ⟨ij, hij, ik, hik, hijik⟩ := ha
+            let ⟨fij, cij, hfij, hcij⟩ := from_set.mem_as_sum.mp hij
+            let ⟨fik, cik, hfik, hcik⟩ := from_set.mem_as_sum.mp hik
+            from_set.mem_as_sum.mpr ⟨fij ∪ fik, distrib_coeff fij fik cij cik,
+              fun x hx => Or.elim (Finset.mem_union.mp hx)
+                (fun hx => product_gen_subset I (Ideal.add.subset J K) (hfij hx))
+                (fun hx => product_gen_subset I (Ideal.add.subset' J K) (hfik hx)),
+              by
+                rw [←hijik, hcij, hcik]
+                exact @Finset.cons_induction _ (fun fij => fij.toSet ⊆ product_gen I J →
+                  (∑ x in fij, cij x * x) + (∑ x in fik, cik x * x) =
+                  ∑ x in fij ∪ fik, distrib_coeff fij fik cij cik x * x)
+                  (fun _ => by
+                    rw [Finset.map_sum.empty, zero_add, Finset.union_empty_left]
+                    exact Finset.map_sum.congr rfl fun x hx => (congrArg (· * x)
+                      (distrib_coeff_empty_left fik cij cik x)).symm)
+                  (fun a s ha ih hs => by
+                    rw [Finset.map_sum.cons, add_right_comm, ih (Subset.trans (s.cons_subset ha) hs)]
+                    byCases ha' : a ∈ fik
+                    { have ha'' : a ∈ s ∪ fik := Finset.mem_union.mpr (Or.inr ha')
+                      have : (s.cons a ha) ∪ fik = s ∪ fik := by
+                        apply Finset.ext; intro; simp only [Finset.mem_union, Finset.mem_cons]
+                        exact ⟨(Or.elim · (Or.elim · (fun h => Or.inr (h ▸ ha')) Or.inl) Or.inr),
+                          (Or.elim · (fun h => Or.inl (Or.inr h)) Or.inr)⟩
+                      rw [this, Finset.map_sum.sum_term _ _ ha'', Finset.map_sum.sum_term _ _ ha'',
+                        add_assoc, ←mul_distrib_right]
+                      have : distrib_coeff s fik cij cik a + cij a = distrib_coeff (s.cons a ha) fik cij cik a := by
+                        simp only [distrib_coeff, ha, ite_false, s.mem_cons_self ha, ite_true, ha', add_comm]
+                      exact this ▸ congrArg (· + _) (Finset.map_sum.congr rfl fun x hx => congrArg (· * x) (by
+                        have : x ∈ s ↔ x ∈ s.cons a ha := by simp only [Finset.mem_cons,
+                          (Finset.mem_erase.mp hx).left, false_or]; exact Iff.rfl
+                        simp only [distrib_coeff, this])) }
+                    { have ha'' : a ∉ s ∪ fik := fun h => absurd (Finset.mem_union.mp h) (not_or_iff_and_not.mpr ⟨ha, ha'⟩);
+                      have : (s.cons a ha) ∪ fik = (s ∪ fik).cons a ha'' := by
+                        apply Finset.ext; intro; simp only [Finset.mem_union, Finset.mem_cons] exact Or.assoc.symm;
+                      rw [this, Finset.map_sum.cons, distrib_coeff_only_left cij cik (s.mem_cons_self ha) ha']
+                      exact congrArg (· + _) (Finset.map_sum.congr rfl fun x hx => congrArg (· * x) (by
+                        have : x ≠ a := fun h => ha'' (h ▸ hx)
+                        have : x ∈ s ↔ x ∈ s.cons a ha := by
+                          simp only [Finset.mem_cons, this, false_or]; exact Iff.rfl
+                        simp only [distrib_coeff, this])) }) fij hfij⟩⟩
 
     end product
 
@@ -474,12 +807,42 @@ namespace M4R
         (fun x hx => intersection.inter_one I ▸ product.subset_inter hx)
          fun x hx => product.mem.mpr fun K hK => hK ⟨x, hx, 1, trivial, (mul_one x).symm⟩
       mul_assoc        := product.assoc
-      mul_distrib_left := sorry
+      mul_distrib_left := product.distrib
       mul_zero         := fun I => in_zero_ideal (by
         have := @product.subset_inter _ _ I 0
         rw [intersection.inter_zero I] at this
         exact this)
       mul_comm         := product.comm
     }
+
+    noncomputable def extension [Ring α] [Ring β] (f : α →ᵣ β) (I : Ideal α) : Ideal β :=
+      from_set (Function.image' f.hom I.subset)
+
+    def contraction [Ring α] [Ring β] (f : α →ᵣ β) (I : Ideal β) : Ideal α where
+      subset     := Function.inv_image f.hom I.subset
+      has_zero   := (f.preserve_zero ▸ I.has_zero : _ ∈ I)
+      add_closed := fun ha hb => (f.preserve_add _ _ ▸ I.add_closed ha hb : _ ∈ I)
+      mul_closed := fun a b hb => (f.preserve_mul a b ▸ I.mul_closed (f a) hb : _ ∈ I)
+
+    theorem extension.subset [Ring α] [Ring β] (f : α →ᵣ β) {I J : Ideal α} (h : I ⊆ J) :
+      extension f I ⊆ extension f J := from_set.subset fun x ⟨y, hy, hyx⟩ => ⟨y, h hy, hyx⟩
+    
+    theorem contraction.subset [Ring α] [Ring β] (f : α →ᵣ β) {I J : Ideal β} (h : I ⊆ J) :
+      contraction f I ⊆ contraction f J := fun _ => (h ·)
+
+    theorem extension_contraction [Ring α] [Ring β] (f : α →ᵣ β) (I : Ideal α) :
+      I ⊆ contraction f (extension f I) := fun x hx => from_set.contains_mem ⟨x, hx, rfl⟩
+
+    theorem contraction_extension [Ring α] [Ring β] (f : α →ᵣ β) (I : Ideal β) :
+      extension f (contraction f I) ⊆ I := from_set.ideal_contained fun x ⟨y, hy, hyx⟩ => hyx ▸ hy
+    
+    theorem extension_contraction_extension [Ring α] [Ring β] (f : α →ᵣ β) (I : Ideal α) :
+      extension f I = extension f (contraction f (extension f I)) :=
+        Ideal.antisymm (extension.subset f (extension_contraction f I)) (contraction_extension f (extension f I))
+    
+    theorem contraction_extension_contraction [Ring α] [Ring β] (f : α →ᵣ β) (I : Ideal β) :
+      contraction f (extension f (contraction f I)) = contraction f I := 
+        Ideal.antisymm (contraction.subset f (contraction_extension f I)) (extension_contraction f (contraction f I))
+
   end Ideal
 end M4R

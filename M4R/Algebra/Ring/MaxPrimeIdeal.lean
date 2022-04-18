@@ -20,6 +20,9 @@ namespace M4R
     theorem one_not_prime [Ring α] : ¬(1 : Ideal α).is_prime := fun h => h.left rfl
     theorem one_not_maximal [Ring α] : ¬(1 : Ideal α).is_maximal := fun h => h.left rfl
 
+    def minimal_prime_ideal_of [Ring α] (P I : Ideal α) : Prop :=
+      P.is_prime ∧ I ⊆ P ∧ ∀ {J : Ideal α}, J.is_prime → I ⊆ J → J ⊆ P → J = P
+
     instance ProperIdealNonTrivialRing [Ring α] {I : Ideal α} (hI : I.proper_ideal) : NonTrivialRing (QClass I) where
       toNonTrivial.one_neq_zero := by
         intro h10;
@@ -108,6 +111,9 @@ namespace M4R
     theorem maximal_is_prime [Ring α] {I : Ideal α} (h : I.is_maximal) : I.is_prime :=
       IntegralDomainPrime (MaximalField h).to_is_IntegralDomain
 
+    theorem contraction_prime [Ring α] [Ring β] (f : α →ᵣ β) {P : Ideal β} (hP : P.is_prime) : (contraction f P).is_prime :=
+      ⟨proper_iff_1_notin.mpr fun h => proper_iff_1_notin.mp hP.left (f.preserve_one ▸ h),
+      fun r s (h : _ ∈ P) => by rw [f.preserve_mul] at h; exact hP.right _ _ h⟩
   end Ideal
   namespace Ring
 

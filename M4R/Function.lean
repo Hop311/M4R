@@ -11,7 +11,7 @@ namespace M4R
     def domain (f : α → β) := α
     def codomain (f : α → β) := β
     def image (f : α → β) : Set β := {y | ∃ x : α, f x = y}
-    def image' (f : α → β) (s : Set α) := {y | ∃ x ∈ s, f x = y}
+    def image' (f : α → β) (s : Set α) : Set β := {y | ∃ x ∈ s, f x = y}
     def inv_image (f : α → β) (s : Set β) : Set α := {x | f x ∈ s}
     def fibre (f : α → β) (b : β) : Set α := {x | f x = b}
     

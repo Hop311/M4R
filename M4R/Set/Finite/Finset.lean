@@ -42,11 +42,16 @@ namespace M4R
     instance EmptyFinsetEmptyCollection : EmptyCollection (Finset α) where
       emptyCollection := Finset.Empty
 
+    def length_empty (α : Type) : (∅ : Finset α).length = 0 := rfl
+
     theorem empty_subset (f : Finset α) : (∅ : Finset α) ⊆ f :=
       fun _ _ => by contradiction
 
     theorem eq_empty_of_forall_not_mem {s : Finset α} (h : ∀ x, x ∉ s) : s = ∅ :=
       Finset.ext fun a => ⟨fun ha => absurd ha (h a), fun _ => by contradiction⟩
+
+    theorem eq_empty_of_subset_empty {s : Finset α} (h : s ⊆ ∅) : s = ∅ :=
+      eq_empty_of_forall_not_mem fun x hx => h hx
 
     theorem mem_empty {a : α} : a ∈ (∅ : Finset α) ↔ False := Iff.rfl
 
@@ -131,6 +136,12 @@ namespace M4R
     theorem union_toSet (s t : Finset α) : (s ∪ t).toSet = s.toSet ∪ t.toSet :=
       Set.ext.mp fun _ => by rw [←Finset.ext_toSet, mem_union]; exact Iff.rfl
 
+    theorem union_empty_right (s : Finset α) : s ∪ ∅ = s :=
+      Finset.ext fun x => by rw [mem_union, mem_empty, or_false]; exact Iff.rfl
+
+    theorem union_empty_left (s : Finset α) : ∅ ∪ s = s :=
+      union_comm ∅ s ▸ union_empty_right s
+
     noncomputable def intersection (s₁ s₂ : Finset α) : Finset α :=
       ⟨s₁.elems.ndinter s₂.elems, UnorderedList.nodup_ndinter s₂.elems s₁.nodup⟩
 
@@ -200,6 +211,9 @@ namespace M4R
       @[simp] theorem mem_cons_self {a : α} (s : Finset α) (h : a ∉ s) : a ∈ cons a s h :=
         mem_cons.mpr (Or.inl rfl)
 
+      @[simp] theorem mem_cons_self' {a : α} {s : Finset α} (h : a ∉ s) {b : α} (hb : b ∈ s) : b ∈ cons a s h :=
+        mem_cons.mpr (Or.inr hb)
+
       @[simp] theorem cons_val {a : α} {s : Finset α} (h : a ∉ s) : (cons a s h).elems = s.elems.cons a := rfl
 
       @[simp] theorem mk_cons {a : α} {s : UnorderedList α} (h : (s.cons a).nodup) :
@@ -207,6 +221,12 @@ namespace M4R
 
       theorem cons_subset {a : α} (s : Finset α) (h : a ∉ s) : s ⊆ s.cons a h :=
         fun _ => UnorderedList.mem_cons_of_mem
+
+      theorem cons_subsetneq {a : α} (s : Finset α) (h : a ∉ s) : s ⊊ s.cons a h :=
+        ⟨cons_subset s h, a, h, mem_cons_self s h⟩
+
+      theorem length_cons {a : α} (s : Finset α) (h : a ∉ s) : (s.cons a h).length = s.length + 1 :=
+        UnorderedList.length_cons a s
 
     end cons
 
@@ -437,16 +457,67 @@ namespace M4R
 
   end finite
   namespace infinite
+    variable {s : Set α} (hs : infinite s)
+    open Classical
 
-    theorem nonempty {s : Set α} (hs : infinite s) : ∃ x, x ∈ s :=
-      Classical.byContradiction fun h => hs (by
+    theorem nonempty : ∃ x, x ∈ s :=
+      byContradiction fun h => hs (by
         simp only [not_exists] at h
         exact Set.empty.mpr h ▸ finite.empty α)
 
-    theorem not_in_finset {s : Set α} (hs : infinite s) (f : Finset α) : ∃ x ∈ s, x ∉ f :=
-      Classical.byContradiction fun h => hs (by
+    theorem not_in_finset (f : Finset α) : ∃ x ∈ s, x ∉ f :=
+      byContradiction fun h => hs (by
         simp only [not_exists, not_and, iff_not_not] at h
-        exact finite.subset f.to_finite h)
+        exact f.to_finite.subset h)
+
+    noncomputable def choose_finset : Nat → Finset α
+    | 0   => Finset.singleton (choose (hs.not_in_finset ∅))
+    | n+1 => have := hs.not_in_finset (choose_finset n)
+      (choose_finset n).cons (choose this) (choose_spec this).right
+
+    theorem choose_finset_subset_succ (n : Nat) : hs.choose_finset n ⊊ hs.choose_finset n.succ :=
+      Finset.cons_subsetneq _ (choose_spec (hs.not_in_finset (hs.choose_finset n))).right
+
+    theorem choose_finset_subset_add (m n : Nat) : hs.choose_finset m ⊆ hs.choose_finset (m + n) := by
+      induction n with
+      | zero      => exact Subset.refl _
+      | succ n ih => exact Subset.trans ih (hs.choose_finset_subset_succ (m + n)).left
+
+    theorem choose_finset_subset_le {m n : Nat} (h : m ≤ n) : hs.choose_finset m ⊆ hs.choose_finset n :=
+      let ⟨k, hk⟩ := Nat.le.dest h
+      hk ▸ hs.choose_finset_subset_add m k
+
+    noncomputable def nat_inclusion : Nat → s
+    | 0   =>
+      have := hs.not_in_finset ∅
+      ⟨choose this, (choose_spec this).left⟩
+    | n+1 =>
+      have := hs.not_in_finset (hs.choose_finset n)
+      ⟨choose this, (choose_spec this).left⟩
+
+    theorem nat_inclusion_notin (n : Nat) : (hs.nat_inclusion (n+1)).val ∉ hs.choose_finset n :=
+      (choose_spec (hs.not_in_finset (hs.choose_finset n))).right
+
+    theorem nat_inclusion_notin_lt {m n: Nat} (h : m < n) : (hs.nat_inclusion n).val ∉ hs.choose_finset m :=
+      match n with
+      | 0   => absurd h (Nat.not_lt_zero m)
+      | n+1 => fun h' => absurd (hs.choose_finset_subset_le (Nat.le_of_succ_le_succ h) h')
+        (hs.nat_inclusion_notin n)
+
+    theorem nat_inclusion_cons (n : Nat) : hs.choose_finset (n+1) = (hs.choose_finset n).cons
+      (hs.nat_inclusion (n+1)).val (hs.nat_inclusion_notin n) := rfl
+
+    theorem nat_inclusion_in : (n : Nat) → (hs.nat_inclusion n).val ∈ hs.choose_finset n
+    | 0   => Finset.mem_singleton.mpr rfl
+    | n+1 => hs.nat_inclusion_cons n ▸ Finset.mem_cons_self _ _
+
+    theorem nat_inclusion_le_injective {m n : Nat} (h₁ : m ≤ n) (h₂ : hs.nat_inclusion m = hs.nat_inclusion n) : m = n :=
+      (Nat.lt_or_eq_of_le h₁).resolve_left (fun h₁ => absurd (h₂ ▸ hs.nat_inclusion_in m)
+        (hs.nat_inclusion_notin_lt h₁))
+
+    theorem nat_inclusion_injective : Function.injective hs.nat_inclusion :=
+      fun m n h => Or.elim (Nat.le_total m n) (hs.nat_inclusion_le_injective · h)
+        (fun h' => (hs.nat_inclusion_le_injective h' h.symm).symm)
 
   end infinite
 end M4R

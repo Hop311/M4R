@@ -148,6 +148,9 @@ namespace M4R
         { intro dis x xs₁ xs₂; have : x ∈ s₁ ∩ s₂ := ⟨xs₁, xs₂⟩; rw [dis] at this; contradiction }
         { exact fun h => Set.subset.antisymm (fun x xs => h x xs.left xs.right) (fun _ _ => by contradiction) }
 
+      theorem not_disjoint_iff_nonempty {s₁ s₂ : Set α} : ¬disjoint s₁ s₂ ↔ Nonempty (s₁ ∩ s₂ : Set α) :=
+        Set.nonempty
+
     end disjoint
 
     namespace SoSUnion

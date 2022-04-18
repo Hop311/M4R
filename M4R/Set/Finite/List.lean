@@ -762,8 +762,6 @@ namespace List
 
   namespace repeat
 
-    theorem length_cons (a : α) (l : List α) : length (a :: l) = length l + 1 := rfl
-
     @[simp] theorem length_append (s t : List α) : length (s ++ t) = length s + length t := by
       induction s with
       | nil => simp only [nil_append, length_nil, Nat.zero_add]

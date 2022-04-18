@@ -327,6 +327,10 @@ namespace Nat
       (Nat.le_trans ha (Nat.le_add_left c b)), Nat.add_comm]
     exact ⟨(Nat.add_le_add_right · c), Nat.le_of_add_le_add_right⟩
 
+  theorem zero_lt_iff_neq_zero {n : Nat} : 0 < n ↔ n ≠ 0 :=
+    ⟨fun h₁ h₂ => absurd (h₂ ▸ h₁) (Nat.lt_irrefl 0), fun h => by
+      cases n; contradiction; exact Nat.zero_lt_succ _⟩
+
 end Nat
 
 namespace Int

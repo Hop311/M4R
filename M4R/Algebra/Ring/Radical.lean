@@ -70,6 +70,10 @@ namespace M4R
         { rw [hn', pow_nat_1] at hxn; exact hxn }
         { exact Or.elim (hI.right (x^n) x (pow_nat_succ x n ▸ hxn)) (ih hn') id }
 
+    def is_primary : Prop := I.proper_ideal ∧ ∀ a b : α, a * b ∈ I → a ∈ I ∨ b ∈ I.radical
+
+    theorem is_primary_of_prime {I : Ideal α} (hI : I.is_prime) : I.is_primary :=
+      And.imp_right (fun h a b hab => Or.imp_right (Ideal.radical.sub_self I ·) (h a b hab)) hI
   end Ideal
 
   namespace Ring
