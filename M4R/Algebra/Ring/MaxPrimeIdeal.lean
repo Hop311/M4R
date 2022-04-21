@@ -112,8 +112,24 @@ namespace M4R
       IntegralDomainPrime (MaximalField h).to_is_IntegralDomain
 
     theorem contraction_prime [Ring α] [Ring β] (f : α →ᵣ β) {P : Ideal β} (hP : P.is_prime) : (contraction f P).is_prime :=
-      ⟨proper_iff_1_notin.mpr fun h => proper_iff_1_notin.mp hP.left (f.preserve_one ▸ h),
-      fun r s (h : _ ∈ P) => by rw [f.preserve_mul] at h; exact hP.right _ _ h⟩
+      ⟨contraction.proper f hP.left, fun r s (h : _ ∈ P) => by rw [f.preserve_mul] at h; exact hP.right _ _ h⟩
+
+    theorem quotient_maximal [Ring α] {I : Ideal α} {P : Ideal α} (hP₁ : P.is_maximal) (hP₂ : I ⊆ P) :
+      (extension (QuotientRing.natural_hom I) P).is_maximal :=
+        ⟨fun h => hP₁.left (by
+          have := congrArg (contraction (QuotientRing.natural_hom I) ·) h
+          simp [quotient_extension_contraction hP₂] at this
+          exact this ▸ Ideal.is_unit_ideal.mpr trivial),
+        by
+          intro J hJ
+          have : P ⊆ contraction (QuotientRing.natural_hom I) J :=
+            fun x hx => hJ (from_set.contains_mem ⟨x, hx, rfl⟩)
+          exact Or.imp (fun h => contraction_extension_eq_of_surjective (natural_hom.surjective I) J ▸
+            congrArg (extension (QuotientRing.natural_hom I) ·) h)
+            (fun h => by
+              rw [←contraction_extension_eq_of_surjective (natural_hom.surjective I) J,
+                ←extension_unit_of_surjective (natural_hom.surjective I)]
+              exact congrArg (extension (QuotientRing.natural_hom I) ·) h) (hP₁.right this)⟩
   end Ideal
   namespace Ring
 

@@ -830,6 +830,10 @@ namespace M4R
     theorem contraction.subset [Ring α] [Ring β] (f : α →ᵣ β) {I J : Ideal β} (h : I ⊆ J) :
       contraction f I ⊆ contraction f J := fun _ => (h ·)
 
+    theorem contraction.proper [Ring α] [Ring β] (f : α →ᵣ β) {I : Ideal β} (hI : I.proper_ideal) :
+      (contraction f I).proper_ideal :=
+        proper_iff_1_notin.mpr fun h => proper_iff_1_notin.mp hI (f.preserve_one ▸ h)
+
     theorem extension_contraction [Ring α] [Ring β] (f : α →ᵣ β) (I : Ideal α) :
       I ⊆ contraction f (extension f I) := fun x hx => from_set.contains_mem ⟨x, hx, rfl⟩
 
@@ -844,5 +848,17 @@ namespace M4R
       contraction f (extension f (contraction f I)) = contraction f I := 
         Ideal.antisymm (contraction.subset f (contraction_extension f I)) (extension_contraction f (contraction f I))
 
+    theorem contraction_extension_of_surjective [Ring α] [Ring β] {f : α →ᵣ β} (hf : Function.surjective f.hom)
+      (J : Ideal β) : J ⊆ extension f (contraction f J) :=
+        fun x hx => let ⟨y, hy⟩ := hf x; from_set.contains_mem ⟨y, (hy ▸ hx : f y ∈ J), hy⟩
+
+    theorem contraction_extension_eq_of_surjective [Ring α] [Ring β] {f : α →ᵣ β} (hf : Function.surjective f.hom)
+      (J : Ideal β) : extension f (contraction f J) = J :=
+        Ideal.antisymm (contraction_extension _ J) (contraction_extension_of_surjective hf J)
+
+    theorem extension_unit_of_surjective [Ring α] [Ring β] {f : α →ᵣ β} (hf : Function.surjective f.hom) :
+      extension f 1 = 1 :=
+        let ⟨x, hx⟩ := hf 1
+        is_unit_ideal.mpr (from_set.contains_mem ⟨x, trivial, hx⟩)
   end Ideal
 end M4R

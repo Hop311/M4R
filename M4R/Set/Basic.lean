@@ -151,6 +151,9 @@ namespace M4R
       theorem not_disjoint_iff_nonempty {s₁ s₂ : Set α} : ¬disjoint s₁ s₂ ↔ Nonempty (s₁ ∩ s₂ : Set α) :=
         Set.nonempty
 
+      theorem subset_left {s₁ s₂ s₃ : Set α} (h₁ : s₁ ⊆ s₂) (h₂ : disjoint s₂ s₃) : disjoint s₁ s₃ :=
+        elementwise.mpr fun x hx => elementwise.mp h₂ x (h₁ hx)
+
     end disjoint
 
     namespace SoSUnion

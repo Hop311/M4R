@@ -20,12 +20,12 @@ namespace M4R
       | zero => exact S.has_one
       | succ n ih => exact pow_nat_succ a n ▸ S.mul_closed ih ha
 
-  def PrimeComplement [Ring α] {P : Ideal α} (hP : P.is_prime) : MultiplicativeSet α where
+  def PrimeComp [Ring α] {P : Ideal α} (hP : P.is_prime) : MultiplicativeSet α where
     subset     := P.subsetᶜ
     has_one    := Ideal.proper_iff_1_notin.mp hP.left
     mul_closed := fun h₁ h₂ h₃ => Or.elim (hP.right _ _ h₃) h₁ h₂
 
-  theorem PrimeComplement.disjoint [Ring α] {P : Ideal α} (hP : P.is_prime) : Set.disjoint P.subset (PrimeComplement hP).subset :=
+  theorem PrimeComp.disjoint [Ring α] {P : Ideal α} (hP : P.is_prime) : Set.disjoint P.subset (PrimeComp hP).subset :=
     Set.disjoint.elementwise.mpr fun _ => iff_not_not.mpr
 
   abbrev frac [Ring α] (S : MultiplicativeSet α) := α × S.subset
@@ -271,6 +271,28 @@ namespace M4R
                 exact equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]; exact mul_comm r s⟩
               (this ▸ I.mul_closed _ (he ▸ hx) : _ ∈ I)
             he ▸ localise_ideal.contains_mul this hs
+
+    theorem localise_ideal.principal (S : MultiplicativeSet α) (a : α) :
+      localise_ideal S (Ideal.principal a) = Ideal.principal (natural_hom S a) :=
+        Ideal.ext'.mpr fun x =>
+          ⟨fun h => Ideal.from_set.induction (fun x => x ∈ Ideal.principal (natural_hom S a)) h
+            (Ideal.principal (natural_hom S a)).has_zero
+            (fun x ⟨y, ⟨z, hz⟩, he⟩ => he ▸ hz ▸ (natural_hom S).preserve_mul _ _ ▸ ⟨natural_hom S z, rfl⟩)
+            (fun _ _ => (Ideal.principal (natural_hom S a)).add_closed)
+            (Ideal.principal (natural_hom S a)).mul_closed,
+          fun ⟨b, hb⟩ => hb ▸ (localise_ideal S (Ideal.principal a)).mul_closed'
+            (Ideal.from_set.contains_mem ⟨a, Ideal.generator_in_principal a, rfl⟩) b⟩
+
+    abbrev localisationₚ [Ring α] {P : Ideal α} (hP : P.is_prime) := localisation (PrimeComp hP)
+
+    noncomputable def localiseₚ [Ring α] {P : Ideal α} (hP : P.is_prime) (I : Ideal α) :
+      Ideal (localisationₚ hP) := localise_ideal (PrimeComp hP) I
+
+    noncomputable def delocaliseₚ [Ring α] {P : Ideal α} (hP : P.is_prime) (I : Ideal (localisationₚ hP)) :
+      Ideal α := delocalise_ideal (PrimeComp hP) I
+
+    abbrev natural_homₚ [Ring α] {P : Ideal α} (hP : P.is_prime) : α →ᵣ localisationₚ hP := natural_hom (PrimeComp hP)
+
   end localisation
 
 end M4R

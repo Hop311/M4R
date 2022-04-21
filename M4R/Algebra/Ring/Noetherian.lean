@@ -90,6 +90,12 @@ namespace M4R
       hbase : f 0 = I
       hprime : tochain.is_prime
       hdescend : tochain.descending
+    theorem height_chain.subset_base [Ring α] {I : Ideal α} (c : height_chain I) (n : Nat) : c.tochain n ⊆ I := by
+      induction n with
+      | zero      => rw [c.hbase]; exact Subset.refl I
+      | succ n ih => exact Subset.trans (c.hdescend n) ih
+    theorem height_chain.base_prime [Ring α] {I : Ideal α} (c : height_chain I) : I.is_prime :=
+      c.hbase ▸ c.hprime 0
 
     structure stable_height_chain extends height_chain I where
       hstrict_stab : tochain.strict_stable
@@ -121,7 +127,7 @@ namespace M4R
       h.right.right
 
     theorem is_prime_of_height_ge {n : Nat} (h : I.height_ge n) : I.is_prime :=
-      Or.elim h (fun ⟨c, _⟩ => c.hbase ▸ c.hprime 0) (fun ⟨c, _⟩ => c.hbase ▸ c.hprime 0)
+      Or.elim h (fun ⟨c, _⟩ => c.base_prime) (fun ⟨c, _⟩ => c.base_prime)
 
     theorem is_prime_of_height_eq {n : Nat} (h : I.height_eq n) : I.is_prime :=
       I.is_prime_of_height_le h.left
@@ -163,6 +169,47 @@ namespace M4R
         fun c => Classical.byContradiction fun h => (c.length_spec.left 0 (Nat.not_le.mp h)).symm
           (c.hbase.symm ▸ h₃ (c.hprime 1) (Ideal.zero_ideal_in _) (fun x hx => c.hbase ▸ c.hdescend 0 hx)), h₁⟩,
         stable_height_chain.const I h₁, stable_height_chain.const_length I h₁⟩⟩
+
+    open localisation
+
+    noncomputable def localise_height_chain [Ring α] {S : MultiplicativeSet α} {P : Ideal α} (hPS : Set.disjoint P.subset S.subset)
+      (c : height_chain P) : height_chain (localise_ideal S P) where
+        f        := fun n => localise_ideal S (c.tochain n)
+        hbase    := by simp only; rw [c.hbase]
+        hprime   := fun n => localise_ideal.prime (c.hprime n) (Set.disjoint.subset_left (c.subset_base n) hPS)
+        hdescend := fun n => extension.subset _ (c.hdescend n)
+
+    theorem localise_height_chain.imp_strict_infinite [Ring α] {S : MultiplicativeSet α} {P : Ideal α}
+      (hPS : Set.disjoint P.subset S.subset) {c : height_chain P} (hc : c.strict_infinite) :
+        (localise_height_chain hPS c).strict_infinite := fun n h => hc n (localise_ideal.prime_loc_deloc (c.hprime n)
+          (Set.disjoint.subset_left (c.subset_base n) hPS) ▸ localise_ideal.prime_loc_deloc (c.hprime n.succ)
+            (Set.disjoint.subset_left (c.subset_base n.succ) hPS) ▸ congrArg (delocalise_ideal S ·) h)
+
+    noncomputable def localise_stable_height_chain [Ring α] {S : MultiplicativeSet α} {P : Ideal α} (hPS : Set.disjoint P.subset S.subset)
+      (c : stable_height_chain P) : stable_height_chain (localise_ideal S P) where
+        toheight_chain := localise_height_chain hPS c.toheight_chain
+        hstrict_stab   := let ⟨N, hN₁, hN₂⟩ := c.hstrict_stab
+          ⟨N, fun n hn hc => hN₁ n hn (localise_ideal.prime_loc_deloc (c.hprime n)
+            (Set.disjoint.subset_left (c.subset_base n) hPS) ▸ localise_ideal.prime_loc_deloc (c.hprime n.succ)
+            (Set.disjoint.subset_left (c.subset_base n.succ) hPS) ▸ congrArg (delocalise_ideal S ·) hc),
+          fun n hn => congrArg (localise_ideal S ·) (hN₂ n hn)⟩
+
+    theorem localise_stable_height_chain.preserve_length [Ring α] {S : MultiplicativeSet α} {P : Ideal α} (hPS : Set.disjoint P.subset S.subset)
+      (c : stable_height_chain P) : c.length = (localise_stable_height_chain hPS c).length :=
+        Nat.le_antisymm
+          (Nat.not_lt.mp (mt (c.length_spec.left (localise_stable_height_chain hPS c).length) (iff_not_not.mpr
+            (localise_ideal.prime_loc_deloc (c.hprime (localise_stable_height_chain hPS c).length) (Set.disjoint.subset_left
+            (c.subset_base (localise_stable_height_chain hPS c).length) hPS) ▸ localise_ideal.prime_loc_deloc (c.hprime
+            (localise_stable_height_chain hPS c).length.succ) (Set.disjoint.subset_left (c.subset_base
+            (localise_stable_height_chain hPS c).length.succ) hPS) ▸ (congrArg (delocalise_ideal S ·)
+            ((localise_stable_height_chain hPS c).length_spec.right (localise_stable_height_chain hPS c).length.succ (Nat.le_succ _))).symm))))
+          (Nat.not_lt.mp (mt ((localise_stable_height_chain hPS c).length_spec.left c.length) (iff_not_not.mpr (congrArg
+          (localise_ideal S ·) (c.length_spec.right c.length.succ (Nat.le_succ _)).symm))))
+
+    theorem local_height_le [Ring α] {S : MultiplicativeSet α} {P : Ideal α} (hP : P.is_prime) (hPS : Set.disjoint P.subset S.subset)
+      (n : Nat) (h : (localise_ideal S P).height_le n) : P.height_le n :=
+        ⟨fun c hc => h.left (localise_height_chain hPS c) (localise_height_chain.imp_strict_infinite hPS hc),
+        fun c => localise_stable_height_chain.preserve_length hPS c ▸ h.right.left (localise_stable_height_chain hPS c), hP⟩
 
   end Ideal
 
@@ -252,6 +299,38 @@ namespace M4R
             Ideal.contraction.subset _ hQP₁, fun h' => hQP₂ (congrArg (localise_ideal S ·) h' ▸
             (delocalise_ideal.deloc_loc S Q).symm)⟩
 
+    def delocalise_ascending_chain [Ring α] {S : MultiplicativeSet α} (c : ascending_chain (localisation S)) :
+      ascending_chain α where
+        f       := fun n => delocalise_ideal S (c.tochain n)
+        hascend := fun n => contraction.subset _ (c.hascend n)
+
+    theorem delocalise_ascending_chain.of_stable [Ring α] {S : MultiplicativeSet α} {c : ascending_chain (localisation S)} :
+      (delocalise_ascending_chain c).is_stable → c.is_stable :=
+        fun ⟨N, hN⟩ => ⟨N, fun n hn => delocalise_ideal.deloc_loc S (c.tochain n) ▸
+          delocalise_ideal.deloc_loc S (c.tochain N) ▸ congrArg _ (hN n hn)⟩
+
+    theorem localiastion_noetherian [NoetherianRing α] (S : MultiplicativeSet α) : Ring.is_noetherian (localisation S) :=
+      fun c => delocalise_ascending_chain.of_stable (NoetherianRing.noetherian (delocalise_ascending_chain c))
+    
+    instance localisation_NoetherianRing [NoetherianRing α] (S : MultiplicativeSet α) : NoetherianRing (localisation S) where
+      noetherian := localiastion_noetherian S
+
+    theorem surjective_noetherian [NoetherianRing α] [Ring β] {f : α →ᵣ β} (hf : Function.surjective f.hom) :
+      Ring.is_noetherian β := fun c =>
+        let c' : ascending_chain α := {
+          f       := fun n => contraction f (c.tochain n)
+          hascend := fun n => contraction.subset _ (c.hascend n)
+        }
+        let ⟨N, hN⟩ := NoetherianRing.noetherian c'
+        ⟨N, fun n hn => contraction_extension_eq_of_surjective hf (c.tochain n) ▸
+          contraction_extension_eq_of_surjective hf (c.tochain N) ▸ congrArg _ (hN n hn)⟩
+
+    open QuotientRing
+
+    theorem quotient_noetherian [NoetherianRing α] (I : Ideal α) : Ring.is_noetherian (QClass I) :=
+      surjective_noetherian (natural_hom.surjective I)
+
+    instance quotient_NoetherianRing [NoetherianRing α] (I : Ideal α) : NoetherianRing (QClass I) where
+      noetherian := quotient_noetherian I
   end NoetherianRing
- 
 end M4R

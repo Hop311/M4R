@@ -107,5 +107,45 @@ namespace M4R
       | zero      => rfl
       | succ n ih => rw [pow_nat_succ, pow_nat_succ, ih]; rfl
 
+    def natural_hom [Ring α] (I : Ideal α) : α →ᵣ QClass I where
+      hom           := toQuotient I
+      preserve_zero := rfl
+      preserve_add  := fun _ _ => rfl
+      preserve_neg  := fun _ => rfl
+      preserve_one  := rfl
+      preserve_mul  := fun _ _ => rfl
+    
+    theorem natural_hom.surjective [Ring α] (I : Ideal α) : Function.surjective (natural_hom I).hom :=
+      @Quot.ind _ _ (fun x : QClass I => ∃ y, natural_hom I y = x) (fun y => ⟨y, rfl⟩)
+    
+    theorem natural_hom.kernel [Ring α] (I : Ideal α) {x : α} : natural_hom I x = 0 ↔ x ∈ I :=
+      ⟨fun h => zero_add x ▸ neg_zero ▸ (QClass.equiv I 0 x).mp h.symm,
+      fun hx => ((QClass.equiv I 0 x).mpr (neg_zero.symm ▸ (zero_add x).symm ▸ hx)).symm⟩
+
+    open Ideal
+
+    theorem quotient_extension_contraction [Ring α] {I J : Ideal α} (h : I ⊆ J) :
+      contraction (QuotientRing.natural_hom I) (extension (QuotientRing.natural_hom I) J) = J :=
+        Ideal.antisymm (fun x hx =>
+          from_set.induction (fun y => ∀ x : α, QuotientRing.natural_hom I x = y → x ∈ J) hx
+            (fun x hx => h ((natural_hom.kernel I).mp hx))
+            (fun x ⟨z, hz, hzx⟩ y hyx => by
+              rw [←zero_add y, ←add_neg z, add_assoc]
+              exact J.add_closed hz (h ((QClass.equiv I z y).mp (hyx ▸ hzx : QuotientRing.natural_hom I z =
+                QuotientRing.natural_hom I y))))
+            (fun x y hx hy z hz => by
+              let ⟨x', hx'⟩ := natural_hom.surjective I x
+              let ⟨y', hy'⟩ := natural_hom.surjective I y
+              rw [←hx', ←hy'] at hz
+              have := J.add_closed (J.add_closed (hx x' hx') (hy y' hy')) (h ((QClass.equiv I (x' + y') z).mp hz.symm))
+              rw [←add_assoc, add_neg, zero_add] at this
+              exact this)
+            (fun x y hy z hz => by
+              let ⟨x', hx'⟩ := natural_hom.surjective I x
+              let ⟨y', hy'⟩ := natural_hom.surjective I y
+              rw [←hx', ←hy'] at hz
+              have := J.add_closed (J.mul_closed x' (hy y' hy')) (h ((QClass.equiv I (x' * y') z).mp hz.symm))
+              rw [←add_assoc, add_neg, zero_add] at this
+              exact this) x rfl) (extension_contraction _ J)
   end QuotientRing
 end M4R
