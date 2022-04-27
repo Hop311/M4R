@@ -104,7 +104,6 @@ namespace M4R
 
     noncomputable instance UnitFinsuppNCSemiring [NCSemiring α] : (Unit →₀ α) ≅* α where
       toMHomomorphism := UnitFinsuppMonoid.toMHomomorphism
-      preserve_one := by simp only [UnitFinsuppMonoid, one_def, Singleton.single, single.eq_same]
       preserve_mul := fun x y => by
         simp only [mul_def]
         have : (fun a₂ b₂ => single (Unit.unit + a₂) ((0 : α) * b₂)) = fun _ _ => (0 : Unit →₀ α) := by
@@ -119,7 +118,7 @@ namespace M4R
       right_inv := UnitFinsuppMonoid.right_inv
 
     noncomputable instance UnitFinsuppNCRing [NCRing α] : (Unit →₀ α) ≅ᵣ α where
-      toSHomomorphism := UnitFinsuppNCSemiring.toSHomomorphism
+      toSMulMap := UnitFinsuppNCSemiring.toSMulMap
       preserve_neg := UnitFinsuppGroup.preserve_neg
       inv := UnitFinsuppMonoid.inv
       left_inv := UnitFinsuppMonoid.left_inv

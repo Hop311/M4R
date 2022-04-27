@@ -27,6 +27,10 @@ namespace M4R
     theorem neg_zero [Group α] : -(0 : α) = 0 := by
       rw [←zero_add (-0), add_neg];
 
+    theorem sub_def [Group α] (a b : α) : a - b = a + -b := rfl
+    theorem sub_self [Group α] (a : α) : a - a = 0 := by rw [sub_def, add_neg]
+    theorem sub_add [Group α] (a b : α) : a - b + b = a := by rw [sub_def, add_assoc, neg_add, add_zero]
+
     theorem add_right_cancel [Group α] (a b c : α) : a + c = b + c ↔ a = b  := by
       have : ∀ (x y z : α), x = y → x + z = y + z := fun x y z => congrArg (· + z)
       apply Iff.intro
@@ -39,6 +43,8 @@ namespace M4R
     theorem sub_right [Group α] {a b c : α} : a + c = b ↔ a = b + -c :=
       ⟨by intro h; rw [←h, add_assoc, add_neg, add_zero],
       by intro h; rw [h, add_assoc, neg_add, add_zero]⟩
+    theorem sub_eq [Group α] {a b c : α} : a - b = c ↔ a = c + b :=
+      ⟨fun h => (sub_right.mpr h.symm).symm, fun h => (sub_right.mp h.symm).symm⟩
 
     theorem neg_neg [Group α] (a : α) : - - a = a := by
       rw [←add_right_cancel _ _ (-a), neg_add, add_neg]

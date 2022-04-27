@@ -14,7 +14,10 @@ namespace M4R
     def image' (f : α → β) (s : Set α) : Set β := {y | ∃ x ∈ s, f x = y}
     def inv_image (f : α → β) (s : Set β) : Set α := {x | f x ∈ s}
     def fibre (f : α → β) (b : β) : Set α := {x | f x = b}
-    
+
+    theorem image'_sub_image (f : α → β) (s : Set α) : image' f s ⊆ image f :=
+      fun x ⟨y, hy, hye⟩ => ⟨y, hye⟩
+
     def injective (f : α → β) : Prop := ∀ ⦃x y : α⦄, f x = f y → x = y
     def surjective (f : α → β) : Prop := ∀ y : β, ∃ x : α, f x = y
     def bijective (f : α → β) : Prop := injective f ∧ surjective f

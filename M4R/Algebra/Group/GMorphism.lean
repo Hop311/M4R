@@ -7,7 +7,6 @@ namespace M4R
     hom           : α → β
     preserve_zero : hom 0 = 0
     preserve_add  : ∀ a b, hom (a + b) = hom a + hom b
-  
   infixr:25 " →₊ " => MHomomorphism
   instance MHomomorphismFun [Monoid α] [Monoid β] : CoeFun (α →₊ β) (fun _ => α → β) where
     coe := MHomomorphism.hom
@@ -16,37 +15,33 @@ namespace M4R
     inv : β → α
     left_inv : Function.left_inverse inv hom
     right_inv : Function.right_inverse inv hom
-
   infixr:25 " ≅₊ " => MIsomorphism
-  instance MIsomorphismFun  [Monoid α] [Monoid β] : CoeFun (α ≅₊ β) (fun _ => α → β) where
+  instance MIsomorphismFun [Monoid α] [Monoid β] : CoeFun (α ≅₊ β) (fun _ => α → β) where
     coe := fun f => f.hom
   
   structure GHomomorphism (α : Type _) (β : Type _) [Group α] [Group β] extends α →₊ β where
     preserve_neg  : ∀ a, hom (-a) = -hom a
-
   infixr:25 " →₋ " => GHomomorphism
   instance GHomomorphismFun [Group  α] [Group  β] : CoeFun (α →₋ β) (fun _ => α → β) where
     coe := fun f => f.hom
 
   structure GIsomorphism (α : Type _) (β : Type _) [Group α] [Group β] extends α →₋ β, α ≅₊ β
-
   infixr:25 " ≅₋ " => GIsomorphism
-  instance GIsomorphismFun  [Group  α] [Group  β] : CoeFun (α ≅₋ β) (fun _ => α → β) where
+  instance GIsomorphismFun [Group  α] [Group  β] : CoeFun (α ≅₋ β) (fun _ => α → β) where
     coe := fun f => f.hom
 
-  def MHomomorphism.kernel [Monoid α] [mb : Monoid β] (mh : α →₊ β) : SubMonoid α where
-    subset     := Function.fibre mh.hom 0
-    has_zero   := mh.preserve_zero
-    add_closed := fun _ x0 _ y0 => by
-      simp only [Mem.mem, Set.mem, Function.fibre]; rw [mh.preserve_add, x0, y0, mb.add_zero]
-
-  def GHomomorphism.kernel [Group α] [gb : Group β] (gh : α →₋ β) : SubGroup α where
-    toSubMonoid := MHomomorphism.kernel gh.toMHomomorphism
-    neg_closed  := fun x x0 => by
-      simp only [MHomomorphism.kernel, Mem.mem, Set.mem, Function.fibre]
-      rw [gh.preserve_neg, x0, gb.neg_zero]
-
   namespace MHomomorphism
+
+    def kernel [Monoid α] [mb : Monoid β] (mh : α →₊ β) : SubMonoid α where
+      subset     := Function.fibre mh.hom 0
+      has_zero   := mh.preserve_zero
+      add_closed := fun _ x0 _ y0 => by
+        simp only [Mem.mem, Set.mem, Function.fibre]; rw [mh.preserve_add, x0, y0, mb.add_zero]
+
+    def image [Monoid α] [mb : Monoid β] (mh : α →₊ β) : SubMonoid β where
+      subset     := Function.image mh.hom
+      has_zero   := ⟨0, mh.preserve_zero⟩
+      add_closed := fun _ ⟨x, hx⟩ _ ⟨y, hy⟩ => ⟨x + y, hx ▸ hy ▸ mh.preserve_add x y⟩
 
     protected def comp [Monoid α] [Monoid β] [Monoid γ] (hbc : β →₊ γ) (hab : α →₊ β) : α →₊ γ where
       hom           := Function.comp hbc.hom hab.hom
@@ -55,11 +50,6 @@ namespace M4R
 
     protected def comp.hom [Monoid α] [Monoid β] [Monoid γ] (hbc : β →₊ γ) (hab : α →₊ β) :
       (hbc.comp hab).hom = hbc.hom ∘ hab.hom := rfl
-
-    def ImageSubMonoid [Monoid α] [Monoid β] (gh : α →₊ β) : SubMonoid β where
-      subset     := Function.image gh.hom
-      has_zero   := ⟨0, gh.preserve_zero⟩
-      add_closed := fun _ ⟨a, hax⟩ _ ⟨b, hby⟩ => by rw [←hax, ←hby]; exact ⟨a + b, gh.preserve_add a b⟩
 
     protected def Identity [Monoid α] : α →₊ α where
       hom           := id
@@ -115,17 +105,23 @@ namespace M4R
         have : hbc.toMHomomorphism.comp hab.toMHomomorphism = hbc.hom ∘ hab.hom := rfl
         rw [this, ←Function.comp_eq, ←Function.comp_eq, hab.right_inv, hbc.right_inv]
 
-    protected noncomputable def of_bijection [Monoid α] [Monoid β] {f : α →₊ β} (hf : Function.bijective f.hom) : α ≅₊ β where
+    protected noncomputable def of_bijection [Monoid α] [Monoid β] (f : α →₊ β) (hf : Function.bijective f.hom) : α ≅₊ β where
       toMHomomorphism := f
       inv := fun b => Classical.choose (hf.surj b)
       left_inv := fun a => hf.inj (Classical.choose_spec (hf.surj (f a)))
       right_inv := fun a => Classical.choose_spec (hf.surj a)
 
-    protected def to_bijection [Monoid α] [Monoid β] (f : α ≅₊ β) : Function.bijective f.hom :=
+    protected def to_bijective [Monoid α] [Monoid β] (f : α ≅₊ β) : Function.bijective f.hom :=
       Function.bijective_of_inverse f.left_inv f.right_inv
 
+    protected def to_injective [Monoid α] [Monoid β] (f : α ≅₊ β) : Function.injective f.hom :=
+      (MIsomorphism.to_bijective f).left
+
+    protected def to_surjective [Monoid α] [Monoid β] (f : α ≅₊ β) : Function.surjective f.hom :=
+      (MIsomorphism.to_bijective f).right
+
     protected noncomputable def Identity [Monoid α] : α ≅₊ α :=
-      MIsomorphism.of_bijection (by apply Function.id_bijective : Function.bijective MHomomorphism.Identity.hom)
+      MIsomorphism.of_bijection _ (by apply Function.id_bijective : Function.bijective MHomomorphism.Identity.hom)
 
     protected def SelfInverse [Monoid α] (f : α →₊ α) (h : ∀ a, f (f a) = a) : α ≅₊ α where
       toMHomomorphism := f
@@ -137,15 +133,24 @@ namespace M4R
 
   namespace GHomomorphism
 
+    theorem preserve_sub [Group α] [Group β] (gh : α →₋ β) (a b : α) : gh (a - b) = gh a - gh b := by
+      rw [Group.sub_def, gh.preserve_add, gh.preserve_neg]; rfl
+
+    def kernel [Group α] [gb : Group β] (gh : α →₋ β) : SubGroup α where
+      toSubMonoid := MHomomorphism.kernel gh.toMHomomorphism
+      neg_closed  := fun x x0 => by
+        simp only [MHomomorphism.kernel, Mem.mem, Set.mem, Function.fibre]
+        rw [gh.preserve_neg, x0, gb.neg_zero]
+
+    def image [Group α] [gb : Group β] (gh : α →₋ β) : SubGroup β where
+      toSubMonoid := MHomomorphism.image gh.toMHomomorphism
+      neg_closed  := fun _ ⟨x, hx⟩ => ⟨-x, hx ▸ gh.preserve_neg x⟩
+
     protected def comp [Group α] [Group β] [Group γ] (hbc : β →₋ γ) (hab : α →₋ β) : α →₋ γ where
       toMHomomorphism := hbc.toMHomomorphism.comp hab.toMHomomorphism
       preserve_neg  := fun a => by
         simp only [MHomomorphism.comp, Function.comp];
         rw [hab.preserve_neg, hbc.preserve_neg]
-
-    def ImageSubGroup [Group α] [Group β] (gh : α →₋ β) : SubGroup β where
-      toSubMonoid := gh.ImageSubMonoid
-      neg_closed := fun x ⟨a, hax⟩ => by rw [←hax]; exact ⟨-a, gh.preserve_neg a⟩
 
     protected def Identity [Group α] : α →₋ α where
       toMHomomorphism := MHomomorphism.Identity
@@ -158,28 +163,6 @@ namespace M4R
     theorem kernel_normal [Group α] [Group β] (f : α →₋ β) : f.kernel.is_normal :=
       fun a (ha : f a = 0) g => (by rw [MHomomorphism.preserve_add, MHomomorphism.preserve_add,
         GHomomorphism.preserve_neg, ha, Monoid.add_zero, Group.neg_add] : f _ = 0)
-
-    protected structure constructor_gh (α : Type _) (β : Type _) [Group α] [Group β] where
-      hom          : α → β
-      preserve_add : ∀ a b, hom (a + b) = hom a + hom b
-      preserve_neg : ∀ a, hom (-a) = -hom a
-
-    protected def construct [Group α] [Group β] (c : GHomomorphism.constructor_gh α β) : GHomomorphism α β where
-      hom := c.hom
-      preserve_zero := by
-        byCases h : ∃ x : α, x ≠ 0
-        { cases h with | intro x hx =>
-          rw [←Group.add_neg x, c.preserve_add, c.preserve_neg, Group.add_neg] }
-        { simp only [not_exists, iff_not_not] at h; rw [←Monoid.add_zero 0, c.preserve_add];
-          conv => lhs rhs rw [←Group.neg_zero]
-          rw [c.preserve_neg, Group.add_neg] }
-      preserve_add := c.preserve_add
-      preserve_neg := c.preserve_neg
-
-    protected def to_constructor [Group α] [Group β] (f : GHomomorphism α β): GHomomorphism.constructor_gh α β where
-      hom          := f.hom
-      preserve_add := f.preserve_add
-      preserve_neg := f.preserve_neg
 
   end GHomomorphism
 
@@ -210,14 +193,14 @@ namespace M4R
         have : hbc.toGHomomorphism.comp hab.toGHomomorphism = hbc.hom ∘ hab.hom := rfl
         rw [this, ←Function.comp_eq, ←Function.comp_eq, hab.right_inv, hbc.right_inv]
 
-    protected noncomputable def of_bijection [Group α] [Group β] {f : α →₋ β} (hf : Function.bijective f.hom) : α ≅₋ β where
+    protected noncomputable def of_bijection [Group α] [Group β] (f : α →₋ β) (hf : Function.bijective f.hom) : α ≅₋ β where
       toGHomomorphism := f
       inv := fun b => Classical.choose (hf.surj b)
       left_inv := fun a => hf.inj (Classical.choose_spec (hf.surj (f a)))
       right_inv := fun a => Classical.choose_spec (hf.surj a)
 
     protected noncomputable def Identity [Group α] : α ≅₋ α :=
-      GIsomorphism.of_bijection (by apply Function.id_bijective : Function.bijective GHomomorphism.Identity.hom)
+      GIsomorphism.of_bijection _ (by apply Function.id_bijective : Function.bijective GHomomorphism.Identity.hom)
 
     protected def SelfInverse [Group α] (f : α →₋ α) (h : ∀ a, f (f a) = a) : α ≅₋ α where
       toGHomomorphism := f

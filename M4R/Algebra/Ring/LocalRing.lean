@@ -63,7 +63,7 @@ namespace M4R
 
     instance localisation_NoetherianLocalRing [NoetherianRing α] {P : Ideal α} (hP : P.is_prime) :
       NoetherianLocalRing (localisationₚ hP) where
-        noetherian := NoetherianRing.localiastion_noetherian (PrimeComp hP)
+        noetherian := NoetherianRing.localisation_noetherian (PrimeComp hP)
 
     protected theorem m_finitely_generated (α : Type _) [NoetherianLocalRing α] : (m : Ideal α).finitely_generated :=
       NoetherianRing.ideal_finitely_generated m
@@ -78,16 +78,16 @@ namespace M4R
           • Artinian → stable
           • Nakayama's lemma  -/
         let RaR := QClass (principal a)
-        have : Ring.Spec RaR = Ring.MaxSpec RaR :=
-          Set.subset.antisymm (fun Q hQ => by
-            let Q' := contraction (QuotientRing.natural_hom (principal a)) Q
-            have h₁ : principal a ⊆ Q' := fun x hx => ((natural_hom.kernel (principal a)).mpr hx ▸
-              Q.has_zero : QuotientRing.natural_hom (principal a) x ∈ Q)
-            have h₂ : Q'.is_prime := Ideal.contraction_prime _ hQ
-            have := quotient_maximal m_max (subset_m (unit_not_principal ha))
-            rw [←hP.right.right h₂ h₁ (subset_m h₂.left), contraction_extension_eq_of_surjective
-              (natural_hom.surjective (principal a)) Q] at this
-            exact this) Ring.maxspec_sub_spec
+        have : Ring.Spec RaR ⊆ Ring.MaxSpec RaR := fun Q hQ => by
+          let Q' := contractionᵣ₁ (QuotientRing.natural_hom (principal a)) Q
+          have h₁ : principal a ⊆ Q' := fun x hx => (natural_hom.kernel.mpr hx ▸ Q.has_zero :
+            QuotientRing.natural_hom (principal a) x ∈ Q)
+          have h₂ : Q'.is_prime := Ideal.contraction_prime _ hQ
+          have := quotient_maximal m_max (subset_m (unit_not_principal ha))
+          rw [←hP.right.right h₂ h₁ (subset_m h₂.left)] at this
+          exact contraction_extension_eq_of_surjective (QuotientRing.natural_hom (principal a)).preserve_mul_left
+            (natural_hom.surjective (principal a)) Q ▸ this
+        have := ArtinianRing.artinian_of_primes_maximal this
         sorry
 
   end NoetherianLocalRing

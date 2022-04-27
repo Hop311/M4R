@@ -161,7 +161,7 @@ namespace M4R
     protected theorem nontrivial : (localisation.ring S).is_NonTrivial ↔ 0 ∉ S :=
       not_iff_not.mpr localisation.trivial
 
-    def natural_hom (S : MultiplicativeSet α) : α →ᵣ localisation S where
+    def natural_hom (S : MultiplicativeSet α) : α →ᵣ₁ localisation S where
       hom           := (of_frac' · S.has_one)
       preserve_zero := rfl
       preserve_add  := fun _ _ => equiv.mpr ⟨1, S.has_one, by simp only [frac.denom_eq, mul_one]⟩
@@ -177,10 +177,10 @@ namespace M4R
         exact equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]⟩
 
     noncomputable def localise_ideal (S : MultiplicativeSet α) : Ideal α → Ideal (localisation S) :=
-      Ideal.extension (natural_hom S)
+      Ideal.extension (natural_hom S).toRMulMap
 
     def delocalise_ideal (S : MultiplicativeSet α) : Ideal (localisation S) → Ideal α :=
-      Ideal.contraction (natural_hom S)
+      Ideal.contractionᵣ₁ (natural_hom S)
 
     theorem localise_ideal.contains_mul {S : MultiplicativeSet α} {I : Ideal α} {r s : α} (hr : r ∈ I) (hs : s ∈ S) :
       of_frac' r hs ∈ localise_ideal S I :=
@@ -274,14 +274,7 @@ namespace M4R
 
     theorem localise_ideal.principal (S : MultiplicativeSet α) (a : α) :
       localise_ideal S (Ideal.principal a) = Ideal.principal (natural_hom S a) :=
-        Ideal.ext'.mpr fun x =>
-          ⟨fun h => Ideal.from_set.induction (fun x => x ∈ Ideal.principal (natural_hom S a)) h
-            (Ideal.principal (natural_hom S a)).has_zero
-            (fun x ⟨y, ⟨z, hz⟩, he⟩ => he ▸ hz ▸ (natural_hom S).preserve_mul _ _ ▸ ⟨natural_hom S z, rfl⟩)
-            (fun _ _ => (Ideal.principal (natural_hom S a)).add_closed)
-            (Ideal.principal (natural_hom S a)).mul_closed,
-          fun ⟨b, hb⟩ => hb ▸ (localise_ideal S (Ideal.principal a)).mul_closed'
-            (Ideal.from_set.contains_mem ⟨a, Ideal.generator_in_principal a, rfl⟩) b⟩
+        Ideal.extension_principal (natural_hom S).toRMulMap a
 
     abbrev localisationₚ [Ring α] {P : Ideal α} (hP : P.is_prime) := localisation (PrimeComp hP)
 
@@ -291,7 +284,8 @@ namespace M4R
     noncomputable def delocaliseₚ [Ring α] {P : Ideal α} (hP : P.is_prime) (I : Ideal (localisationₚ hP)) :
       Ideal α := delocalise_ideal (PrimeComp hP) I
 
-    abbrev natural_homₚ [Ring α] {P : Ideal α} (hP : P.is_prime) : α →ᵣ localisationₚ hP := natural_hom (PrimeComp hP)
+    abbrev natural_homₚ [Ring α] {P : Ideal α} (hP : P.is_prime) : α →ᵣ localisationₚ hP :=
+      (natural_hom (PrimeComp hP)).toRMulMap
 
   end localisation
 

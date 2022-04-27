@@ -130,6 +130,9 @@ namespace Nat
   theorem sub_eq_iff_eq_add {a b c : Nat} (ab : b ≤ a) : a - b = c ↔ a = c + b :=
     ⟨fun h => by rw [←h, sub_add_cancel ab], fun h => by rw [h, add_sub_cancel]⟩
 
+  theorem eq_sub_iff_add_eq {a b c : Nat} (bc : c ≤ b) : a = b - c ↔ a + c = b :=
+    ⟨fun h => ((sub_eq_iff_eq_add bc).mp h.symm).symm, fun h => ((sub_eq_iff_eq_add bc).mpr h.symm).symm⟩
+
   theorem mul_pred_left : ∀ (n m : Nat), n.pred * m = n * m - m
   | zero  , m => by simp
   | succ n, m => by rw [pred_succ, succ_mul, add_sub_cancel]
@@ -327,9 +330,40 @@ namespace Nat
       (Nat.le_trans ha (Nat.le_add_left c b)), Nat.add_comm]
     exact ⟨(Nat.add_le_add_right · c), Nat.le_of_add_le_add_right⟩
 
+  theorem lt_sub_iff_right {a b c : Nat} (h : c ≤ b) : a < b - c ↔ a + c < b :=
+    ⟨fun h' => Nat.lt_of_le_and_ne ((le_sub_iff_right h).mp (Nat.le_of_lt h'))
+      (fun h'' => absurd ((eq_sub_iff_add_eq h).mpr h'') (Nat.ne_of_lt h')),
+    fun h' => Nat.lt_of_le_and_ne ((le_sub_iff_right h).mpr (Nat.le_of_lt h'))
+      (fun h'' => absurd ((eq_sub_iff_add_eq h).mp h'') (Nat.ne_of_lt h'))⟩
+
+  theorem sub_lt_iff_right {a b c : Nat} (h : c ≤ a) : a - c < b ↔ a < b + c := by
+    apply M4R.not_iff_not.mp
+    simp only [Nat.not_lt]
+    exact le_sub_iff_right h
+
   theorem zero_lt_iff_neq_zero {n : Nat} : 0 < n ↔ n ≠ 0 :=
     ⟨fun h₁ h₂ => absurd (h₂ ▸ h₁) (Nat.lt_irrefl 0), fun h => by
       cases n; contradiction; exact Nat.zero_lt_succ _⟩
+
+  theorem lt.dest {m n : Nat} (h : m < n) : ∃ k, k ≠ 0 ∧ m + k = n :=
+    let ⟨k, hk⟩ := le.dest (Nat.le_of_lt h)
+    ⟨k, fun h' => absurd ((h' ▸ hk : m + 0 = n) ▸ h) (Nat.lt_irrefl n), hk⟩
+
+  theorem ne_zero_dest {m : Nat} (h : m ≠ 0) : ∃ k, m = k + 1 :=
+    ⟨m.pred, (succ_pred_eq_of_pos (pos_iff_ne_zero.mpr h)).symm⟩
+
+  theorem of_lt_add_left {n m : Nat} (h : n < m + n) : 0 < m :=
+    Nat.sub_self n ▸ (sub_lt_iff_right (Nat.le_refl n)).mpr h
+
+  theorem of_lt_add_right {n m : Nat} (h : n < n + m) : 0 < m :=
+    of_lt_add_left (Nat.add_comm n m ▸ h : n < m + n)
+
+  theorem lt_add_pos_left (n : Nat) {m : Nat} (h : m ≠ 0) : n < m + n :=
+    Nat.lt_of_le_and_ne (le_add_left n m)
+      (fun h' => absurd (Nat.sub_self n ▸ (sub_eq_iff_eq_add (Nat.le_refl n)).mpr h') h.symm)
+
+  theorem lt_add_pos_right (n : Nat) {m : Nat} (h : m ≠ 0) : n < n + m :=
+    Nat.add_comm n m ▸ lt_add_pos_left n h
 
 end Nat
 

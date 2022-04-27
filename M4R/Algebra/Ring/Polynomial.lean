@@ -42,7 +42,7 @@ namespace M4R
   theorem mul_def [Semiring α] {p q : MVPolynomial σ α} :
     (p * q) = ∑ fun m a => ∑ fun n b => monomial (m + n) (a * b) in q in p := rfl
 
-  noncomputable def C [Semiring α] : α →* MVPolynomial σ α where
+  noncomputable def C [Semiring α] : α →*₁ MVPolynomial σ α where
     toMHomomorphism := monomial 0
     preserve_one  := rfl
     preserve_mul  := fun a b => by simp only [←single_eq_monomial, mul_def, Finsupp.map_sum.single,

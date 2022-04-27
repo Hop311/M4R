@@ -82,6 +82,12 @@ namespace M4R
       protected theorem insert_neq {s : Set α} {a : α} (h : a ∉ s) : s ⊊ s.insert a :=
         ⟨subset.insert s a, ⟨a, h, Or.inl rfl⟩⟩
 
+      protected theorem proper_iff {a b : Set α} : a ⊊ b ↔ a ⊆ b ∧ a ≠ b :=
+        ⟨fun h => ⟨h.left, proper_neq h⟩, fun ⟨h₁, h₂⟩ => neq_proper h₁ h₂⟩
+
+      protected theorem not_proper {a b : Set α} : ¬a ⊊ b ↔ a ⊈ b ∨ a = b := by
+        rw [subset.proper_iff, not_and_iff_or_not, iff_not_not]; exact Iff.rfl
+
     end subset
 
     namespace union
