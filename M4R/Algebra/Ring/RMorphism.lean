@@ -61,6 +61,12 @@ namespace M4R
     protected theorem preserve_one_of_surjective {f : α →* β} (hf : Function.surjective f.hom) : f 1 = 1 :=
       SMulMap.preserve_one_of_1_in_image (hf 1)
 
+    protected theorem preserve_pow_ne_zero (f : α →* β) (x : α) {n : Nat} (hn : n ≠ 0) : f (x ^ n) = f x ^ n := by
+      have : ∀ n : Nat, f (x ^ n.succ) = f x ^ n.succ := fun n => by
+        induction n with
+        | zero      => rw [pow_nat_1, pow_nat_1]
+        | succ n ih => rw [pow_nat_succ, f.preserve_mul, ih, ←pow_nat_succ]
+      cases n; contradiction; exact this _
   end SMulMap
 
   namespace SHomomorphism
@@ -82,6 +88,10 @@ namespace M4R
     protected def Identity : α →*₁ α where
       toSMulMap := SMulMap.Identity
       preserve_one := rfl
+
+    protected theorem preserve_pow (f : α →*₁ β) (x : α) : (n : Nat) → f (x ^ n) = f x ^ n
+    | 0   => f.preserve_one
+    | n+1 => f.preserve_pow_ne_zero x n.succ_ne_zero
 
   end SHomomorphism
 
@@ -160,6 +170,9 @@ namespace M4R
     protected theorem preserve_one_of_surjective {f : α →ᵣ β} (hf : Function.surjective f.hom) : f 1 = 1 :=
       SMulMap.preserve_one_of_surjective hf
 
+    protected theorem preserve_pow_ne_zero (f : α →ᵣ β) (x : α) {n : Nat} (hn : n ≠ 0) : f (x ^ n) = f x ^ n :=
+      f.toSMulMap.preserve_pow_ne_zero x hn
+
   end RMulMap
 
   namespace RHomomorphism
@@ -178,6 +191,9 @@ namespace M4R
     protected def Identity : α →ᵣ₁ α where
       toRMulMap := RMulMap.Identity
       preserve_one := SHomomorphism.Identity.preserve_one
+
+    protected theorem preserve_pow (f : α →ᵣ₁ β) (x : α) (n : Nat) : f (x ^ n) = f x ^ n :=
+      f.toSHomomorphism.preserve_pow x n
 
   end RHomomorphism
 

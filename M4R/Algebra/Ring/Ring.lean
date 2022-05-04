@@ -25,6 +25,11 @@ namespace M4R
     theorem neg_one_mul_add' [NCRing α] (a b : α) : -1 * (a + b) = -b + -a := by
       rw [neg_one_mul, neg_add_distrib]
 
+    theorem sub_mul_distrib_left [NCRing α] (a b c : α) : a * (b - c) = a * b - a * c := by
+      rw [sub_def, mul_distrib_left, mul_neg]; rfl
+    theorem sub_mul_distrib_right [NCRing α] (a b c : α) : (a - b) * c = a * c - b * c := by
+      rw [sub_def, mul_distrib_right, neg_mul]; rfl
+
     protected class constructor_ncr (α : Type _) extends Group.constructor_g α, One α, Mul α where
       mul_one           : ∀ a : α, a * 1 = a
       one_mul           : ∀ a : α, 1 * a = a
@@ -88,6 +93,10 @@ namespace M4R
     protected instance multi_product {ι : Type _} (fι : ι → Type _) [∀ i, Ring (fι i)] : Ring (MultiProd fι) where
       mul_comm := (Semiring.multi_product fι).mul_comm
 
+    def is_NonTrivial (α : Type _) [Ring α] : Prop := (1 : α) ≠ 0
+    def is_NonTrivial.toNonTrivialRing [Ring α] (h : is_NonTrivial α) : NonTrivialRing α where
+      toNonTrivial.one_neq_zero := h
+
     protected class constructor_r (α : Type _) extends AbelianGroup.constructor_ab α, One α, Mul α where
       mul_one           : ∀ a : α, a * 1 = a
       mul_assoc         : ∀ a b c : α, (a * b) * c = a * (b * c)
@@ -113,6 +122,8 @@ namespace M4R
       mul_comm          := Semiring.mul_comm
 
   end Ring
+
+  theorem NonTrivialRing.to_is_NonTrivial [NonTrivialRing α] : Ring.is_NonTrivial α := NonTrivial.one_neq_zero
 
   instance IntRing : NonTrivialRing Int where
     toRing := Ring.construct

@@ -105,10 +105,22 @@ namespace M4R
       protected theorem subset' [Ring α] (I J : Ideal α) : J ⊆ I + J :=
         add.comm I J ▸ add.subset J I
 
-      protected theorem of_subset [Ring α] {I J : Ideal α} (h : I ⊆ J) : I + J = J := by
+      protected theorem add_self [Ring α] (I : Ideal α) : I + I = I :=
+        Ideal.antisymm (fun x ⟨i, hi, j, hj, hij⟩ => hij ▸ I.add_closed hi hj) (add.subset I I)
+
+      protected theorem subset_add_subset [Ring α] {I₁ J₁ I₂ J₂ : Ideal α} (hI : I₁ ⊆ I₂) (hJ : J₁ ⊆ J₂) :
+        I₁ + J₁ ⊆ I₂ + J₂ := fun x ⟨i, hi, j, hj, hij⟩ => ⟨i, hI hi, j, hJ hj, hij⟩
+
+      protected theorem subset_add [Ring α] {I J K : Ideal α} (hI : I ⊆ K) (hJ : J ⊆ K) : I + J ⊆ K :=
+        add.add_self K ▸ add.subset_add_subset hI hJ
+
+      protected theorem of_subset [Ring α] {I J : Ideal α} (h : J ⊆ I) : I + J = I := by
         apply Ideal.antisymm
-        intro x ⟨i, iI, j, jJ, hij⟩; rw [←hij]; exact J.add_closed (h iI) jJ
-        rw [add.comm]; exact Ideal.add.subset J I
+        intro x ⟨i, iI, j, jJ, hij⟩; rw [←hij]; exact I.add_closed iI (h jJ)
+        exact Ideal.add.subset I J
+
+      protected theorem of_subset' [Ring α] {I J : Ideal α} (h : I ⊆ J) : I + J = J :=
+        add.comm I J ▸ add.of_subset h
 
       protected theorem mem [Ring α] (I J : Ideal α) : ∀ a, a ∈ I + J ↔ ∃ i ∈ I, ∃ j ∈ J, i + j = a :=
         fun _ => Iff.rfl
@@ -161,8 +173,8 @@ namespace M4R
     theorem in_zero_ideal [Ring α] {I : Ideal α} (hI : I ⊆ 0) : I = 0 :=
       Ideal.antisymm hI (zero_ideal_in I)
 
-    theorem principal_in [Ring α] (I : Ideal α) : ∀ a ∈ I, principal a ⊆ I := by
-      intro _ aI _ ⟨y, ayx⟩; rw [←ayx]; exact mul_closed' _ aI _;
+    theorem principal_in [Ring α] {I : Ideal α} {a : α} (ha : a ∈ I) : principal a ⊆ I := by
+      intro _ ⟨y, ayx⟩; rw [←ayx]; exact mul_closed' _ ha _;
     theorem unit_principal [Ring α] {u : α} (hu : isUnit u) : principal u = 1 :=
       Ideal.antisymm (in_unit_ideal _) (fun y _ => unit_divides u y hu)
     theorem unit_not_principal [Ring α] {u : α} (hu : ¬isUnit u) : (principal u).proper_ideal :=
@@ -170,7 +182,7 @@ namespace M4R
 
     theorem is_unit_ideal' [Ring α] {I : Ideal α} : I = 1 ↔ ∃ x, isUnit x ∧ x ∈ I :=
       ⟨(· ▸ ⟨1, isUnit_1, trivial⟩), fun ⟨x, hx, hxI⟩ =>
-        Ideal.antisymm (in_unit_ideal I) (unit_principal hx ▸ principal_in I x hxI)⟩
+        Ideal.antisymm (in_unit_ideal I) (unit_principal hx ▸ principal_in hxI)⟩
     theorem is_unit_ideal [Ring α] {I : Ideal α} : I = 1 ↔ 1 ∈ I :=
       is_unit_ideal'.trans ⟨fun ⟨x, ⟨y, hxy⟩, hxI⟩ => hxy ▸ I.mul_closed' hxI y, fun h => ⟨1, isUnit_1, h⟩⟩
     theorem is_zero_ideal [Ring α] {I : Ideal α} : I = 0 ↔ ∀ a ∈ I, a = 0 := by
@@ -185,8 +197,15 @@ namespace M4R
        fun ⟨x, hx⟩ h => (h ▸ hx : x ∉ (1 : Ideal α)) trivial⟩
     theorem proper_iff_1_notin [Ring α] {I : Ideal α} : I.proper_ideal ↔ 1 ∉ I :=
       not_iff_not.mpr is_unit_ideal
+    theorem proper_ideal_subset [Ring α] {I J : Ideal α} (hIJ : I ⊆ J) (hJ : J.proper_ideal) : I.proper_ideal :=
+      fun hI => absurd (unit_ideal_in (hI ▸ hIJ)) hJ
+    theorem proper_ideal_subsetneq [Ring α] {I J : Ideal α} (hIJ : I ⊊ J) : I.proper_ideal :=
+      have ⟨h₁, h₂⟩ := Ideal.subsetneq.mp hIJ
+      fun hI => absurd (hI.trans (unit_ideal_in (hI ▸ h₁)).symm) h₂
+    theorem zero_ideal_proper_of_nontrivial {α} [Ring α] (h : Ring.is_NonTrivial α) : (ZeroIdeal α).proper_ideal :=
+      proper_iff_notin.mpr ⟨1, h⟩
     theorem zero_ideal_proper (α) [NonTrivialRing α] : (ZeroIdeal α).proper_ideal :=
-      proper_iff_notin.mpr ⟨1, NonTrivial.one_neq_zero⟩
+      zero_ideal_proper_of_nontrivial NonTrivial.one_neq_zero
 
     protected def intersection [Ring α] (I J : Ideal α) : Ideal α where
       subset     := I.subset ∩ J.subset
@@ -201,6 +220,8 @@ namespace M4R
 
       protected theorem subset_left [Ring α] (I J : Ideal α) : I ∩ J ⊆ I := fun _ => And.left
       protected theorem subset_right [Ring α] (I J : Ideal α) : I ∩ J ⊆ J := fun _ => And.right
+      protected theorem and_subset_and [Ring α] {I₁ I₂ J₁ J₂ : Ideal α} (hI : I₁ ⊆ I₂) (hJ : J₁ ⊆ J₂) : I₁ ∩ J₁ ⊆ I₂ ∩ J₂ :=
+        fun _ => And.imp (hI ·) (hJ ·)
 
       protected theorem of_subset [Ring α] {I J : Ideal α} (h : I ⊆ J) : I ∩ J = I :=
         Ideal.antisymm (intersection.subset_left I J) fun a ha => ⟨ha, h ha⟩
@@ -240,6 +261,10 @@ namespace M4R
       protected theorem mem [Ring α] {S : Set (Ideal α)} {a : α} : a ∈ ⋂₀ S ↔ ∀ I ∈ S, a ∈ I :=
         ⟨fun h I hIS => h I.subset ⟨I, hIS, rfl⟩, fun h s ⟨I, hIS, hIs⟩ => hIs ▸ h I hIS⟩
 
+      protected theorem contains [Ring α] {S : Set (Ideal α)} {I : Ideal α} (h : I ∈ S) : ⋂₀ S ⊆ I :=
+        fun x hx => have : I.subset ∈ S.toSetSet Ideal.subset := ⟨I, h, rfl⟩
+          Set.SoSIntersection.subset_of_mem this hx
+
     end sIntersection
 
     noncomputable def from_set [Ring α] (S : Set α) : Ideal α := ⋂₀ {I : Ideal α | S ⊆ I.subset}
@@ -274,6 +299,9 @@ namespace M4R
       theorem contains_unit (h : ∃ a ∈ S, isUnit a) : from_set S = 1 :=
         let ⟨a, haS, ha⟩ := h
         unit_ideal_in (unit_principal ha ▸ contains_principal haS)
+
+      theorem zero_set (α : Type _) [Ring α] : from_set (Set.singleton (0 : α)) = 0 :=
+        Ideal.antisymm (ideal_contained (Subset.refl _)) (zero_ideal_in _)
 
       theorem mem {a : α} : a ∈ from_set S ↔ ∀ I : Ideal α, S ⊆ I.subset → a ∈ I := by
         simp only [from_set, sIntersection.mem]; exact Iff.rfl
@@ -394,7 +422,7 @@ namespace M4R
 
     end
 
-    private abbrev product_gen [Ring α] (I J : Ideal α) : Set α := {x | ∃ i ∈ I, ∃ j ∈ J, x = i * j}
+    abbrev product_gen [Ring α] (I J : Ideal α) : Set α := {x | ∃ i ∈ I, ∃ j ∈ J, x = i * j}
 
     protected noncomputable def product [Ring α] (I J : Ideal α) : Ideal α :=
       from_set (product_gen I J)
@@ -419,6 +447,9 @@ namespace M4R
 
       theorem subset_right [Ring α] {I J : Ideal α} : I * J ⊆ J :=
         Subset.trans subset_inter (Set.intersection.subset_inter_right _ _)
+
+      theorem mul_subset_mul [Ring α] {I₁ I₂ J₁ J₂ : Ideal α} (hI : I₁ ⊆ I₂) (hJ : J₁ ⊆ J₂) : I₁ * J₁ ⊆ I₂ * J₂ :=
+        from_set.subset fun x ⟨i, hi, j, hj, hij⟩ => ⟨i, hI hi, j, hJ hj, hij⟩
 
       private abbrev triple_product_gen [Ring α] (I J K : Ideal α) : Set α := {x | ∃ i ∈ I, ∃ j ∈ J, ∃ k ∈ K, x = i * j * k}
       private abbrev mult_fibre [Ring α] (f : Finset α) (k y : α) : Set α := {x | x ∈ f ∧ x * k = y}
@@ -809,7 +840,7 @@ namespace M4R
     end product
 
     noncomputable instance IdealSemiring [Ring α] : Semiring (Ideal α) := Semiring.construct {
-      add_zero         := fun I => add.comm 0 I ▸ add.of_subset (zero_ideal_in I)
+      add_zero         := fun I => add.of_subset (zero_ideal_in I)
       add_assoc        := add.assoc
       add_comm         := add.comm
       mul_one          := fun I => Ideal.antisymm
@@ -824,6 +855,23 @@ namespace M4R
       mul_comm         := product.comm
     }
 
+    namespace product
+      theorem pow_succ_subset [Ring α] (I : Ideal α) (n : Nat) : I ^ n.succ ⊆ I ^ n :=
+        pow_nat_succ I n ▸ product.subset_left
+
+      theorem pow_subset [Ring α] (I : Ideal α) (n : Nat) (hn : n ≠ 0) : I ^ n ⊆ I := by
+        have : ∀ n : Nat, I ^ n.succ ⊆ I := fun n => by
+          induction n with
+          | zero      => exact Subset.refl I
+          | succ n ih => exact Subset.trans (pow_succ_subset I n.succ) ih
+        cases n; contradiction; exact this _
+
+      theorem pow_contains [Ring α] (n : Nat) {I : Ideal α} {x : α} (hx : x ∈ I) : x ^ n ∈ I ^ n := by
+        induction n with
+        | zero      => trivial
+        | succ n ih => rw [pow_nat_succ, pow_nat_succ]; exact from_set.contains_mem ⟨x ^ n, ih, x, hx, rfl⟩
+    end product
+
     def ideal_quotient [Ring α] (I : Ideal α) (a : α) : Ideal α where
       subset     := {x | a * x ∈ I}
       has_zero   := ((mul_zero a).symm ▸ I.has_zero : a * 0 ∈ I)
@@ -837,12 +885,85 @@ namespace M4R
       from_set (Function.image' f I.subset)
 
     theorem extension.subset [Ring α] [Ring β] (f : α → β) {I J : Ideal α} (h : I ⊆ J) :
-      extension f I ⊆ extension f J := from_set.subset fun x ⟨y, hy, hyx⟩ => ⟨y, h hy, hyx⟩
+      extension f I ⊆ extension f J := from_set.subset (Function.image'_subset f h)
 
     theorem extension_unit_of_surjective [Ring α] [Ring β] {f : α → β} (hfs : Function.surjective f) :
       extension f 1 = 1 :=
         let ⟨x, hx⟩ := hfs 1
         is_unit_ideal.mpr (from_set.contains_mem ⟨x, trivial, hx⟩)
+
+    theorem extension_add [Ring α] [Ring β] (f : α →₊ β) (I J : Ideal α) : extension f (I + J) = extension f I + extension f.hom J :=
+      Ideal.ext'.mpr fun x => ⟨fun hx => from_set.mem.mp hx (extension f.hom I + extension f.hom J) fun x ⟨y, ⟨i, hi, j, hj, hij⟩, hyx⟩ =>
+        ⟨f i, from_set.contains_mem ⟨i, hi, rfl⟩, f j, from_set.contains_mem ⟨j, hj, rfl⟩, hyx ▸ hij ▸ (f.preserve_add i j).symm⟩,
+      fun ⟨i, hi, j, hj, hij⟩ => hij ▸ (extension f.hom (I + J)).add_closed
+        (extension.subset f.hom (Ideal.add.subset I J) hi) (extension.subset f.hom (Ideal.add.subset' I J) hj)⟩
+
+    theorem extension_mul [Ring α] [Ring β] (f : α →ᵣ β) (I J : Ideal α) : extension f (I * J) = extension f I * extension f.hom J :=
+      Ideal.ext'.mpr fun x => ⟨fun hx => from_set.mem.mp hx (extension f.hom I * extension f J) fun x ⟨y, hy, hyx⟩ =>
+        hyx ▸ from_set.induction (fun y : α => f y ∈ extension f.hom I * extension f.hom J) hy
+          (by simp only [f.preserve_zero]; exact (extension f.hom I * extension f.hom J).has_zero)
+          (fun x ⟨i, hi, j, hj, hij⟩ => from_set.contains_mem ⟨f i, from_set.contains_mem ⟨i, hi, rfl⟩,
+            f j, from_set.contains_mem ⟨j, hj, rfl⟩, hij ▸ f.preserve_mul i j⟩)
+          (fun x y hx hy => by simp only [f.preserve_add]; exact (extension f.hom I * extension f.hom J).add_closed hx hy)
+          (fun x y hy => by simp only [f.preserve_mul]; exact (extension f.hom I * extension f.hom J).mul_closed _ hy),
+        fun hx => from_set.mem.mp hx (extension f (I * J)) (fun x ⟨i, hi, j, hj, hij⟩ =>
+          let ⟨fI, cI, hfI, hcI⟩ := from_set.mem_as_sum.mp hi
+          let ⟨fJ, cJ, hfJ, hcJ⟩ := from_set.mem_as_sum.mp hj
+          let f' : Finset β → Finset β → Finset β := fun fI fJ =>
+            ((fI.elems.product fJ.elems).map (fun ⟨i, j⟩ => i * j)).to_finset
+          let c' : Finset β → Finset β → β → β := fun fI fJ x =>
+            ∑ y in (fI.elems.product fJ.elems).to_finset.filter (fun y => y.fst * y.snd = x), cI y.fst * cJ y.snd
+          from_set.mem_as_sum.mpr ⟨f' fI fJ, c' fI fJ, by
+            intro x hx
+            let ⟨⟨y₁, y₂⟩, hy, hyx⟩ := UnorderedList.map.mem_map.mp (UnorderedList.mem_to_finset.mp hx)
+            have ⟨hyI, hyJ⟩ := UnorderedList.product.mem.mp hy
+            let ⟨i, hi, hiy⟩ := hfI hyI
+            let ⟨j, hj, hjy⟩ := hfJ hyJ
+            exact ⟨i * j, from_set.contains_mem ⟨i, hi, j, hj, rfl⟩, by rw [←hyx, f.preserve_mul, hiy, hjy]⟩,
+          by
+            have : ∀ x, c' fI fJ x * x = ∑ y in (fI.elems.product fJ.elems).to_finset.filter (fun y => y.fst * y.snd = x),
+              cI y.fst * y.fst * (cJ y.snd * y.snd) := fun x => by
+                simp only [Finset.map_sum.sum_mul]; exact Finset.map_sum.congr rfl (fun y hy => by
+                  rw [←(Finset.mem_filter.mp hy).right, mul_assoc, mul_left_comm (cJ y.snd), ←mul_assoc])
+            rw [hij, hcI, hcJ, Finset.map_sum.mul_distrib, Finset.map_sum.congr rfl (fun x _ => this x), Finset.sum_distrib]
+            have : (∑ x in (f' fI fJ), ((fI.elems.product fJ.elems).to_finset.filter (fun y => y.fst * y.snd = x)).elems).nodup :=
+              UnorderedList.sum_nodup (UnorderedList.nodup_map_on
+                (fun x hx y hy h =>
+                  let ⟨⟨xi, xj⟩, hxij, hxe⟩ := UnorderedList.map.mem_map.mp (UnorderedList.mem_to_finset.mp hx)
+                  have : (xi, xj) ∈ ((fI.elems.product fJ.elems).to_finset.filter (fun y' => y'.fst * y'.snd = y)).elems :=
+                    h ▸ Finset.mem_filter.mpr ⟨UnorderedList.mem_to_finset.mpr  hxij, hxe⟩
+                  (Finset.mem_filter.mp this).right ▸ hxe.symm) (Finset.val_nodup _))
+                (fun s hs => let ⟨t, ht, hts⟩ := UnorderedList.map.mem_map.mp hs; hts ▸ Finset.val_nodup _)
+                (fun s hs t ht hst x hxs hxt => hst (by
+                  let ⟨s', hs', hse⟩ := UnorderedList.map.mem_map.mp hs
+                  let ⟨t', ht', hte⟩ := UnorderedList.map.mem_map.mp ht
+                  rw [←hse, ←hte]; rw [←hse] at hxs; rw [←hte] at hxt
+                  let ⟨_, hse⟩ := Finset.mem_filter.mp hxs; let ⟨_, hte⟩ := Finset.mem_filter.mp hxt
+                  rw [hse.symm.trans hte]))
+            have : fI.elems.product fJ.elems = ∑ x in (f' fI fJ), ((fI.elems.product fJ.elems).to_finset.filter (fun y => y.fst * y.snd = x)).elems :=
+              (UnorderedList.nodup_ext (UnorderedList.product.nodup fI.nodup fJ.nodup) this).mpr (fun ⟨x₁, x₂⟩ =>
+                ⟨fun hx => UnorderedList.sum_mem.mpr ⟨((fI.elems.product fJ.elems).to_finset.filter (fun y => y.fst * y.snd = x₁ * x₂)).elems,
+                  UnorderedList.map.mem_map.mpr ⟨x₁ * x₂, UnorderedList.mem_to_finset.mpr (UnorderedList.map.mem_map.mpr ⟨(x₁, x₂), hx, rfl⟩), rfl⟩,
+                  Finset.mem_filter.mpr ⟨UnorderedList.mem_to_finset.mpr hx, rfl⟩⟩,
+                fun hx => by
+                  let ⟨l, hl, hxl⟩ := UnorderedList.sum_mem.mp hx
+                  let ⟨y, hy, hyl⟩ := UnorderedList.map.mem_map.mp hl
+                  rw [←hyl] at hxl; exact UnorderedList.mem_to_finset.mp (Finset.mem_filter.mp hxl).left⟩)
+            exact UnorderedList.map_sum.congr this (fun _ _ => rfl)⟩)⟩
+
+    theorem extension_pow [Ring α] [Ring β] (f : α →ᵣ β) (I : Ideal α) {n : Nat} (hn : n ≠ 0) : extension f (I ^ n) = extension f.hom I ^ n := by
+      have : ∀ n : Nat, extension f (I ^ n.succ) = extension f.hom I ^ n.succ := fun n => by
+        induction n with
+        | zero      => rw [pow_nat_1, pow_nat_1]
+        | succ n ih => rw [pow_nat_succ, extension_mul, ih, pow_nat_succ _ n.succ]
+      cases n; contradiction; exact this _
+
+    theorem extension_zero [Ring α] [Ring β] {f : α → β} {I : Ideal α} : extension f I = 0 ↔ I.subset ⊆ Function.fibre f 0 :=
+      ⟨fun h x hx => by
+        have : f x ∈ extension f I := from_set.contains_mem ⟨x, hx, rfl⟩
+        rw [h] at this; exact this,
+      fun h => Ideal.antisymm (from_set.zero_set _ ▸ from_set.subset (Subset.trans (Function.image'_subset f h)
+        fun x ⟨y, hy, hyx⟩ => hyx ▸ hy)) (zero_ideal_in _)⟩
 
     abbrev preserve_mul_left [Ring α] [Ring β] (f : α →₋ β) : Prop := ∀ a b, ∃ c, f (a * b) = c * f b
   end Ideal
@@ -901,6 +1022,11 @@ namespace M4R
     theorem contraction_extension_eq_of_surjective (hfs : Function.surjective f.hom)
       (J : Ideal β) : extension f (contraction hf J) = J :=
         Ideal.antisymm (contraction_extension _ J) (contraction_extension_of_surjective hf hfs J)
+
+    theorem contraction.of_subset_of_surjective (hfs : Function.surjective f.hom) {I J : Ideal β}
+      (h : contraction hf I ⊆ contraction hf J) : I ⊆ J :=
+        contraction_extension_eq_of_surjective hf hfs I ▸
+          contraction_extension_eq_of_surjective hf hfs J ▸ extension.subset f.hom h
 
     theorem contraction_injective_of_contraction_extension (hf' : ∀ I, extension f (contraction hf I) = I) :
       Function.injective (contraction hf) := fun x y h => hf' x ▸ hf' y ▸ congrArg _ h

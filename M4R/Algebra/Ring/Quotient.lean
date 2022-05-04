@@ -135,6 +135,9 @@ namespace M4R
           ⟨j, hj, by rw [←hyx, ←hij, (natural_hom I).preserve_add, natural_hom.kernel.mpr hi, zero_add]⟩,
         fun ⟨y, hy, hyx⟩ => ⟨y, Ideal.add.subset' I J hy, hyx⟩⟩)
 
+    theorem quotient_contraction_contains [Ring α] {I : Ideal α} (J : Ideal (QClass I)) : I ⊆ contractionᵣ₁ (natural_hom I) J :=
+      fun x hx => (natural_hom.kernel.mpr hx ▸ J.has_zero : natural_hom I x ∈ J)
+
     theorem quotient_extension_contraction [Ring α] {I J : Ideal α} (h : I ⊆ J) :
       contractionᵣ₁ (natural_hom I) (extension (natural_hom I) J) = J :=
         Ideal.antisymm (fun x hx =>
@@ -157,6 +160,27 @@ namespace M4R
               have := J.add_closed (J.mul_closed x' (hy y' hy')) (h ((QClass.equiv I (x' * y') z).mp hz.symm))
               rw [←add_assoc, add_neg, zero_add] at this
               exact this) x rfl) (extension_contraction _ J)
+
+    theorem quotient_extension_injective [Ring α] {I J K : Ideal α} (h : extension (natural_hom I) J = extension (natural_hom I).hom K) :
+      J + I = K + I := by
+        have := congrArg (contractionᵣ₁ (natural_hom I)) h
+        rw [←natural_hom.extension_add_I I J, quotient_extension_contraction (Ideal.add.subset I J), Ideal.add.comm I J,
+          ←natural_hom.extension_add_I I K, quotient_extension_contraction (Ideal.add.subset I K), Ideal.add.comm I K] at this
+        exact this
+
+    theorem quotient_contraction_injective [Ring α] {I : Ideal α} : Function.injective (contractionᵣ₁ (natural_hom I)) :=
+      contraction_injective_of_surjective _ (natural_hom.surjective I)
+
+    theorem quotient_extension_proper [Ring α] {I : Ideal α} {J : Ideal α} (hIJ : I ⊆ J) (hJ : J.proper_ideal) : (extension (natural_hom I).hom J).proper_ideal :=
+      fun h => absurd (((add.of_subset hIJ).symm.trans (quotient_extension_injective (extension_unit_of_surjective (natural_hom.surjective I) ▸ h))).trans
+        (add.of_subset (in_unit_ideal I))) hJ
+
+    theorem quotient_extension_unit [Ring α] {I : Ideal α} {J : Ideal α} (hIJ : I ⊆ J) (hJ : extension (natural_hom I).hom J = 1) : J = 1 :=
+      Classical.byContradiction fun h => absurd hJ (quotient_extension_proper hIJ h)
+
+    theorem quotient_extension_zero [Ring α] {I J : Ideal α} : extension (natural_hom I).hom J = 0 ↔ J ⊆ I :=
+      Iff.trans Ideal.extension_zero ⟨fun h x hx => natural_hom.kernel.mp (h hx),
+        fun h x hx => natural_hom.kernel.mpr (h hx)⟩
 
     abbrev quotient_zero.inv_map [Ring α] : QClass (0 : Ideal α) → α :=
       Quot.lift id (fun x y h => by

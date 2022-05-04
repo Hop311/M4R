@@ -198,4 +198,8 @@ namespace List
       exact pairwise_of_pw_filter r l }
 
   theorem nodup_dedup : ∀ l : List α, l.dedup.nodup := pairwise_of_pw_filter _
+
+  theorem nodup_append {l₁ l₂ : List α} : nodup (l₁++l₂) ↔ nodup l₁ ∧ nodup l₂ ∧ disjoint l₁ l₂ := by
+    simp only [nodup, Pairwise.appendIff, disjoint_iff_ne]; exact Iff.rfl
+
 end List

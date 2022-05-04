@@ -21,6 +21,8 @@ namespace M4R
 
     def length (f : Finset α) : Nat := f.elems.length
 
+    theorem val_nodup (f : Finset α) : f.elems.nodup := f.nodup
+
     protected def toSet (f : Finset α) : Set α := Set.toSet f
     protected def ext_toSet {f : Finset α} {x : α} : x ∈ f ↔ x ∈ f.toSet := ⟨id, id⟩
 
@@ -54,6 +56,8 @@ namespace M4R
       eq_empty_of_forall_not_mem fun x hx => h hx
 
     theorem mem_empty {a : α} : a ∈ (∅ : Finset α) ↔ False := Iff.rfl
+    theorem empty_val (α : Type _) : (∅ : Finset α).elems = 0 := rfl
+    theorem empty_toSet (α : Type _) : (∅ : Finset α).toSet = ∅ := rfl
 
     protected def singleton (a : α) : Finset α := ⟨UnorderedList.singleton a, Pairwise.singleton _ a⟩
 
@@ -176,6 +180,8 @@ namespace M4R
 
     @[simp] theorem mem_filter {s : Finset α} {a : α} : a ∈ s.filter p ↔ a ∈ s ∧ p a := UnorderedList.mem_filter
 
+    theorem filter_empty (p : α → Prop) : (∅ : Finset α).filter p = ∅ := rfl
+
     noncomputable instance sdiff_SetMinus : SetMinus (Finset α) :=
       ⟨fun s₁ s₂ => ⟨s₁.elems - s₂.elems, @UnorderedList.le.nodup_of_le α (s₁.elems - s₂.elems) s₁.elems
         (UnorderedList.le.sub_le_self _ _) s₁.nodup⟩⟩
@@ -199,6 +205,20 @@ namespace M4R
 
     @[simp] theorem inter_sdiff_self (s₁ s₂ : Finset α) : s₁ ∩ (s₂ ∖ s₁) = ∅ :=
       eq_empty_of_forall_not_mem (by simp only [mem_inter, mem_sdiff]; exact fun x ⟨h, _, hn⟩ => absurd h hn)
+
+    theorem union_sdiff (s₁ s₂ : Finset α) : s₁ ∪ s₂ ∖ s₁ = s₁ ∪ s₂ :=
+      Finset.ext fun _ => by
+        simp only [Finset.mem_union, Finset.mem_sdiff]
+        exact ⟨Or.imp_right And.left, (Or.elim · Or.inl (fun h => or_iff_not_imp_left.mpr (And.intro h)))⟩
+
+    theorem disjoint_sdiff (s₁ s₂ : Finset α) : disjoint s₁ (s₂ ∖ s₁) :=
+      inter_sdiff_self s₁ s₂
+
+    theorem sdiff_empty_left (s : Finset α) : ∅ ∖ s = ∅ :=
+      Finset.ext fun _ => by simp only [Finset.mem_sdiff, Finset.mem_empty, false_and]
+
+    theorem sdiff_empty_right (s : Finset α) : s ∖ ∅ = s :=
+      Finset.ext fun _ => by simp only [Finset.mem_sdiff, Finset.mem_empty, and_true]; exact Iff.rfl
 
     section cons
 
@@ -242,6 +262,17 @@ namespace M4R
           Or.elim h (· ▸ Finset.mem_map_inj.mp (mem_cons_self s ha)) (fun h =>
             let ⟨b, hb, he⟩ := Finset.map_inj_mem.mp h
             Finset.map_inj_mem.mpr ⟨b, mem_cons.mpr (Or.inr hb), he⟩)⟩
+
+    @[simp] theorem filter_cons_of_pos (p : α → Prop) {a : α} {s : Finset α} (ha : a ∉ s) (hpa : p a) : filter p (s.cons a ha) = (filter p s).cons a (fun h =>
+      absurd (mem_filter.mp h).left ha) :=
+        Finset.ext fun x => by
+          simp only [Finset.mem_cons, Finset.mem_filter]
+          exact ⟨fun ⟨h₁, h₂⟩ => h₁.imp_right (fun h => ⟨h, h₂⟩), fun h => h.elim (fun h => ⟨Or.inl h, h ▸ hpa⟩) (And.imp_left Or.inr)⟩
+
+    @[simp] theorem filter_cons_of_neg (p : α → Prop) {a : α} {s : Finset α} (ha : a ∉ s) (hpa : ¬p a) : filter p (s.cons a ha) = filter p s :=
+      Finset.ext fun x => by
+        simp only [Finset.mem_filter, Finset.mem_cons]
+        exact ⟨fun ⟨h₁, h₂⟩ => ⟨h₁.resolve_left (fun h => absurd (h ▸ h₂) hpa), h₂⟩, And.imp_left Or.inr⟩
 
     section insert
 
@@ -320,8 +351,7 @@ namespace M4R
         Finset.ext fun x => by
           byCases hx : x = a
           { simp only [hx, hs, true_iff]; exact mem_cons_self _ _ }
-          { simp only [mem_cons, hx, false_or, mem_erase, ne_eq, true_and];
-            exact Iff.rfl }
+          { simp only [mem_cons, hx, false_or, mem_erase, ne_eq, true_and]; exact Iff.rfl }
 
     end erase
   end Finset

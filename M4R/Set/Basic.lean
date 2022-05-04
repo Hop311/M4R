@@ -119,6 +119,8 @@ namespace M4R
 
       theorem subset_inter_left (s t : Set α) : s ∩ t ⊆ s := fun _ => And.left
       theorem subset_inter_right (s t : Set α) : s ∩ t ⊆ t := fun _ => And.right
+      theorem and_subset_and {s₁ s₂ t₁ t₂ : Set α} (hs : s₁ ⊆ s₂) (ht : t₁ ⊆ t₂) : s₁ ∩ t₁ ⊆ s₂ ∩ t₂ :=
+        fun _ => And.imp (hs ·) (ht ·)
 
     end intersection
 

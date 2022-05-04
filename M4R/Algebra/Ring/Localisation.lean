@@ -28,6 +28,9 @@ namespace M4R
   theorem PrimeComp.disjoint [Ring α] {P : Ideal α} (hP : P.is_prime) : Set.disjoint P.subset (PrimeComp hP).subset :=
     Set.disjoint.elementwise.mpr fun _ => iff_not_not.mpr
 
+  theorem PrimeComp.disjoint_subset [Ring α] {P : Ideal α} (hP : P.is_prime) {I : Ideal α} (hIP : I ⊆ P) : Set.disjoint I.subset (PrimeComp hP).subset :=
+    Set.ext.mp fun x => ⟨fun hx => absurd (hIP hx.left) hx.right, fun _ => by contradiction⟩
+
   abbrev frac [Ring α] (S : MultiplicativeSet α) := α × S.subset
 
   namespace frac
@@ -284,9 +287,57 @@ namespace M4R
     noncomputable def delocaliseₚ [Ring α] {P : Ideal α} (hP : P.is_prime) (I : Ideal (localisationₚ hP)) :
       Ideal α := delocalise_ideal (PrimeComp hP) I
 
-    abbrev natural_homₚ [Ring α] {P : Ideal α} (hP : P.is_prime) : α →ᵣ localisationₚ hP :=
-      (natural_hom (PrimeComp hP)).toRMulMap
+    abbrev natural_homₚ [Ring α] {P : Ideal α} (hP : P.is_prime) : α →ᵣ₁ localisationₚ hP := natural_hom (PrimeComp hP)
 
+    theorem localisation_at.is_max [Ring α] {P : Ideal α} (hP : P.is_prime) :
+      ∀ I, I.is_maximal ↔ I = localiseₚ hP P :=
+        have : ∀ I : Ideal (localisationₚ hP), I ⊈ localiseₚ hP P → I = 1 := fun I hI =>
+          let ⟨x, hx₁, hx₂⟩ := NotSubset.exists_def.mp hI
+          Ideal.is_unit_ideal'.mpr ⟨x,
+            let ⟨r, s, hs, he⟩ := exists_frac x
+            he ▸ is_unit (fun hr => hx₂ (localise_ideal.exists_frac.mpr ⟨r, s, hr, hs, he⟩)) hs, hx₁⟩
+        fun I =>
+          ⟨fun hI => ((hI.right (of_not_not (mt (this I) hI.left))).resolve_right
+            (localise_ideal.proper.mpr (PrimeComp.disjoint hP))).symm,
+          fun h => by rw [h]; exact ⟨localise_ideal.proper.mpr (PrimeComp.disjoint hP), fun hJ =>
+            or_iff_not_imp_left.mpr fun h => this _ fun h' => h (Ideal.antisymm h' hJ)⟩⟩
+
+    theorem localisation_at.maximal [Ring α] {P : Ideal α} (hP : P.is_prime) : (localiseₚ hP P).is_maximal :=
+      (localisation_at.is_max hP _).mpr rfl
+
+    theorem localisation_at.prime [Ring α] {P : Ideal α} (hP : P.is_prime) : (localiseₚ hP P).is_prime :=
+      Ideal.maximal_is_prime (maximal hP)
+
+    noncomputable def symbolic_power [Ring α] {P : Ideal α} (hP : P.is_prime) (n : Nat) : Ideal α :=
+      delocaliseₚ hP (localiseₚ hP (P ^ n))
+
+    namespace symbolic_power
+      theorem zero_eq_unit [Ring α] {P : Ideal α} (hP : P.is_prime) : symbolic_power hP 0 = 1 :=
+        Ideal.antisymm (Ideal.in_unit_ideal _) (fun x hx => Ideal.from_set.contains_mem ⟨x, hx, rfl⟩)
+
+      theorem primary [Ring α] {P : Ideal α} (hP : P.is_prime) {n : Nat} (hn : n ≠ 0) : (symbolic_power hP n).is_primary := by
+        have h₁ : localiseₚ hP (P ^ n) = localiseₚ hP P ^ n := Ideal.extension_pow (natural_hom (PrimeComp hP)).toRMulMap P hn
+        have h₂ : ((localiseₚ hP P) ^ n).is_primary := Ideal.is_primary_of_radical_maximal (by
+          rw [Ideal.radical_pow_of_prime (Ideal.maximal_is_prime (localisation_at.maximal hP)) n hn]; exact localisation_at.maximal hP)
+        simp only [symbolic_power, h₁]; exact Ideal.contraction_is_primary _ h₂
+
+      theorem proper [Ring α] {P : Ideal α} (hP : P.is_prime) {n : Nat} (hn : n ≠ 0) : (symbolic_power hP n).proper_ideal :=
+        (primary hP hn).left
+
+      theorem rad_eq [Ring α] {P : Ideal α} (hP : P.is_prime) {n : Nat} (hn : n ≠ 0) : (symbolic_power hP n).radical = P := by
+        simp only [symbolic_power]
+        have h₁ : localiseₚ hP (P ^ n) = localiseₚ hP P ^ n := Ideal.extension_pow (natural_hom (PrimeComp hP)).toRMulMap P hn
+        have h₂ : delocaliseₚ hP (localiseₚ hP P ^ n).radical = (delocaliseₚ hP (localiseₚ hP P ^ n)).radical :=
+          Ideal.contraction_radical (natural_hom (PrimeComp hP)) (localiseₚ hP P ^ n)
+        have h₃ : (localiseₚ hP P ^ n).radical = localiseₚ hP P := Ideal.radical_pow_of_prime (localisation_at.prime hP) n hn
+        rw [h₁, ←h₂, h₃]; exact localise_ideal.prime_loc_deloc hP (PrimeComp.disjoint hP)
+
+      theorem descending [Ring α] {P : Ideal α} (hP : P.is_prime) (n : Nat) : symbolic_power hP n.succ ⊆ symbolic_power hP n :=
+        Ideal.contraction.subset (natural_hom (PrimeComp hP)).preserve_mul_left (Ideal.extension.subset _ (Ideal.product.pow_succ_subset P n))
+
+      theorem subset_base [Ring α] {P : Ideal α} (hP : P.is_prime) {n : Nat} (hn : n ≠ 0) : symbolic_power hP n ⊆ P := by
+        have := Ideal.radical.sub_self (symbolic_power hP n); rw [rad_eq hP hn] at this; exact this
+    end symbolic_power
   end localisation
 
 end M4R

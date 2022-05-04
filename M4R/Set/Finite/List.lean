@@ -976,4 +976,15 @@ namespace List
         let ⟨y, hy, hay⟩ := this.mpr ⟨a, ha, rfl⟩; exact hay ▸ hy⟩
 
   end dedup
+
+  def disjoint (s t : List α) : Prop := ∀ x, x ∈ s → x ∉ t
+
+  theorem disjoint.symm {s t : List α} : disjoint s t ↔ disjoint t s :=
+    have : ∀ s t : List α, disjoint s t → disjoint t s :=
+      fun s t h x ht hs => h x hs ht
+    ⟨this s t, this t s⟩
+
+  theorem disjoint_iff_ne {l₁ l₂ : List α} : disjoint l₁ l₂ ↔ ∀ a ∈ l₁, ∀ b ∈ l₂, a ≠ b :=
+    ⟨fun h x hx y hy hxy => absurd hy (hxy ▸ h x hx), fun h x h₁ h₂ => absurd rfl (h x h₁ x h₂)⟩
+
 end List

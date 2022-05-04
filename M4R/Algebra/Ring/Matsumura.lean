@@ -3,7 +3,7 @@ import M4R.Algebra.Ring.Localisation
 import M4R.Algebra.Ring.Radical
 
 namespace M4R
-  open Monoid NCSemiring Semiring
+  open Monoid NCSemiring Semiring NCRing
 
   variable {A : Type _} [Ring A] {I : Ideal A}
 
@@ -25,9 +25,62 @@ namespace M4R
       | inr h => exact Or.inr (of_not_not h)
     ⟩⟩
 
-  theorem Ideal.exists_prime_ideal (α) [NonTrivialRing α] : ∃ I : Ideal α, I.is_prime :=
-    let ⟨I, _, hI⟩ := t1_1 (Ideal.zero_ideal_proper α)
-    ⟨I, Ideal.maximal_is_prime hI⟩
+  theorem Ideal.exists_maximal_containing {x : A} (hx : ¬isUnit x) : ∃ I : Ideal A, I.is_maximal ∧ x ∈ I :=
+    let ⟨I, hxI, hI⟩ := t1_1 (unit_not_principal hx)
+    ⟨I, hI, hxI (generator_in_principal x)⟩
+  theorem Ideal.exists_maximal_ideal (A) [NonTrivialRing A] : ∃ I : Ideal A, I.is_maximal :=
+    let ⟨I, _, hI⟩ := t1_1 (zero_ideal_proper A)
+    ⟨I, hI⟩
+  theorem Ideal.exists_prime_ideal (A) [NonTrivialRing A] : ∃ I : Ideal A, I.is_prime :=
+    let ⟨I, hI⟩ := exists_maximal_ideal A
+    ⟨I, maximal_is_prime hI⟩
+
+  theorem Ring.jacobson_radical.units {x : A} : x ∈ jacobson_radical A ↔ ↑{y : A | ∃ r, 1 + r * x = y} ⊆ unit_set A :=
+    ⟨fun hx => fun y ⟨r, hrxy⟩ => Classical.byContradiction fun hy => by
+      let ⟨M, hM, hyM⟩ := Ideal.exists_maximal_containing hy
+      rw [←hrxy] at hyM
+      have := M.add_closed hyM ((M.mul_closed (-r) (maximal_subset_jacobson hM hx)))
+      rw [add_assoc, neg_mul, add_neg, add_zero] at this
+      exact absurd (Ideal.is_unit_ideal.mpr this) hM.left,
+    fun hx => Ideal.sIntersection.mem.mpr fun M hM => Classical.byContradiction fun h =>
+      let ⟨m, hm, x', ⟨s, hs⟩, h'⟩ := Ideal.is_unit_ideal.mp ((hM.right (Ideal.add.subset M (Ideal.principal x))).resolve_left
+        (fun h' => h (h' ▸ Ideal.add.subset' _ _ (Ideal.generator_in_principal x))));
+      have : 1 + -s * x ∈ M := by rw [←h', ←hs, mul_comm, neg_mul, add_assoc, add_neg, add_zero]; exact hm
+      absurd (Ideal.is_unit_ideal'.mpr ⟨1 + -s * x, hx ⟨-s, rfl⟩, this⟩) hM.left⟩
+
+  theorem Ring.nakayama {M : Ideal A} (hM : M.finitely_generated) {I : Ideal A} (hI : I ⊆ Ring.jacobson_radical A)
+    (hIM : M = I * M) : M = 0 := by
+      let ⟨f, hfM, hfmax⟩ := hM.has_minimal_generating_set
+      byCases hf : f = ∅
+      { rw [hf, Finset.empty_toSet, Ideal.from_set.empty] at hfM; exact hfM }
+      { let ⟨g, hg⟩ : ∃ g, g ∈ f := Classical.byContradiction fun h => hf (Finset.ext fun x => by
+          rw [Finset.mem_empty, iff_false]; exact not_exists.mp h x);
+        have : g ∈ I * M := hIM ▸ hfM ▸ Ideal.from_set.contains_mem hg;
+        let ⟨c, hcI, hfc⟩ : ∃ c : A → A, (∀ x, c x ∈ I) ∧ g = ∑ x in f, c x * x :=
+          let ⟨fs, c, hf, hc⟩ := Ideal.from_set.mem_as_sum.mp this
+          @Finset.cons_induction _ (fun fs : Finset A => fs.toSet ⊆ Ideal.product_gen I M → ∀ g, g = (∑ x in fs, c x * x) →
+            ∃ c : A → A, (∀ x, c x ∈ I) ∧ g = ∑ x in f, c x * x) (fun _ g hg => ⟨fun _ => 0, fun _ => I.has_zero, by
+            rw [hg, Finset.map_sum.empty, Finset.map_sum.eq_zero (fun _ _ => by rw [zero_mul])]⟩)
+            (fun x fs hx ih hfs g hg =>
+              let ⟨c', hc', hgc'⟩ := ih (Subset.trans (fun _ => Finset.mem_cons_self' hx) hfs) (g - c x * x)
+                (by rw [Finset.map_sum.cons] at hg; exact Group.sub_eq.mpr hg)
+              let ⟨i, hi, m, hm, him⟩ := hfs (Finset.mem_cons_self fs hx)
+              let ⟨mc, hmc⟩ := Ideal.from_set.mem_as_sum_finset.mp (hfM ▸ hm : m ∈ Ideal.from_set f.toSet)
+              ⟨fun y => c' y + c x * i * mc y, fun y => I.add_closed (hc' y) (mul_right_comm _ _ _ ▸ I.mul_closed _ hi),
+              by simp only [mul_distrib_right, Finset.map_sum.distrib, mul_assoc,
+                ←Finset.map_sum.mul_sum]; rw [←hgc', ←hmc, ←him, Group.sub_add]⟩) fs hf g hc;
+        let ⟨u, hu⟩ : isUnit (1 - c g) := by exact jacobson_radical.units.mp (hI (hcI g)) ⟨-1, by rw [neg_one_mul, Group.sub_def]⟩
+        have : (1 - c g) * g = ∑ x in f.erase g, c x * x := by
+          rw [sub_mul_distrib_right, one_mul, Group.sub_eq, ←Finset.map_sum.sum_term _ _ hg, hfc]
+        have := hfmax (f.erase g) (hfM ▸ Ideal.antisymm (Ideal.from_set.ideal_contained fun x hx => by
+          byCases hxg : x = g
+          { exact Ideal.from_set.mem_as_sum_finset.mpr ⟨fun y => u * c y, by
+              simp only [mul_assoc]; rw [←Finset.map_sum.mul_sum, ←this, ←mul_assoc, mul_comm u, hu, one_mul, hxg]⟩ }
+          { exact Ideal.from_set.contains_mem (Finset.mem_erase.mpr ⟨hxg, hx⟩) })
+              (Ideal.from_set.subset fun x hx => (Finset.mem_erase.mp hx).right));
+        exact absurd this (have : (f.erase g).length.succ = f.length := by
+            rw [congrArg Finset.length (Finset.erase_cons f hg), Finset.length_cons]
+          Nat.not_le.mpr (this ▸ Nat.lt.base _)) }
 
   -- Theorem 1.2
   theorem t1_2 (I) (S : MultiplicativeSet A) (hIS : Set.disjoint I.subset S.subset) :
@@ -59,15 +112,14 @@ namespace M4R
             (m.mul_closed _ s'im)) (m.mul_closed' r'im _),
             r * r'' * (s * s''), ⟨r'' * s'', by
               rw [mul_assoc, ←mul_assoc s, mul_comm s, mul_assoc, ←mul_assoc r]⟩, rfl⟩
-        have h₃ : m + Ideal.principal (r * s) = m := by
-          rw [Ideal.add.comm]; exact Ideal.add.of_subset (Ideal.principal_in m _ hrs)
+        have h₃ : m + Ideal.principal (r * s) = m := Ideal.add.of_subset (Ideal.principal_in hrs)
         rw [h₃] at h₂
 
         exact Set.nonempty.mpr (⟨_, h₂, h₁⟩ : Nonempty ↑(m.subset ∩ S.subset)) hm₁.right⟩
 
-  theorem Ideal.radical_prime_intersection : I.radical = ⋂₀ {J | I ⊆ J ∧ J.is_prime} :=
+  theorem Ideal.radical_prime_intersection (I : Ideal A) : I.radical = ⋂₀ {J | I ⊆ J ∧ J.is_prime} :=
     Ideal.antisymm (fun x hx => propext sIntersection.mem ▸ fun J ⟨hIJ, hJ⟩ =>
-      (prime_radical hJ).eq_rad ▸ subset_radical hIJ hx)
+      (prime_radical hJ).eq_rad ▸ radical.subset hIJ hx)
       (fun x hx => by
         apply Classical.byContradiction; intro hxI
         let S : MultiplicativeSet A := {
@@ -83,6 +135,11 @@ namespace M4R
           { exact absurd (radical.is_radical I x n hn0 (hn ▸ haI)) hxI })
         exact absurd ⟨1, rfl⟩ (Set.disjoint.elementwise.mp hJS x
           (sIntersection.mem.mp hx J ⟨Subset.trans (radical.sub_self I) hIJ, hJ⟩)))
+
+  theorem Ring.nil_radical.eq_prime_intersection (A : Type _) [Ring A] : Ring.nil_radical A = ⋂₀ Ring.Spec A :=
+    (Ideal.radical_prime_intersection 0).trans (Ideal.ext'.mpr fun x => by
+      rw [Ideal.sIntersection.mem, Ideal.sIntersection.mem]; exact forall_congr' fun P => (by
+        simp only [P.zero_ideal_in, true_and]; exact Iff.rfl : 0 ⊆ P ∧ P.is_prime → x ∈ P ↔ P.is_prime → x ∈ P))
 
   -- Theorem 1.3
   theorem t1_3 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :

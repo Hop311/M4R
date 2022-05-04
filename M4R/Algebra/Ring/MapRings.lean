@@ -5,9 +5,6 @@ open Classical
 
 namespace M4R
 
-  --noncomputable instance MapOne (α : Type _) (β : Type _) [Zero α] [Zero β] [One β] : One (α → β) where
-  --s  one := fun a => if a = 0 then 1 else 0
-
   namespace Finsupp        
 
     protected noncomputable instance one (α : Type _) (β : Type _) [Zero α] [Zero β] [One β] :

@@ -45,6 +45,8 @@ namespace M4R
       emptyCollection := UnorderedList.Empty
     instance UnorderedListZero : Zero (UnorderedList α) where zero := UnorderedList.Empty
     @[simp] theorem empty_eq : (↑([] : List α) : UnorderedList α) = 0 := rfl
+    theorem mem_empty {a : α} : a ∈ (0 : UnorderedList α) ↔ False := Iff.rfl
+    theorem nodup_zero (α : Type _) : (0 : UnorderedList α).nodup := List.nodup_nil
 
     protected def singleton (a : α) : UnorderedList α := ↑[a]
     @[simp] theorem singleton_eq (a : α) : List.to_UnorderedList [a] = UnorderedList.singleton a := rfl
@@ -59,6 +61,13 @@ namespace M4R
     protected theorem induction_on (p : UnorderedList α → Prop) (s : UnorderedList α)
       (h₁ : p 0) (h₂ : ∀ ⦃a : α⦄ {s : UnorderedList α}, p s → p (s.cons a)) : p s :=
         UnorderedList.induction h₁ h₂ s
+
+    def disjoint (s t : UnorderedList α) : Prop := ∀ x, x ∈ s → x ∉ t
+
+    theorem disjoint.symm {s t : UnorderedList α} : disjoint s t ↔ disjoint t s :=
+      have : ∀ s t : UnorderedList α, disjoint s t → disjoint t s :=
+        fun s t h x ht hs => h x hs ht
+      ⟨this s t, this t s⟩
 
     @[simp] theorem mem_cons {a b : α} {s : UnorderedList α} : a ∈ s.cons b ↔ a = b ∨ a ∈ s :=
       @Quotient.ind _ _ (fun (l : UnorderedList α) => a ∈ l.cons b ↔ a = b ∨ a ∈ l)
@@ -116,6 +125,10 @@ namespace M4R
       @[simp] theorem mem_add {a : α} {s t : UnorderedList α} : a ∈ s + t ↔ a ∈ s ∨ a ∈ t :=
         @Quotient.inductionOn₂ _ _ _ _ (fun (l₁ l₂ : UnorderedList α) => a ∈ l₁ + l₂ ↔ a ∈ l₁ ∨ a ∈ l₂)
           s t fun l₁ l₂ => List.mem_append
+
+      theorem nodup_add {s t : UnorderedList α} : (s + t).nodup ↔ s.nodup ∧ t.nodup ∧ disjoint s t :=
+        @Quotient.inductionOn₂ _ _ _ _ (fun (s t : UnorderedList α) => (s + t).nodup ↔ s.nodup ∧ t.nodup ∧ disjoint s t)
+          s t fun l₁ l₂ => List.nodup_append
 
     end append
 
@@ -973,5 +986,6 @@ namespace M4R
     theorem nodup_dedup (l : UnorderedList α) : l.dedup.nodup :=
       @Quotient.inductionOn _ _ (fun s : UnorderedList α => s.dedup.nodup) l List.nodup_dedup
 
+    
   end UnorderedList
 end M4R

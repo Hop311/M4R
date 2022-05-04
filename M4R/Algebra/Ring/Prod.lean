@@ -21,6 +21,16 @@ namespace M4R
       b ÷ (∑ f in s) :=
         prop_sum (b ÷ ·) f s (divides_zero b) h (fun _ _ => divides_add)
 
+    theorem mul_distrib [NCSemiring γ] (s₁ : UnorderedList α) (s₂ : UnorderedList β) (f₁ : α → γ) (f₂ : β → γ) :
+      (∑ f₁ in s₁) * (∑ f₂ in s₂) = ∑ x in s₁.product s₂, f₁ x.fst * f₂ x.snd :=
+        UnorderedList.induction_on (fun s₁ : UnorderedList α => (∑ f₁ in s₁) * (∑ f₂ in s₂) = ∑ x in s₁.product s₂, f₁ x.fst * f₂ x.snd) s₁
+          (by simp only [product.empty_left, empty, zero_mul])
+          (fun a s ih => by
+            simp only [cons, mul_distrib_right, ih, product.cons_left, append]
+            exact congrArg (_ + ·) (UnorderedList.induction_on (fun s₂ => f₁ a * (∑ f₂ in s₂) = ∑ x in s₂.map (Prod.mk a), f₁ x.fst * f₂ x.snd) s₂
+              (by simp only [map_nil, empty, mul_zero])
+              (fun _ _ ih => by simp only [map.cons, cons, mul_distrib_left, ih])))
+
   end UnorderedList.map_sum
 
   namespace Finset.map_sum
@@ -33,6 +43,10 @@ namespace M4R
 
     theorem div_sum [Semiring β] (b : β) (f : α → β) (s : Finset α) (h : ∀ a ∈ s, b ÷ f a) :
       b ÷ (∑ f in s) := UnorderedList.map_sum.div_sum b f s h
+
+    theorem mul_distrib [NCSemiring γ] (s₁ : Finset α) (s₂ : Finset β) (f₁ : α → γ) (f₂ : β → γ) :
+      (∑ f₁ in s₁) * (∑ f₂ in s₂) = ∑ x in s₁.elems.product s₂.elems, f₁ x.fst * f₂ x.snd :=
+        UnorderedList.map_sum.mul_distrib s₁.elems s₂.elems f₁ f₂
 
   end Finset.map_sum
 

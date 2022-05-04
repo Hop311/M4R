@@ -33,7 +33,7 @@ namespace M4R
     instance ProperIdealNonTrivialRing [Ring α] {I : Ideal α} (hI : I.proper_ideal) : NonTrivialRing (QClass I) :=
       (ProperIdeal_is_NonTrivial hI).toNonTrivialRing
 
-    theorem NonTrivialRingProperIdeal [Ring α] {I : Ideal α} (h : is_NonTrivial (QClass I)) : I.proper_ideal := by
+    theorem NonTrivialRingProperIdeal [Ring α] {I : Ideal α} (h : Ring.is_NonTrivial (QClass I)) : I.proper_ideal := by
       intro hu;
       have : (1 : QClass I) = (0 : QClass I) := by
         apply Eq.symm; apply Quot.sound; simp only [Setoid.r, QRel]
@@ -114,7 +114,7 @@ namespace M4R
         ⟨contraction.proper_of_preserve_one f.preserve_mul_left f.preserve_one hP.left,
           fun r s (h : _ ∈ P) => by rw [f.preserve_mul] at h; exact hP.right _ _ h⟩
 
-    theorem quotient_maximal [Ring α] {I : Ideal α} {P : Ideal α} (hP₁ : P.is_maximal) (hP₂ : I ⊆ P) :
+    theorem quotient_extension_maximal [Ring α] {I : Ideal α} {P : Ideal α} (hP₁ : P.is_maximal) (hP₂ : I ⊆ P) :
       (extension (QuotientRing.natural_hom I).hom P).is_maximal :=
         ⟨fun h => hP₁.left (by
           have := congrArg (contractionᵣ₁ (QuotientRing.natural_hom I) ·) h
@@ -129,6 +129,17 @@ namespace M4R
             (fun h => contraction_extension_eq_of_surjective (natural_hom I).preserve_mul_left
               (natural_hom.surjective I) J ▸ extension_unit_of_surjective (natural_hom.surjective I)
               ▸ congrArg (extension (QuotientRing.natural_hom I).hom ·) h) (hP₁.right this)⟩
+
+    theorem quotient_contraction_maximal [Ring α] {I : Ideal α} {M : Ideal (QClass I)} (hM : M.is_maximal) :
+      (contractionᵣ₁ (QuotientRing.natural_hom I) M).is_maximal :=
+        ⟨contraction.proper_of_preserve_one (QuotientRing.natural_hom I).preserve_mul_left
+          (QuotientRing.natural_hom I).preserve_one hM.left,
+        fun hJ => by
+          have hIJ := Subset.trans (quotient_contraction_contains M) hJ
+          rw [←quotient_extension_contraction hIJ] at hJ
+          have := contraction.of_subset_of_surjective _ (natural_hom.surjective I) hJ
+          exact (hM.right this).imp (fun h => quotient_extension_contraction hIJ ▸
+            congrArg (contractionᵣ₁ (natural_hom I)) h) (quotient_extension_unit hIJ)⟩
   end Ideal
   namespace Ring
 

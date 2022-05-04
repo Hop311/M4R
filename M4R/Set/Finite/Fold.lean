@@ -90,6 +90,11 @@ namespace M4R
                   (conv => rhs; rw [hassoc, ←hassoc (f x), hcomm (f x), hassoc _ (f x), ←hassoc])
                   rw [←ih, hassoc])
 
+      theorem append (init : α) (f : β → α) (s t : UnorderedList β) :
+        (s + t).map_fold op hcomm hassoc init f  = t.map_fold op hcomm hassoc (s.map_fold op hcomm hassoc init f) f := by
+          have := fold.append op (hrcomm_of_comm_assoc hcomm hassoc) init (s.map f) (t.map f)
+          rw [←map.add] at this; exact this
+
     end map_fold
   end UnorderedList
   namespace Finset

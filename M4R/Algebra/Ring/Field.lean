@@ -1,4 +1,4 @@
-import M4R.Algebra.Ring.Defs
+import M4R.Algebra.Ring.Ring
 
 namespace M4R
 
@@ -64,11 +64,6 @@ namespace M4R
   end NCIntegralDomain
 
   open NonTrivial NCField
-
-  def Ring.is_NonTrivial (α : Type _) [Ring α] : Prop := (1 : α) ≠ 0
-  def Ring.is_NonTrivial.toNonTrivialRing [Ring α] (h : is_NonTrivial α) : NonTrivialRing α where
-    toNonTrivial.one_neq_zero := h
-  theorem NonTrivialRing.to_is_NonTrivial [NonTrivialRing α] : Ring.is_NonTrivial α := NonTrivial.one_neq_zero
 
   def Ring.is_Field (α : Type _) [Ring α] : Prop := is_NonTrivial α ∧ ∀ {a : α}, (h : a ≠ 0) → ∃ b, a * b = 1
   noncomputable def Ring.is_Field.toField [Ring α] (h : is_Field α) : Field α where

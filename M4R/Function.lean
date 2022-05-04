@@ -17,6 +17,8 @@ namespace M4R
 
     theorem image'_sub_image (f : α → β) (s : Set α) : image' f s ⊆ image f :=
       fun x ⟨y, hy, hye⟩ => ⟨y, hye⟩
+    theorem image'_subset (f : α → β) {s₁ s₂ : Set α} (h : s₁ ⊆ s₂) : image' f s₁ ⊆ image' f s₂ :=
+      fun x ⟨y, hys₁, hyx⟩ => ⟨y, h hys₁, hyx⟩
 
     def injective (f : α → β) : Prop := ∀ ⦃x y : α⦄, f x = f y → x = y
     def surjective (f : α → β) : Prop := ∀ y : β, ∃ x : α, f x = y
