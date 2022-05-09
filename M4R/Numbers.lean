@@ -5,6 +5,9 @@ namespace Nat
   @[simp] theorem pred_zero : pred 0 = 0 := rfl
   @[simp] theorem pred_succ (n : Nat) : pred (succ n) = n := rfl
 
+  protected theorem lt_one {n : Nat} (hn : n < 1) : n = 0 :=
+    Nat.eq_zero_of_le_zero (Nat.le_of_succ_le_succ hn)
+
   protected theorem ne_of_lt {m n : Nat} : m < n → m ≠ n :=
     fun h h' => Nat.lt_irrefl n (by rw [h'] at h; exact h)
 
@@ -364,6 +367,9 @@ namespace Nat
 
   theorem lt_add_pos_right (n : Nat) {m : Nat} (h : m ≠ 0) : n < n + m :=
     Nat.add_comm n m ▸ lt_add_pos_left n h
+
+  theorem sub_pos_iff_lt {m n : Nat} : 0 < m - n ↔ n < m :=
+    (pos_iff_ne_zero.trans (M4R.not_iff_not.mpr (sub_eq_zero_iff_le m n))).trans Nat.not_le
 
 end Nat
 

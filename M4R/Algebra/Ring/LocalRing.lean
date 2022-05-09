@@ -22,7 +22,7 @@ namespace M4R
     theorem units {a : α} : isUnit a ↔ a ∉ m :=
       ⟨fun h₁ h₂ => absurd (is_unit_ideal'.mpr ⟨a, h₁, h₂⟩) m_proper,
        not_imp_symm fun ha =>
-        let ⟨I, haI, hI⟩ := t1_1 (unit_not_principal ha)
+        let ⟨I, haI, hI⟩ := exists_maximal_containing (unit_not_principal ha)
         maximal_is_m hI ▸ haI (generator_in_principal a)⟩
 
     theorem not_unit {a : α} : ¬isUnit a ↔ a ∈ m := (iff_not_comm.mp units).symm
@@ -130,6 +130,44 @@ namespace M4R
               (c.length_spec.left 1 (Nat.not_le.mp h)).symm⟩) (Ideal.subsetneq.mpr (by simp only [←c.hbase]; exact ⟨c.hdescend 0,
               (c.length_spec.left 0 (Nat.lt_trans Nat.zero_lt_one (Nat.not_le.mp h))).symm⟩)), maximal_is_prime m_max⟩
 
+    theorem local_krull_height_theorem [NoetherianLocalRing α] (f : Finset α) (hf : (from_set f.toSet).proper_ideal)
+      (hP : m.minimal_prime_ideal_of (from_set f.toSet)) : (m : Ideal α).height_le f.length :=
+        /-
+          • STRONG INDUCTION
+          • f.length = 0 → from_set f = 0 → minimal primes of 0 have height 0
+          • f.length = 1 → from_set f is principal → krull_principal_ideal_theorem
+          • f.length > 1 and true for any f' with f'.length < f.length → (see below)
+        -/
+        Finset.strong_induction (fun f : Finset α => (from_set f.toSet).proper_ideal → m.minimal_prime_ideal_of (from_set f.toSet) → (m : Ideal α).height_le f.length)
+          (fun f ih hf hP => by
+            simp only at *
+            exact (Nat.lt_trichotomy f.length 1).elim
+              (fun hf1 => by
+                have : f.length = 0 := Nat.lt_one hf1
+                rw [this]; rw [Finset.eq_empty_of_length_eq_zero this] at hP
+                exact m.height_le_of_eq (m.height_eq_zero.mpr (from_set.empty ▸ hP))) (Or.elim ·
+              (fun hf1 =>
+                let ⟨a, ha⟩ := Finset.length.eq_one.mp hf1
+                have : from_set f.toSet = principal a := by rw [ha, Finset.singleton_toSet, from_set.is_principal]
+                hf1 ▸ local_krull_principal_ideal_theorem (fun ha' => absurd (this ▸ unit_principal ha') hf) (this ▸ hP))
+              (fun hf1 => by
+                /-
+                  • sufficient to show height Q ≤ f.length - 1 for any prime ideal Q such that Q ⊊ m with no prime Q' in between (NOT Q ⊊ Q' ⊊ m)
+                  • from_set f ⊈ Q as m is minimal prime, so f must contain at least one generator g ∉ Q
+                  • use artinian_of_primes_maximal on R/(Q + principal g) (primes in R/(Q + gR) correspond to primes P in R s.t.
+                    Q + gR ⊊ P (i.e. only m, which is also maximal in the quotient))
+                  • artinian → nilradical nilpotent, and nilradical = m / (Q + gR) (⋂₀ of primes = {m})
+                  • (m/(Q + gR)) ^ n = 0 → m ^ n ⊆ Q + gR → all generators in x ∈ f (apart from g?) satisfy x ^ n ∈ Q + principal g,
+                    i.e. xᵢ = dᵢ + rᵢg, xᵢ ∈ f ∖ { g }, dᵢ ∈ Q, rᵢ ∈ R
+                  • any prime ideal containing all the dᵢ's and g must contain all of f, and so must equal m. Thus, letting d = {d₁, ..., dᵢ} (of length f.length-1),
+                    we have : M / (from_set d) is a minimal prime ideal of principal (natural_hom (from_set d) g) (or principal g / (from_set d)?).
+                  • Using krull_principal_ideal_theorem (maybe even local version?) we have height (m / (from_set d)) ≤ 1, and so Q must be a minimal prime of from_set d,
+                    otherwise if there exists a prime Q' s.t. from_set d ⊆ Q' ⊊ Q, we would have Q' / (from_set d) ⊊ Q / (from_set d) ⊊ m / (from_set d),
+                    violating the height condition.
+                  • As Q is a minimal prime of from_set d (with d.length + 1 = f.length), ih gives height Q ≤ n - 1
+                -/
+                sorry))) f hf hP
+
   end NoetherianLocalRing
 
   namespace NoetherianRing
@@ -144,6 +182,18 @@ namespace M4R
             (1 : Ideal (localisationₚ hP.left)) ⊆ m)) m_proper) this
         local_height_le hP.left (PrimeComp.disjoint hP.left) 1
           (m_def hP.left ▸ this : height_le (localiseₚ hP.left P) 1)
+
+    theorem krull_height_theorem [NoetherianRing α] (f : Finset α) (hf : (from_set f.toSet).proper_ideal)
+      (P : Ideal α) (hP : P.minimal_prime_ideal_of (from_set f.toSet)) : P.height_le f.length :=
+        let f' : Finset (localisationₚ hP.left) := (f.map (natural_homₚ hP.left)).to_finset
+        have hf' : f'.length ≤ f.length := f.length_map (natural_homₚ hP.left).hom ▸
+          (f.map (natural_homₚ hP.left).hom).to_finset_length_le
+        have : m.minimal_prime_ideal_of (from_set f'.toSet) := by
+          exact extension_from_finset (natural_homₚ hP.left).preserve_mul_left f ▸ m_def hP.left
+            ▸ minimal_prime_localisation hP (PrimeComp.disjoint hP.left)
+        have := NoetherianLocalRing.local_krull_height_theorem f' this.right_proper this
+        P.height_le_trans hf' (local_height_le hP.left (PrimeComp.disjoint hP.left) f'.length (m_def hP.left ▸ this :
+          height_le (localiseₚ hP.left P) f'.length))
 
   end NoetherianRing
 

@@ -44,7 +44,7 @@ namespace M4R
     instance EmptyFinsetEmptyCollection : EmptyCollection (Finset α) where
       emptyCollection := Finset.Empty
 
-    def length_empty (α : Type) : (∅ : Finset α).length = 0 := rfl
+    def length_empty (α : Type _) : (∅ : Finset α).length = 0 := rfl
 
     theorem empty_subset (f : Finset α) : (∅ : Finset α) ⊆ f :=
       fun _ _ => by contradiction
@@ -59,6 +59,9 @@ namespace M4R
     theorem empty_val (α : Type _) : (∅ : Finset α).elems = 0 := rfl
     theorem empty_toSet (α : Type _) : (∅ : Finset α).toSet = ∅ := rfl
 
+    theorem eq_empty_of_length_eq_zero {s : Finset α} (hs : s.length = 0) : s = ∅ :=
+      val_inj.mp (UnorderedList.eq_nil_of_length_eq_zero hs)
+
     protected def singleton (a : α) : Finset α := ⟨UnorderedList.singleton a, Pairwise.singleton _ a⟩
 
     protected theorem in_singleton {a a' : α} : a' ∈ Finset.singleton a → a' = a :=
@@ -69,6 +72,13 @@ namespace M4R
 
     protected theorem mem_singleton {a a' : α} : a' ∈ Finset.singleton a ↔ a' = a :=
       ⟨Finset.in_singleton, fun h => h.symm ▸ Finset.self_singleton a⟩
+
+    theorem singleton_toSet (a : α) : (Finset.singleton a).toSet = Set.singleton a :=
+      Set.ext.mp fun _ => Iff.trans Finset.mem_singleton Iff.rfl
+
+    theorem length.eq_one {s : Finset α} : s.length = 1 ↔ ∃ a, s = Finset.singleton a :=
+      Iff.trans UnorderedList.length.eq_one
+        ⟨fun ⟨a, ha⟩ => ⟨a, val_inj.mp ha⟩, fun ⟨a, ha⟩ => ⟨a, val_inj.mpr ha⟩⟩
 
     section map
       protected def map (f : α → β) (s : Finset α) : UnorderedList β := s.elems.map f
@@ -246,7 +256,7 @@ namespace M4R
         ⟨cons_subset s h, a, h, mem_cons_self s h⟩
 
       theorem length_cons {a : α} (s : Finset α) (h : a ∉ s) : (s.cons a h).length = s.length + 1 :=
-        UnorderedList.length_cons a s
+        UnorderedList.length.cons a s
 
     end cons
 
@@ -262,6 +272,9 @@ namespace M4R
           Or.elim h (· ▸ Finset.mem_map_inj.mp (mem_cons_self s ha)) (fun h =>
             let ⟨b, hb, he⟩ := Finset.map_inj_mem.mp h
             Finset.map_inj_mem.mpr ⟨b, mem_cons.mpr (Or.inr hb), he⟩)⟩
+
+    @[simp] theorem length_map (f : α → β) (s : Finset α) : (s.map f).length = s.length :=
+      UnorderedList.map.length_map f s.elems
 
     @[simp] theorem filter_cons_of_pos (p : α → Prop) {a : α} {s : Finset α} (ha : a ∉ s) (hpa : p a) : filter p (s.cons a ha) = (filter p s).cons a (fun h =>
       absurd (mem_filter.mp h).left ha) :=
@@ -328,6 +341,15 @@ namespace M4R
     protected theorem induction_on (p : Finset α → Prop) (s : Finset α) (h₁ : p ∅)
       (h₂ : ∀ ⦃a : α⦄ {s : Finset α}, a ∉ s → p s → p (insert a s)) : p s :=
         Finset.induction p h₁ h₂ s
+
+    theorem strong_induction (p : Finset α → Prop) (ih : ∀ f : Finset α, (∀ f' : Finset α, f'.length < f.length → p f') → p f)
+      (f : Finset α) : p f :=
+        ih f (@cons_induction _ (fun f : Finset α => ∀ f' : Finset α, f'.length < f.length → p f')
+          (fun f h => absurd h f.length.not_lt_zero)
+          (fun x f hx ih' f' hf' => by
+            rw [Finset.length_cons] at hf'
+            exact (Nat.lt_or_eq_of_le (Nat.le_of_succ_le_succ hf')).elim
+              (ih' f') (fun h => ih f' (h ▸ ih'))) f)
 
     section erase
 
@@ -396,6 +418,9 @@ namespace M4R
         apply Finset.ext; intro
         rw [mem_to_finset, UnorderedList.mem_cons, Finset.mem_cons, mem_to_finset]
         exact Iff.rfl
+
+    theorem to_finset_length_le (l : UnorderedList α) : l.to_finset.length ≤ l.length :=
+      length.le_of_le l.dedup_le
 
   end UnorderedList
 

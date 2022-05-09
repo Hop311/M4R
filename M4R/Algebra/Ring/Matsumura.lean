@@ -8,7 +8,7 @@ namespace M4R
   variable {A : Type _} [Ring A] {I : Ideal A}
 
   -- Theorem 1.1
-  theorem t1_1 (hI : I.proper_ideal) : ∃ J : Ideal A, I ⊆ J ∧ J.is_maximal :=
+  private theorem t1_1 (hI : I.proper_ideal) : ∃ J : Ideal A, I ⊆ J ∧ J.is_maximal :=
     let ⟨m, hm₁, hm₂⟩ := Ideal.ideal_zorn {J | I ⊆ J ∧ J.proper_ideal} (by
       intro c cs hc
       cases Classical.em (Nonempty c) with
@@ -25,7 +25,11 @@ namespace M4R
       | inr h => exact Or.inr (of_not_not h)
     ⟩⟩
 
-  theorem Ideal.exists_maximal_containing {x : A} (hx : ¬isUnit x) : ∃ I : Ideal A, I.is_maximal ∧ x ∈ I :=
+  theorem Ideal.exists_maximal_containing (hI : I.proper_ideal) : ∃ J : Ideal A, I ⊆ J ∧ J.is_maximal := t1_1 hI
+  theorem Ideal.exists_prime_containing (hI : I.proper_ideal) : ∃ J : Ideal A, I ⊆ J ∧ J.is_prime :=
+    let ⟨J, hIJ, hJ⟩ := t1_1 hI; ⟨J, hIJ, maximal_is_prime hJ⟩
+
+  theorem Ideal.exists_maximal_containing_nonunit {x : A} (hx : ¬isUnit x) : ∃ I : Ideal A, I.is_maximal ∧ x ∈ I :=
     let ⟨I, hxI, hI⟩ := t1_1 (unit_not_principal hx)
     ⟨I, hI, hxI (generator_in_principal x)⟩
   theorem Ideal.exists_maximal_ideal (A) [NonTrivialRing A] : ∃ I : Ideal A, I.is_maximal :=
@@ -37,7 +41,7 @@ namespace M4R
 
   theorem Ring.jacobson_radical.units {x : A} : x ∈ jacobson_radical A ↔ ↑{y : A | ∃ r, 1 + r * x = y} ⊆ unit_set A :=
     ⟨fun hx => fun y ⟨r, hrxy⟩ => Classical.byContradiction fun hy => by
-      let ⟨M, hM, hyM⟩ := Ideal.exists_maximal_containing hy
+      let ⟨M, hM, hyM⟩ := Ideal.exists_maximal_containing_nonunit hy
       rw [←hrxy] at hyM
       have := M.add_closed hyM ((M.mul_closed (-r) (maximal_subset_jacobson hM hx)))
       rw [add_assoc, neg_mul, add_neg, add_zero] at this
@@ -83,7 +87,7 @@ namespace M4R
           Nat.not_le.mpr (this ▸ Nat.lt.base _)) }
 
   -- Theorem 1.2
-  theorem t1_2 (I) (S : MultiplicativeSet A) (hIS : Set.disjoint I.subset S.subset) :
+  private theorem t1_2 (I) (S : MultiplicativeSet A) (hIS : Set.disjoint I.subset S.subset) :
     ∃ J : Ideal A, I ⊆ J ∧ Set.disjoint J.subset S.subset ∧ J.is_prime :=
       let ⟨m, hm₁, hm₂⟩ := Ideal.ideal_zorn {J | I ⊆ J ∧ Set.disjoint J.subset S.subset} (by
         intro c cs hc
@@ -142,14 +146,14 @@ namespace M4R
         simp only [P.zero_ideal_in, true_and]; exact Iff.rfl : 0 ⊆ P ∧ P.is_prime → x ∈ P ↔ P.is_prime → x ∈ P))
 
   -- Theorem 1.3
-  theorem t1_3 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
+  private theorem t1_3 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
     ⋂₀ fI.toSet = ∏ fI := by
       sorry
 
   open QuotientRing
 
   -- Theorem 1.3
-  def t1_4 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
+  private def t1_4 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
     QClass (⋂₀ fI.toSet) ≅ᵣ MultiProd (fun i : fI => QClass i.val) := by
       sorry
 

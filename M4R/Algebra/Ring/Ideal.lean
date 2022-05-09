@@ -292,7 +292,7 @@ namespace M4R
       theorem self (I : Ideal α) : from_set I.subset = I :=
         Ideal.antisymm (ideal_contained (Subset.refl _)) (contains_set _)
 
-      theorem is_principal {a : α} : from_set (Set.singleton a) = principal a :=
+      theorem is_principal (a : α) : from_set (Set.singleton a) = principal a :=
         Ideal.antisymm (ideal_contained fun x hx => hx.symm ▸ generator_in_principal a)
           (contains_principal rfl)
 
@@ -1101,5 +1101,18 @@ namespace M4R
         (fun x y ⟨x', hx'⟩ ⟨y', hy'⟩ => hx' ▸ hy' ▸ mul_distrib_left (f a) x' y' ▸ ⟨x' + y', rfl⟩)
         fun x y ⟨y', hy'⟩ => hy' ▸ mul_left_comm x (f a) y' ▸ ⟨x * y', rfl⟩),
       fun ⟨y, hy⟩ => hy ▸ (extension f (principal a)).mul_closed' (from_set.contains_mem ⟨a, generator_in_principal a, rfl⟩) y⟩
+
+    theorem extension_from_set (s : Set α) : extension f (from_set s) = from_set (Function.image' f.hom s) :=
+      Ideal.antisymm (from_set.ideal_contained (fun x ⟨y, hy, hyx⟩ =>
+        hyx ▸ from_set.induction (f · ∈ from_set (Function.image' f.hom s)) hy
+          (by simp only [f.preserve_zero]; exact (from_set (Function.image' f.hom s)).has_zero)
+          (fun x hx t ⟨I, hI, hIt⟩ => hIt ▸ hI ⟨x, hx, rfl⟩)
+          (fun x y => by simp only [f.preserve_add]; exact (from_set (Function.image' f.hom s)).add_closed)
+          (fun x y hy => by let ⟨z, hz⟩ := hf x y; simp only [hz]; exact hz ▸
+            (from_set (Function.image' f.hom s)).mul_closed z hy)))
+        (from_set.subset (Function.image'_subset f.hom (from_set.contains_set s)))
+
+    theorem extension_from_finset (fs : Finset α) : extension f (from_set fs.toSet) = from_set (fs.map f.hom).to_finset.toSet :=
+      (extension_from_set hf fs.toSet).trans (congrArg _ (Set.ext.mp fun _ => Finset.map_mem.symm.trans UnorderedList.mem_to_finset.symm))
   end Ideal
 end M4R

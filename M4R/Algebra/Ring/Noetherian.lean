@@ -93,11 +93,15 @@ namespace M4R
       theorem base_prime {I : Ideal α} (hc₁ : c.base I) (hc₂ : c.is_prime) : I.is_prime :=
         hc₁ ▸ hc₂ 0
 
+      theorem subsetneq_succ_of_strict_infinite_ascending (hc₁ : c.strict_infinite) (hc₂ : c.ascending) (n : Nat) :
+        c n ⊊ c n.succ := Ideal.subsetneq.mpr ⟨hc₂ n, hc₁ n⟩
+      theorem subsetneq_lt_of_strict_infinite_ascending (hc₁ : c.strict_infinite) (hc₂ : c.ascending) {m n : Nat} (h : m < n) :
+        c m ⊊ c n := ProperSubset.trans_left (subsetneq_succ_of_strict_infinite_ascending hc₁ hc₂ m) (subset_ascending hc₂ h)
+
       theorem subsetneq_succ_of_strict_infinite_descending (hc₁ : c.strict_infinite) (hc₂ : c.descending) (n : Nat) :
         c n.succ ⊊ c n := Ideal.subsetneq.mpr ⟨hc₂ n, (hc₁ n).symm⟩
       theorem subsetneq_lt_of_strict_infinite_descending (hc₁ : c.strict_infinite) (hc₂ : c.descending) {m n : Nat} (h : m < n) :
-        c n ⊊ c m := ProperSubset.trans_right (subset_descending hc₂ h)
-          (subsetneq_succ_of_strict_infinite_descending hc₁ hc₂ m)
+        c n ⊊ c m := ProperSubset.trans_right (subset_descending hc₂ h) (subsetneq_succ_of_strict_infinite_descending hc₁ hc₂ m)
 
       theorem is_stable_of_strict_stable : c.strict_stable → c.is_stable :=
         fun ⟨N, hN⟩ => ⟨N, hN.right⟩

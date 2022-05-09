@@ -29,7 +29,7 @@ namespace M4R
       Quot.liftOn s sizeOf (fun _ _ => Perm.sizeOf_Eq_sizeOf)
     instance UnorderedListSizeOf : SizeOf (UnorderedList α) where sizeOf := UnorderedList.sizeOf
 
-    protected def length (s : UnorderedList α) : Nat :=
+    def length (s : UnorderedList α) : Nat :=
       Quot.liftOn s List.length (fun _ _ => Perm.length_eq)
 
     protected def cons (a : α) (s : UnorderedList α) : UnorderedList α :=
@@ -79,8 +79,9 @@ namespace M4R
     @[simp] theorem mem_cons_self (a : α) (s : UnorderedList α) : a ∈ s.cons a :=
       mem_cons.mpr (Or.inl rfl)
 
-    theorem length_cons (a : α) (s : UnorderedList α) : (s.cons a).length = s.length + 1 :=
-      @Quotient.ind _ _ (fun (l : UnorderedList α) => (l.cons a).length = l.length + 1) (fun _ => rfl) s
+    theorem eq_nil_of_length_eq_zero {s : UnorderedList α} : s.length = 0 → s = 0 :=
+      @Quotient.ind _ _ (fun (l : UnorderedList α) => l.length = 0 → l = 0)
+        (fun _ h => congrArg _ (List.eq_nil_of_length_eq_zero h)) s
 
     @[simp] theorem zero_subset {s : UnorderedList α} : 0 ⊆ s := by
       intro _ _; contradiction
@@ -132,6 +133,36 @@ namespace M4R
 
     end append
 
+    namespace length
+      @[simp] theorem coe_length (l : List α) : length (l : UnorderedList α) = l.length := rfl
+
+      @[simp] theorem zero : @length α 0 = 0 := rfl
+
+      @[simp] theorem add (s t : UnorderedList α) : length (s + t) = length s + length t :=
+        @Quotient.inductionOn₂ _ _ _ _
+          (fun (l₁ l₂ : UnorderedList α) => length (l₁ + l₂) = length l₁ + length l₂) s t
+            List.length_append
+
+      @[simp] theorem cons (a : α) (s : UnorderedList α) : length (s.cons a) = length s + 1 :=
+        @Quotient.inductionOn _ _
+          (fun (l : UnorderedList α) => length (l.cons a) = length l + 1) s fun l => rfl
+
+      @[simp] theorem singleton (a : α) : length (UnorderedList.singleton a) = 1 := by
+        simp only [singleton_eq_cons, zero, cons]
+
+      theorem eq_one {s : UnorderedList α} : length s = 1 ↔ ∃ a, s = UnorderedList.singleton a :=
+        ⟨@Quotient.inductionOn _ _
+          (fun (l : UnorderedList α) => length l = 1 → ∃ a, l = UnorderedList.singleton a) s
+          (fun l h => (List.length_eq_one.mp h).imp fun _ => congrArg List.to_UnorderedList),
+        fun ⟨a, e⟩ => e.symm ▸ rfl⟩
+
+      theorem pos_iff_exists_mem {s : UnorderedList α} : 0 < length s ↔ ∃ a, a ∈ s :=
+        @Quotient.inductionOn _ _
+          (fun (l : UnorderedList α) => 0 < length l ↔ ∃ a, a ∈ l) s
+          (fun l => List.length_pos_iff_exists_mem)
+
+    end length
+
     protected theorem in_singleton {a a' : α} : a' ∈ UnorderedList.singleton a → a' = a :=
       List.in_singleton
 
@@ -178,6 +209,8 @@ namespace M4R
         @Quotient.ind _ _ (fun (l : UnorderedList α) => l.map id = l) (fun l =>
           congrArg List.to_UnorderedList (List.map_id l)) s
 
+      @[simp] theorem length_map (f : α → β) (s : UnorderedList α) : (s.map f).length = s.length :=
+        @Quotient.ind _ _ (fun (l : UnorderedList α) => (l.map f).length = l.length) (List.length_map f) s
     end map
 
     theorem nodup_map_on {f : α → β} {s : UnorderedList α} (H : ∀ x ∈ s, ∀ y ∈ s, f x = f y → x = y) :
@@ -470,6 +503,10 @@ namespace M4R
 
     end le
 
+    theorem length.le_of_le {s t : UnorderedList α} (h : s ≤ t) : length s ≤ length t :=
+      @le.le_induction_on α s t (fun l₁ l₂ => length l₁ ≤ length l₂) h
+        List.Sublist.length_le_of_sublist
+
     open Classical
 
     protected noncomputable def erase (s : UnorderedList α) (a : α) : UnorderedList α :=
@@ -582,47 +619,10 @@ namespace M4R
     @[simp] theorem le.sub_le_self (s t : UnorderedList α) : s - t ≤ s :=
       sub.sub_le_iff_le_add_left.mpr (le.add_left s t)
 
-    def card : UnorderedList α → Nat :=
-      fun s => Quotient.liftOn s List.length fun l₁ l₂ => Perm.length_eq
-
-    namespace card
-      @[simp] theorem coe_card (l : List α) : card (l : UnorderedList α) = l.length := rfl
-
-      @[simp] theorem zero : @card α 0 = 0 := rfl
-
-      @[simp] theorem add (s t : UnorderedList α) : card (s + t) = card s + card t :=
-        @Quotient.inductionOn₂ _ _ _ _
-          (fun (l₁ l₂ : UnorderedList α) => card (l₁ + l₂) = card l₁ + card l₂) s t
-            List.length_append
-
-      @[simp] theorem cons (a : α) (s : UnorderedList α) : card (s.cons a) = card s + 1 :=
-        @Quotient.inductionOn _ _
-          (fun (l : UnorderedList α) => card (l.cons a) = card l + 1) s fun l => rfl
-
-      @[simp] theorem singleton (a : α) : card (UnorderedList.singleton a) = 1 := by
-        simp only [singleton_eq_cons, zero, cons]
-
-      theorem eq_one {s : UnorderedList α} : card s = 1 ↔ ∃ a, s = UnorderedList.singleton a :=
-        ⟨@Quotient.inductionOn _ _
-          (fun (l : UnorderedList α) => card l = 1 → ∃ a, l = UnorderedList.singleton a) s
-          (fun l h => (List.length_eq_one.mp h).imp fun _ => congrArg List.to_UnorderedList),
-        fun ⟨a, e⟩ => e.symm ▸ rfl⟩
-
-      theorem le_of_le {s t : UnorderedList α} (h : s ≤ t) : card s ≤ card t :=
-        @le.le_induction_on α s t (fun l₁ l₂ => card l₁ ≤ card l₂) h
-          List.Sublist.length_le_of_sublist
-
-      theorem pos_iff_exists_mem {s : UnorderedList α} : 0 < card s ↔ ∃ a, a ∈ s :=
-        @Quotient.inductionOn _ _
-          (fun (l : UnorderedList α) => 0 < card l ↔ ∃ a, a ∈ l) s
-          (fun l => List.length_pos_iff_exists_mem)
-
-    end card
-
     theorem filter_eq_self {s : UnorderedList α} : filter p s = s ↔ ∀ a ∈ s, p a :=
         @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           filter p l = l ↔ ∀ a ∈ l, p a) s fun l => Iff.trans ⟨fun h =>
-            List.Sublist.eq_of_sublist_of_length_eq (List.filter'_sublist _) (@congrArg _ _ _ _ card h),
+            List.Sublist.eq_of_sublist_of_length_eq (List.filter'_sublist _) (@congrArg _ _ _ _ length h),
             congrArg List.to_UnorderedList⟩ List.filter'_eq_self
 
     theorem filter_le_filter (p : α → Prop) {s t : UnorderedList α} (h : s ≤ t) : filter p s ≤ filter p t :=
@@ -656,16 +656,16 @@ namespace M4R
       theorem cons (b : α) (s) : countp p (s.cons b) = countp p s + (if p b then 1 else 0) := by
         byCases h : p b; simp [h]; simp [h]
 
-      theorem countp_eq_card_filter (s : UnorderedList α) : countp p s = card (filter p s) :=
+      theorem countp_eq_length_filter (s : UnorderedList α) : countp p s = length (filter p s) :=
         @Quotient.inductionOn _ _
-          (fun (l : UnorderedList α) => countp p l = card (filter p l)) s
+          (fun (l : UnorderedList α) => countp p l = length (filter p l)) s
             fun l => List.countp_eq_length_filter' _ _
 
       @[simp] theorem add (s t : UnorderedList α) : countp p (s + t) = countp p s + countp p t := by
-        simp [countp_eq_card_filter]
+        simp [countp_eq_length_filter]
 
       theorem pos {s : UnorderedList α} : 0 < countp p s ↔ ∃ a ∈ s, p a := by
-        simp [countp_eq_card_filter, card.pos_iff_exists_mem]
+        simp [countp_eq_length_filter, length.pos_iff_exists_mem]
 
     end countp
 
@@ -956,9 +956,9 @@ namespace M4R
         ((le.add_le_add_right u).mp (le.trans ha (inter_le_left (s + u) (t + u))))
         ((le.add_le_add_right u).mp (le.trans ha (inter_le_right (s + u) (t + u)))))
         (le.cons_of_le a (le.refl (s ∩ t)))
-      apply Nat.succ_ne_self (card (s ∩ t))
-      rw [←Nat.add_one, ←card.cons a (s ∩ t)]
-      exact congrArg card this
+      apply Nat.succ_ne_self (length (s ∩ t))
+      rw [←Nat.add_one, ←length.cons a (s ∩ t)]
+      exact congrArg length this
 
     theorem add_inter_distrib (s t u : UnorderedList α) : s + (t ∩ u) = (s + t) ∩ (s + u) := by
       rw [append.comm, inter_add_distrib, append.comm s, append.comm s]
@@ -986,6 +986,8 @@ namespace M4R
     theorem nodup_dedup (l : UnorderedList α) : l.dedup.nodup :=
       @Quotient.inductionOn _ _ (fun s : UnorderedList α => s.dedup.nodup) l List.nodup_dedup
 
-    
+    theorem dedup_le (l : UnorderedList α) : l.dedup ≤ l :=
+      @Quotient.ind _ _ (fun s : UnorderedList α => s.dedup ≤ s) (fun l => l.dedup_sublist.subperm) l
+
   end UnorderedList
 end M4R

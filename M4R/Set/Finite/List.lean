@@ -173,6 +173,10 @@ namespace List
           simp only [List.map_cons, List.cons_ext];
           exact ⟨h₂ a (List.mem_cons_self a l), ih₂ fun x hx => h₂ x (mem_cons_of_mem a hx)⟩
 
+    @[simp] theorem length_map (f : α → β) (l : List α) : (l.map f).length = l.length := by
+      induction l with
+      | nil => rfl
+      | cons a b ih => rw [map_cons, length_cons, length_cons, ih]
   end map
 
   inductive Sublist : List α → List α → Prop
@@ -974,6 +978,8 @@ namespace List
           rw [←not_and_iff_or_not]; exact fun ⟨hxy, hyz⟩ => hxz (hxy.trans hyz)) a l)
         simp only [not_forall, iff_not_not] at this
         let ⟨y, hy, hay⟩ := this.mpr ⟨a, ha, rfl⟩; exact hay ▸ hy⟩
+
+    theorem dedup_sublist : ∀ (l : List α), l.dedup <+ l := pw_filter_sublist _
 
   end dedup
 

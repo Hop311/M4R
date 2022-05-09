@@ -23,6 +23,12 @@ namespace M4R
     def minimal_prime_ideal_of [Ring α] (P I : Ideal α) : Prop :=
       P.is_prime ∧ I ⊆ P ∧ ∀ {J : Ideal α}, J.is_prime → I ⊆ J → J ⊆ P → J = P
 
+    theorem minimal_prime_ideal_of.right_proper [Ring α] {P I : Ideal α} (h : P.minimal_prime_ideal_of I) : I.proper_ideal :=
+      Ideal.proper_ideal_subset h.right.left h.left.left
+
+    theorem minimal_prime_of_prime [Ring α] {P : Ideal α} (hP : P.is_prime) : P.minimal_prime_ideal_of P :=
+      ⟨hP, Subset.refl P, fun _ h₁ h₂ => (Ideal.antisymm h₂ h₁)⟩
+
     theorem ProperIdeal_is_NonTrivial [Ring α] {I : Ideal α} (hI : I.proper_ideal) : Ring.is_NonTrivial (QClass I) := by
       intro h10;
       have := @Quotient.exact α (QSetoid I) 0 1 h10.symm;
