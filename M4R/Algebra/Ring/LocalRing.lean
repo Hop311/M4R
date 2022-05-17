@@ -55,6 +55,10 @@ namespace M4R
           maximal_is_m (quotient_contraction_maximal hx)),
       fun hx => hx ▸ Ideal.quotient_extension_maximal m_max (subset_m hI)⟩⟩
 
+    theorem quotient_LocalRing.m_def [LocalRing α] {I : Ideal α} (hI : I.proper_ideal) :
+      extension (QuotientRing.natural_hom I).hom m = @m _ (quotient_LocalRing hI) :=
+        @maximal_is_m _ (quotient_LocalRing hI) _ (quotient_extension_maximal m_max (subset_m hI))
+
   end LocalRing
 
   open LocalRing localisation_at Monoid Group NCSemiring CommMonoid
@@ -67,10 +71,15 @@ namespace M4R
       NoetherianLocalRing (localisationₚ hP) where
         noetherian := NoetherianRing.localisation_noetherian (PrimeComp hP)
 
+    instance quotient_NotherianLocalRing [NoetherianLocalRing α] {I : Ideal α} (hI : I.proper_ideal) :
+      NoetherianLocalRing (QClass I) where
+        toLocalRing := quotient_LocalRing hI
+        noetherian  := NoetherianRing.quotient_noetherian I
+
     protected theorem m_finitely_generated (α : Type _) [NoetherianLocalRing α] : (m : Ideal α).finitely_generated :=
       NoetherianRing.ideal_finitely_generated m
 
-    theorem local_krull_principal_ideal_theorem [NoetherianLocalRing α] {a : α} (ha : ¬isUnit a)
+    theorem local_krull_principal_ideal_theorem [NoetherianLocalRing α] {a : α}
       (hP : m.minimal_prime_ideal_of (principal a)) : (m : Ideal α).height_le 1 :=
         let RaR := QClass (principal a)
         have : Ring.Spec RaR ⊆ Ring.MaxSpec RaR := fun Q hQ => by
@@ -78,7 +87,7 @@ namespace M4R
           have h₁ : principal a ⊆ Q' := fun x hx => (natural_hom.kernel.mpr hx ▸ Q.has_zero :
             QuotientRing.natural_hom (principal a) x ∈ Q)
           have h₂ : Q'.is_prime := Ideal.contraction_prime _ hQ
-          have := quotient_extension_maximal m_max (subset_m (unit_not_principal ha))
+          have := quotient_extension_maximal m_max (subset_m hP.right_proper)
           rw [←hP.right.right h₂ h₁ (subset_m h₂.left)] at this
           exact contraction_extension_eq_of_surjective (QuotientRing.natural_hom (principal a)).preserve_mul_left
             (natural_hom.surjective (principal a)) Q ▸ this
@@ -105,7 +114,7 @@ namespace M4R
             extension (QuotientRing.natural_hom (symbolic_power hQ N.succ.succ)).hom (m * symbolic_power hQ N.succ) :=
               Ideal.antisymm (by
                 conv => lhs rw [this, QuotientRing.natural_hom.extension_add_I];
-                exact extension.subset _ (Ideal.product.mul_subset_mul (Ideal.principal_in (not_unit.mp ha)) (Subset.refl _)))
+                exact extension.subset _ (Ideal.product.mul_subset_mul hP.right.left (Subset.refl _)))
                 (extension_mul _ _ _ ▸ product.subset_right)
           rw [extension_mul] at h₂
           have := Ideal.antisymm (quotient_extension_zero.mp (Ring.nakayama (NoetherianRing.ideal_finitely_generated _) h₁ h₂)) (symbolic_power.descending hQ N.succ)
@@ -123,84 +132,138 @@ namespace M4R
             ▸ Ideal.sIntersection.contains (localise_ideal.prime hQ' (PrimeComp.disjoint_subset hQ hQ'Q.left)))
           exact absurd (Ideal.antisymm hQ'Q.left (localise_ideal.prime_loc_deloc hQ (PrimeComp.disjoint_subset hQ (Subset.refl Q))
             ▸ localise_ideal.prime_loc_deloc hQ' (PrimeComp.disjoint_subset hQ hQ'Q.left) ▸ this)) (Ideal.subsetneq.mp hQ'Q).right
-        ⟨fun c hc => this (c.tochain 1) (c.tochain 2) (c.hprime 1) (c.hprime 2) (Ideal.subsetneq.mpr ⟨c.hdescend 1, (hc 1).symm⟩)
-            (Ideal.subsetneq.mpr (by simp only [←c.hbase]; exact ⟨c.hdescend 0, (hc 0).symm⟩)),
-          fun c => Classical.byContradiction fun h =>
-            this (c.tochain 1) (c.tochain 2) (c.hprime 1) (c.hprime 2) (Ideal.subsetneq.mpr ⟨c.hdescend 1,
-              (c.length_spec.left 1 (Nat.not_le.mp h)).symm⟩) (Ideal.subsetneq.mpr (by simp only [←c.hbase]; exact ⟨c.hdescend 0,
-              (c.length_spec.left 0 (Nat.lt_trans Nat.zero_lt_one (Nat.not_le.mp h))).symm⟩)), maximal_is_prime m_max⟩
+        height_le_of_strict_lt (maximal_is_prime m_max) fun c hc h => Classical.byContradiction fun he =>
+          this (c 1) (c 2) (hc.right.right 1) (hc.right.right 2) (Ideal.subsetneq.mpr ⟨hc.right.left 1, Ne.symm he⟩)
+            (Ideal.subsetneq.mpr (hc.left ▸ ⟨hc.right.left 0, (h 0 Nat.zero_lt_one).symm⟩))
 
-    theorem local_krull_height_theorem [NoetherianLocalRing α] (f : Finset α) (hf : (from_set f.toSet).proper_ideal)
-      (hP : m.minimal_prime_ideal_of (from_set f.toSet)) : (m : Ideal α).height_le f.length :=
-        /-
-          • STRONG INDUCTION
-          • f.length = 0 → from_set f = 0 → minimal primes of 0 have height 0
-          • f.length = 1 → from_set f is principal → krull_principal_ideal_theorem
-          • f.length > 1 and true for any f' with f'.length < f.length → (see below)
-        -/
-        Finset.strong_induction (fun f : Finset α => (from_set f.toSet).proper_ideal → m.minimal_prime_ideal_of (from_set f.toSet) → (m : Ideal α).height_le f.length)
-          (fun f ih hf hP => by
-            simp only at *
-            exact (Nat.lt_trichotomy f.length 1).elim
-              (fun hf1 => by
-                have : f.length = 0 := Nat.lt_one hf1
-                rw [this]; rw [Finset.eq_empty_of_length_eq_zero this] at hP
-                exact m.height_le_of_eq (m.height_eq_zero.mpr (from_set.empty ▸ hP))) (Or.elim ·
-              (fun hf1 =>
-                let ⟨a, ha⟩ := Finset.length.eq_one.mp hf1
-                have : from_set f.toSet = principal a := by rw [ha, Finset.singleton_toSet, from_set.is_principal]
-                hf1 ▸ local_krull_principal_ideal_theorem (fun ha' => absurd (this ▸ unit_principal ha') hf) (this ▸ hP))
-              (fun hf1 => by
-                /-
-                  • sufficient to show height Q ≤ f.length - 1 for any prime ideal Q such that Q ⊊ m with no prime Q' in between (NOT Q ⊊ Q' ⊊ m)
-                  • from_set f ⊈ Q as m is minimal prime, so f must contain at least one generator g ∉ Q
-                  • use artinian_of_primes_maximal on R/(Q + principal g) (primes in R/(Q + gR) correspond to primes P in R s.t.
-                    Q + gR ⊊ P (i.e. only m, which is also maximal in the quotient))
-                  • artinian → nilradical nilpotent, and nilradical = m / (Q + gR) (⋂₀ of primes = {m})
-                  • (m/(Q + gR)) ^ n = 0 → m ^ n ⊆ Q + gR → all generators in x ∈ f (apart from g?) satisfy x ^ n ∈ Q + principal g,
-                    i.e. xᵢ = dᵢ + rᵢg, xᵢ ∈ f ∖ { g }, dᵢ ∈ Q, rᵢ ∈ R
-                  • any prime ideal containing all the dᵢ's and g must contain all of f, and so must equal m. Thus, letting d = {d₁, ..., dᵢ} (of length f.length-1),
-                    we have : M / (from_set d) is a minimal prime ideal of principal (natural_hom (from_set d) g) (or principal g / (from_set d)?).
-                  • Using krull_principal_ideal_theorem (maybe even local version?) we have height (m / (from_set d)) ≤ 1, and so Q must be a minimal prime of from_set d,
-                    otherwise if there exists a prime Q' s.t. from_set d ⊆ Q' ⊊ Q, we would have Q' / (from_set d) ⊊ Q / (from_set d) ⊊ m / (from_set d),
-                    violating the height condition.
-                  • As Q is a minimal prime of from_set d (with d.length + 1 = f.length), ih gives height Q ≤ n - 1
-                -/
-                sorry))) f hf hP
+    theorem local_krull_height_theorem {α : Type u} [NoetherianLocalRing α] (f : Finset α) (hP : m.minimal_prime_ideal_of (from_set f.toSet))
+      (ih : ∀ m, m < f.length → ∀ (α : Type u) [NoetherianRing α] (f : Finset α) (hfm : f.length = m) (P : Ideal α),
+        P.minimal_prime_ideal_of (from_set f.toSet) → P.height_le f.length) : (m : Ideal α).height_le f.length :=
+          (Nat.lt_trichotomy f.length 1).elim
+            (fun hf1 => by
+              have : f.length = 0 := Nat.lt_one hf1
+              rw [Finset.eq_empty_of_length_eq_zero this] at hP
+              exact this ▸ Ideal.height_le_of_eq (Ideal.height_eq_zero.mpr (from_set.empty ▸ hP)))
+            (Or.elim · (fun hf1 =>
+              let ⟨a, ha⟩ := Finset.length.eq_one.mp hf1
+              have : from_set f.toSet = principal a := by rw [ha, Finset.singleton_toSet, from_set.is_principal]
+              hf1 ▸ local_krull_principal_ideal_theorem (by rw [this] at hP; exact hP))
+            (fun hf1 => by
+              /-
+                • sufficient to show height Q ≤ f.length - 1 for any prime ideal Q such that Q ⊊ m with no prime Q' in between (NOT Q ⊊ Q' ⊊ m)
+                • from_set f ⊈ Q as m is minimal prime, so f must contain at least one generator g ∉ Q
+                • use artinian_of_primes_maximal on R/(Q + principal g) (primes in R/(Q + gR) correspond to primes P in R s.t.
+                  Q + gR ⊊ P (i.e. only m, which is also maximal in the quotient))
+                • artinian → nilradical nilpotent, and nilradical = m / (Q + gR) (⋂₀ of primes = {m})
+                • (m/(Q + gR)) ^ n = 0 → m ^ n ⊆ Q + gR → all generators in x ∈ f (apart from g) satisfy x ^ n ∈ Q + principal g,
+                  i.e. xᵢ ^ n = dᵢ + rᵢg, xᵢ ∈ f ∖ { g }, dᵢ ∈ Q, rᵢ ∈ R
+                • any prime ideal containing all the dᵢ's and g must contain all of f, and so must equal m. Thus, letting d = {d₁, ..., dᵢ} (of length f.length-1),
+                  we have : M / (from_set d) is a minimal prime ideal of principal (natural_hom (from_set d) g) (or principal g / (from_set d)?).
+                • Using krull_principal_ideal_theorem (maybe even local version?) we have height (m / (from_set d)) ≤ 1, and so Q must be a minimal prime of from_set d,
+                  otherwise if there exists a prime Q' s.t. from_set d ⊆ Q' ⊊ Q, we would have Q' / (from_set d) ⊊ Q / (from_set d) ⊊ m / (from_set d),
+                  violating the height condition.
+                • As Q is a minimal prime of from_set d (with d.length + 1 = f.length), ih gives height Q ≤ n - 1
+              -/
+              have : ∀ Q : Ideal α, Q.is_prime → Q ⊊ m → (∀ Q' : Ideal α, Q'.is_prime → Q' ⊊ m → Q' ⊆ Q) → Q.height_le f.length.pred := fun Q hQ hQm hQmax => by
+                let ⟨g, hgf, hgQ⟩ : ∃ g : α, g ∈ f ∧ g ∉ Q := Classical.byContradiction fun h =>
+                  absurd ((hP.right.right hQ (from_set.ideal_contained fun x hx => of_not_not (not_and.mp
+                    (not_exists.mp h x) hx)) hQm.left) ▸ Subset.refl _) (ProperSubset.toNotSubset hQm)
+                have hprimes_maximal : Ring.Spec (QClass (Q + principal g)) ⊆ Ring.MaxSpec (QClass (Q + principal g)) := fun Q' hQ' =>
+                  have := contraction_prime (QuotientRing.natural_hom (Q + principal g)) hQ'
+                  Classical.byContradiction fun h' => absurd (Subset.trans (quotient_contraction_contains Q')
+                    (hQmax _ this (Ideal.subsetneq.mpr ⟨subset_m this.left, fun h => absurd (quotient_of_contraction_maximal
+                    (h ▸ m_max)) h'⟩)) (add.subset' _ _ (generator_in_principal g))) hgQ
+                have : Ring.MaxSpec (QClass (Q + principal g)) = Set.singleton (extension (QuotientRing.natural_hom (Q + principal g)).hom m) :=
+                  Set.ext.mp fun I => ⟨fun hI => contraction_extension_eq_of_surjective (QuotientRing.natural_hom (Q + principal g)).preserve_mul_left
+                    (natural_hom.surjective (Q + principal g)) I ▸ congrArg (extension (QuotientRing.natural_hom (Q + principal g)).hom ·)
+                    (maximal_is_m (quotient_contraction_maximal hI)), fun hI => hI ▸ quotient_extension_maximal m_max (add.subset_add hQm.left
+                    (principal_in (hP.right.left (from_set.contains_mem hgf))))⟩
+                let ⟨n, hn, hnm⟩ := ArtinianRing.nilradical_nilpotent (ArtinianRing.artinian_of_primes_maximal hprimes_maximal)
+                rw [Ring.nil_radical.eq_prime_intersection, Set.subset.antisymm hprimes_maximal (fun _ => maximal_is_prime),
+                  this, sIntersection.single, ←extension_pow _ _ hn, quotient_extension_zero] at hnm
+                have hxQg : ∀ x ∈ f, x ^ n ∈ Q + principal g := fun x hx =>
+                  hnm (product.pow_contains n (hP.right.left (from_set.contains_mem hx)))
+                let d : Finset α := ((f.erase g).elems.pmap (fun x hx => Classical.choose (hxQg x hx))
+                  (fun x hx => (Finset.mem_erase.mp hx).right)).to_finset
+                have hdQ : from_set d.toSet ⊆ Q := from_set.ideal_contained fun x hx =>
+                  let ⟨a, ha, hx⟩ := UnorderedList.mem_pmap.mp (UnorderedList.mem_to_finset.mp hx)
+                  hx ▸ (Classical.choose_spec (hxQg a (Finset.mem_erase.mp ha).right)).left
+                have hdproper := proper_ideal_subset hdQ hQ.left
+                have : (extension (QuotientRing.natural_hom (from_set d.toSet)).hom m).minimal_prime_ideal_of
+                  (principal (QuotientRing.natural_hom (from_set d.toSet) g)) :=
+                    ⟨quotient_extension_prime (maximal_is_prime m_max) (Subset.trans hdQ hQm.left),
+                    from_set.contains_principal ⟨g, hP.right.left (from_set.contains_mem hgf), rfl⟩,
+                    by
+                      intro J hJ hgJ hJm
+                      have : f.toSet ⊆ (contractionᵣ₁ (QuotientRing.natural_hom (from_set d.toSet)) J).subset := fun x hxf => by
+                        byCases hxg : x = g
+                        { rw [←extension_principal] at hgJ;
+                          apply contraction.subset (QuotientRing.natural_hom (from_set d.toSet)).preserve_mul_left hgJ;
+                          rw [←natural_hom.extension_add_I, hxg];
+                          exact extension_contraction _ _ (add.subset' (from_set d.toSet) (principal g) (generator_in_principal g)) }
+                        { have := hxQg x hxf;
+                          exact prime_radical (contraction_prime (QuotientRing.natural_hom (from_set d.toSet)) hJ) x n hn
+                            ((Classical.choose_spec (Classical.choose_spec this).right).right ▸ (contractionᵣ₁ (QuotientRing.natural_hom
+                              (from_set d.toSet)) J).add_closed (quotient_contraction_contains J (from_set.contains_mem (UnorderedList.mem_to_finset.mpr
+                              (UnorderedList.mem_pmap.mpr ⟨x, Finset.mem_erase.mpr ⟨hxg, hxf⟩, rfl⟩))))
+                            (Subset.trans (extension_principal _ g ▸ extension_contraction _ _) (contraction.subset (QuotientRing.natural_hom
+                              (from_set d.toSet)).preserve_mul_left hgJ) (Classical.choose_spec (Classical.choose_spec this).right).left)) }
+                      have := hP.right.right (contraction_prime _ hJ) (from_set.ideal_contained this) (quotient_extension_contraction
+                        (Subset.trans hdQ hQm.left) ▸ contraction.subset (QuotientRing.natural_hom (from_set d.toSet)).preserve_mul_left hJm)
+                      exact contraction_extension_eq_of_surjective _ (natural_hom.surjective _) J ▸
+                        congrArg (extension (QuotientRing.natural_hom (from_set d.toSet)).hom ·) this⟩
+                rw [quotient_LocalRing.m_def hdproper] at this
+                have := @local_krull_principal_ideal_theorem _ (quotient_NotherianLocalRing hdproper) _ this
+                have : Q.minimal_prime_ideal_of (from_set d.toSet) := ⟨hQ, hdQ, by
+                  intro J hJ hdJ hJQ
+                  exact Classical.byContradiction fun hneJQ => absurd this (Ideal.height_gt_one (quotient_extension_prime hJ hdJ)
+                    (quotient_extension_prime hQ hdQ) (maximal_is_prime (@m_max _ (quotient_LocalRing hdproper)))
+                    (quotient_extension_subsetneq hdJ (Ideal.subsetneq.mpr ⟨hJQ, hneJQ⟩))
+                    (quotient_LocalRing.m_def hdproper ▸ quotient_extension_subsetneq hdQ hQm))⟩
+                have hdf : d.length < f.length := by
+                  apply Nat.lt_of_le_of_lt (UnorderedList.to_finset_length_le _)
+                  rw [UnorderedList.pmap_length]
+                  conv => rhs rw [f.erase_cons hgf, Finset.length_cons]
+                  exact Nat.lt.base _
+                exact Q.height_le_trans (Nat.le_of_succ_le_succ (Nat.succ_pred_eq_of_pos (Nat.lt_trans Nat.zero_lt_one hf1) ▸ hdf))
+                  (ih d.length hdf α d rfl Q this)
+              sorry))
 
   end NoetherianLocalRing
 
   namespace NoetherianRing
 
-    theorem krull_principal_ideal_theorem [NoetherianRing α] {a : α} (ha : ¬isUnit a)
+    theorem krull_principal_ideal_theorem [NoetherianRing α] {a : α}
       {P : Ideal α} (hP : P.minimal_prime_ideal_of (principal a)) : P.height_le 1 :=
         have : m.minimal_prime_ideal_of (principal (natural_homₚ hP.left a)) :=
           localise_ideal.principal _ a ▸ m_def hP.left ▸ minimal_prime_localisation
             hP (PrimeComp.disjoint hP.left)
-        have := NoetherianLocalRing.local_krull_principal_ideal_theorem (fun h =>
-          absurd (unit_ideal_in (unit_principal h ▸ this.right.left :
-            (1 : Ideal (localisationₚ hP.left)) ⊆ m)) m_proper) this
-        local_height_le hP.left (PrimeComp.disjoint hP.left) 1
-          (m_def hP.left ▸ this : height_le (localiseₚ hP.left P) 1)
+        local_height_le hP.left (PrimeComp.disjoint hP.left) 1 (m_def hP.left ▸
+          NoetherianLocalRing.local_krull_principal_ideal_theorem this : height_le (localiseₚ hP.left P) 1)
 
-    theorem krull_height_theorem [NoetherianRing α] (f : Finset α) (hf : (from_set f.toSet).proper_ideal)
-      (P : Ideal α) (hP : P.minimal_prime_ideal_of (from_set f.toSet)) : P.height_le f.length :=
-        let f' : Finset (localisationₚ hP.left) := (f.map (natural_homₚ hP.left)).to_finset
-        have hf' : f'.length ≤ f.length := f.length_map (natural_homₚ hP.left).hom ▸
-          (f.map (natural_homₚ hP.left).hom).to_finset_length_le
-        have : m.minimal_prime_ideal_of (from_set f'.toSet) := by
-          exact extension_from_finset (natural_homₚ hP.left).preserve_mul_left f ▸ m_def hP.left
-            ▸ minimal_prime_localisation hP (PrimeComp.disjoint hP.left)
-        have := NoetherianLocalRing.local_krull_height_theorem f' this.right_proper this
-        P.height_le_trans hf' (local_height_le hP.left (PrimeComp.disjoint hP.left) f'.length (m_def hP.left ▸ this :
-          height_le (localiseₚ hP.left P) f'.length))
+    theorem krull_height_theorem [NoetherianRing α] {f : Finset α} {P : Ideal α}
+      (hP : P.minimal_prime_ideal_of (from_set f.toSet)) : P.height_le f.length :=
+        Nat.strong_induction (fun n => ∀ (α : Type _) [NoetherianRing α] (f : Finset α) (hfn : f.length = n) (P : Ideal α),
+          P.minimal_prime_ideal_of (from_set f.toSet) → P.height_le f.length)
+          (fun n ih α hα f hfn P hP =>
+            let f' : Finset (localisationₚ hP.left) := (f.map (natural_homₚ hP.left)).to_finset
+            have hf' : f'.length ≤ f.length := f.length_map (natural_homₚ hP.left).hom ▸
+              (f.map (natural_homₚ hP.left).hom).to_finset_length_le
+            have : m.minimal_prime_ideal_of (from_set f'.toSet) := by
+              exact extension_from_finset (natural_homₚ hP.left).preserve_mul_left f ▸ m_def hP.left
+                ▸ minimal_prime_localisation hP (PrimeComp.disjoint hP.left)
+            have := NoetherianLocalRing.local_krull_height_theorem f' this (fun m hm => ih m (hfn ▸ Nat.lt_of_lt_of_le hm hf'))
+            P.height_le_trans hf' (local_height_le hP.left (PrimeComp.disjoint hP.left) f'.length (m_def hP.left ▸ this :
+                height_le (localiseₚ hP.left P) f'.length))) f.length α f rfl P hP
 
   end NoetherianRing
 
   namespace NoetherianLocalRing
 
-    protected theorem has_krull_dim (α : Type _) [NoetherianLocalRing α] : Ring.krull_dim.has_krull_dim α := by
-      sorry
+    protected theorem has_krull_dim (α : Type _) [NoetherianLocalRing α] : Ring.krull_dim.has_krull_dim α :=
+      let ⟨f, hf⟩ := NoetherianLocalRing.m_finitely_generated α
+      Ring.krull_dim.has_krull_dim_of_maximal_height_le ⟨m, m_max⟩ f.length fun M hM =>
+        NoetherianRing.krull_height_theorem (maximal_is_m hM ▸ hf ▸ minimal_prime_of_prime (maximal_is_prime m_max))
 
   end NoetherianLocalRing
 

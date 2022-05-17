@@ -180,7 +180,7 @@ namespace M4R
         exact equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]⟩
 
     noncomputable def localise_ideal (S : MultiplicativeSet α) : Ideal α → Ideal (localisation S) :=
-      Ideal.extension (natural_hom S).toRMulMap
+      Ideal.extension (natural_hom S)
 
     def delocalise_ideal (S : MultiplicativeSet α) : Ideal (localisation S) → Ideal α :=
       Ideal.contractionᵣ₁ (natural_hom S)

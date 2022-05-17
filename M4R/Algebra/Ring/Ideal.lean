@@ -179,6 +179,8 @@ namespace M4R
       Ideal.antisymm (in_unit_ideal _) (fun y _ => unit_divides u y hu)
     theorem unit_not_principal [Ring α] {u : α} (hu : ¬isUnit u) : (principal u).proper_ideal :=
       fun h => absurd (by rw [h]; trivial : 1 ∈ principal u) hu
+    theorem zero_principal (α : Type _) [Ring α] : principal (0 : α) = 0 :=
+      in_zero_ideal fun x ⟨y, hy⟩ => (zero_mul y ▸ hy.symm : x = 0)
 
     theorem is_unit_ideal' [Ring α] {I : Ideal α} : I = 1 ↔ ∃ x, isUnit x ∧ x ∈ I :=
       ⟨(· ▸ ⟨1, isUnit_1, trivial⟩), fun ⟨x, hx, hxI⟩ =>
@@ -206,6 +208,8 @@ namespace M4R
       proper_iff_notin.mpr ⟨1, h⟩
     theorem zero_ideal_proper (α) [NonTrivialRing α] : (ZeroIdeal α).proper_ideal :=
       zero_ideal_proper_of_nontrivial NonTrivial.one_neq_zero
+    theorem eq_zero_ideal_of_trivial [Ring α] (h : ¬Ring.is_NonTrivial α) (I : Ideal α) : I = 0 :=
+      is_zero_ideal.mpr fun x _ => by rw [←one_mul x, of_not_not h, zero_mul]
 
     protected def intersection [Ring α] (I J : Ideal α) : Ideal α where
       subset     := I.subset ∩ J.subset
@@ -264,6 +268,9 @@ namespace M4R
       protected theorem contains [Ring α] {S : Set (Ideal α)} {I : Ideal α} (h : I ∈ S) : ⋂₀ S ⊆ I :=
         fun x hx => have : I.subset ∈ S.toSetSet Ideal.subset := ⟨I, h, rfl⟩
           Set.SoSIntersection.subset_of_mem this hx
+
+      protected theorem single [Ring α] (I : Ideal α) : ⋂₀ Set.singleton I = I :=
+        Ideal.ext'.mpr fun x => ⟨fun hx => hx _ ⟨I, rfl, rfl⟩, fun hx s ⟨J, hJI, hJs⟩ => hJs ▸ hJI ▸ hx⟩
 
     end sIntersection
 
@@ -450,6 +457,14 @@ namespace M4R
 
       theorem mul_subset_mul [Ring α] {I₁ I₂ J₁ J₂ : Ideal α} (hI : I₁ ⊆ I₂) (hJ : J₁ ⊆ J₂) : I₁ * J₁ ⊆ I₂ * J₂ :=
         from_set.subset fun x ⟨i, hi, j, hj, hij⟩ => ⟨i, hI hi, j, hJ hj, hij⟩
+
+      theorem principal_mul [Ring α] (a : α) (I : Ideal α) : (principal a * I).subset = {x | ∃ y ∈ I, x = a * y} :=
+        Set.ext.mp fun x => ⟨fun hx => from_set.induction (fun x => ∃ y ∈ I, x = a * y) hx
+          ⟨0, I.has_zero, (mul_zero a).symm⟩
+          (fun x ⟨i, ⟨b, hb⟩, j, hj, hij⟩ => ⟨b * j, I.mul_closed b hj, by rw [hij, ←hb, mul_assoc]⟩)
+          (fun x y ⟨x', hx', hex'⟩ ⟨y', hy', hey'⟩ => ⟨x' + y', I.add_closed hx' hy', by rw [hex', hey', mul_distrib_left]⟩)
+          (fun x y ⟨y', hy', hey'⟩ => ⟨x * y', I.mul_closed x hy', by rw [hey', mul_left_comm]⟩),
+          fun ⟨y, hy, hyx⟩ => from_set.contains_mem ⟨a, generator_in_principal a, y, hy, hyx⟩⟩
 
       private abbrev triple_product_gen [Ring α] (I J K : Ideal α) : Set α := {x | ∃ i ∈ I, ∃ j ∈ J, ∃ k ∈ K, x = i * j * k}
       private abbrev mult_fibre [Ring α] (f : Finset α) (k y : α) : Set α := {x | x ∈ f ∧ x * k = y}

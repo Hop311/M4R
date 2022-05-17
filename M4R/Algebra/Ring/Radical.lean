@@ -153,6 +153,9 @@ namespace M4R
 
     variable {α}
 
+    theorem nil_radical_proper (h : Ring.is_NonTrivial α) : (nil_radical α).proper_ideal :=
+      fun h' => let ⟨n, hn, h1n⟩ := Ideal.is_unit_ideal.mp h'; absurd (pow_nat_one n ▸ h1n) h
+
     theorem maximal_subset_jacobson {M : Ideal α} (hM : M.is_maximal) : jacobson_radical α ⊆ M :=
       fun x hx => Ideal.sIntersection.mem.mp hx M hM
 

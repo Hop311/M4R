@@ -32,6 +32,12 @@ namespace M4R
   theorem Ideal.exists_maximal_containing_nonunit {x : A} (hx : ¬isUnit x) : ∃ I : Ideal A, I.is_maximal ∧ x ∈ I :=
     let ⟨I, hxI, hI⟩ := t1_1 (unit_not_principal hx)
     ⟨I, hI, hxI (generator_in_principal x)⟩
+  theorem Ideal.exists_maximal_ideal_of_nontrivial [Ring A] (h : Ring.is_NonTrivial A) : ∃ I : Ideal A, I.is_maximal :=
+    let ⟨I, _, hI⟩ := t1_1 (zero_ideal_proper_of_nontrivial h)
+    ⟨I, hI⟩
+  theorem Ideal.exists_prime_ideal_of_nontrivial [Ring A] (h : Ring.is_NonTrivial A) : ∃ I : Ideal A, I.is_prime :=
+    let ⟨I, hI⟩ := exists_maximal_ideal_of_nontrivial h
+    ⟨I, maximal_is_prime hI⟩
   theorem Ideal.exists_maximal_ideal (A) [NonTrivialRing A] : ∃ I : Ideal A, I.is_maximal :=
     let ⟨I, _, hI⟩ := t1_1 (zero_ideal_proper A)
     ⟨I, hI⟩

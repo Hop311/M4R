@@ -379,6 +379,11 @@ namespace List
       b ∈ pmap f l H ↔ ∃ (a : α) (h : a ∈ l), f a (H a h) = b := by
         simp only [pmap_eq_map_attach, mem_map, mem_attach, true_and, Subtype.exists]
         exact Iff.refl _
+
+    theorem pmap_length {p : α → Prop} (f : ∀ a, p a → β) {l : List α} (hl : ∀ a ∈ l, p a) : (l.pmap f hl).length = l.length := by
+      induction l with
+      | nil          => rfl
+      | cons a l ih => rw [length_cons, ←ih (fun x hx => hl x (mem_cons_of_mem a hx))]; rfl
   end pmap
 
   open Classical

@@ -257,6 +257,10 @@ namespace M4R
 
     theorem pmap_empty {p : α → Prop} (f : ∀ a, p a → β) : pmap f 0 (fun _ _ => by contradiction) = 0 := rfl
 
+    theorem pmap_length {p : α → Prop} (f : ∀ a, p a → β) {s : UnorderedList α} (H : ∀ a ∈ s, p a) : (s.pmap f H).length = s.length :=
+      @Quotient.inductionOn _ _ (fun (l : UnorderedList α) => (H : ∀ a ∈ l, p a) → (l.pmap f H).length = l.length)
+        s (fun _ => List.pmap_length f) H
+
     section filter
 
       noncomputable def filter (p : α → Prop) (s : UnorderedList α) : UnorderedList α :=

@@ -192,6 +192,9 @@ namespace M4R
 
       protected theorem mem {S : Set (Set α)} {a : α} : a ∈ ⋂₀ S ↔ ∀ s ∈ S, a ∈ s := Iff.rfl
 
+      protected theorem single (S : Set α) : ⋂₀ Set.singleton S = S :=
+        Set.ext.mp fun s => ⟨fun hs => hs S rfl, fun hs s' hs' => hs' ▸ hs⟩
+
     end SoSIntersection
 
   end Set

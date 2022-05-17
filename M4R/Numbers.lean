@@ -371,6 +371,12 @@ namespace Nat
   theorem sub_pos_iff_lt {m n : Nat} : 0 < m - n ↔ n < m :=
     (pos_iff_ne_zero.trans (M4R.not_iff_not.mpr (sub_eq_zero_iff_le m n))).trans Nat.not_le
 
+  theorem strong_induction (p : Nat → Prop) (ih : ∀ n, (∀ m, m < n → p m) → p n) (n : Nat) : p n :=
+    ih n fun m hm => by
+      induction n generalizing m with
+      | zero       => contradiction
+      | succ n ih' => exact (Nat.lt_or_eq_of_le (Nat.le_of_succ_le_succ hm)).elim (ih' m) (fun h => ih m (h ▸ ih'))
+
 end Nat
 
 namespace Int

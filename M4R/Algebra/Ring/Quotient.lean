@@ -168,6 +168,10 @@ namespace M4R
           ←natural_hom.extension_add_I I K, quotient_extension_contraction (Ideal.add.subset I K), Ideal.add.comm I K] at this
         exact this
 
+    theorem quotient_extension_subsetneq [Ring α] {I J K : Ideal α} (hIJ : I ⊆ J) (hJK : J ⊊ K) : extension (natural_hom I) J ⊊ extension (natural_hom I).hom K :=
+      Ideal.subsetneq.mpr ⟨extension.subset _ hJK.left, fun h => absurd (((add.of_subset hIJ).symm.trans (quotient_extension_injective h)).trans
+        (add.of_subset (Subset.trans hIJ hJK.left))) (Ideal.subsetneq.mp hJK).right⟩
+
     theorem quotient_contraction_injective [Ring α] {I : Ideal α} : Function.injective (contractionᵣ₁ (natural_hom I)) :=
       contraction_injective_of_surjective _ (natural_hom.surjective I)
 
