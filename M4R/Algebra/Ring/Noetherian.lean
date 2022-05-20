@@ -70,6 +70,17 @@ namespace M4R
         { exact ⟨0, fun m hm => absurd hm (Nat.not_lt_zero m), fun m hm =>
             have h := Nat.not_lt.mp h;
             (hN₂ (n + m) (Nat.le_trans h (Nat.le_add_right n m))).trans (hN₂ n h).symm⟩ }
+      theorem shift_stable_length (n : Nat) (hc : c.strict_stable) : (c.shift n).stable_length (shift_strict_stable n hc) =
+        c.stable_length hc - n := by
+          byCases h : n < c.stable_length hc
+          { exact stable_length_eq _ (fun m hm => (c.stable_length_spec hc).left (n + m) (Nat.add_comm m n ▸
+              (Nat.lt_sub_iff_right (Nat.le_of_lt h)).mp hm)) fun m hm => by
+                have := (c.stable_length_spec hc).right _ (Nat.sub_le_iff_right.mp hm)
+                rw [Nat.add_comm, ←Nat.sub_add_cancel (Nat.le_of_lt h), Nat.add_comm _ n] at this
+                exact this }
+          { exact Nat.sub_eq_zero_of_le (Nat.not_lt.mp h) ▸ stable_length_eq _ (fun m hm => absurd hm (Nat.not_lt_zero m))
+              fun m hm => have h := Nat.not_lt.mp h; ((c.stable_length_spec hc).right (n + m) (Nat.le_trans h
+                (Nat.le_add_right n m))).trans ((c.stable_length_spec hc).right n h).symm }
 
       theorem subset_ascending (hc : c.ascending) {m n : Nat} (h : m ≤ n) : c m ⊆ c n :=
         have : ∀ n, c m ⊆ c (m + n) := fun n => by
@@ -173,6 +184,12 @@ namespace M4R
         ∀ (d : chain α) (hd : d.strict_stable), d ∈ S → d.stable_length hd  ≤ length_of_finite h :=
           have ⟨hc, hcS, h'⟩ := choose_spec h.right
           ⟨⟨choose h.right, hc, hcS, rfl⟩, h'⟩
+
+      theorem length_eq_of_finite {S : Set (chain α)} (h₁ : ∀ c ∈ S, ¬c.strict_infinite) {c : chain α} (hc : c.strict_stable) (hcS : c ∈ S)
+        (h₂ : ∀ (d : chain α) (hd : d.strict_stable), d ∈ S → d.stable_length hd  ≤ c.stable_length hc) :
+          length_of_finite ⟨h₁, c, hc, hcS, h₂⟩ = c.stable_length hc :=
+            have h := choose_spec (choose_spec (⟨h₁, c, hc, hcS, h₂⟩ : length_finite S).right)
+            Nat.le_antisymm (h₂ _ _ h.left) (h.right c hc hcS)
 
       def const_chain (I : Ideal α) : chain α := ⟨fun _ => I⟩
 
@@ -548,6 +565,29 @@ namespace M4R
       theorem strict_stabilised.succ_length_eq {c : chain α} {m : Nat} (hmonotone : monotone_chain c) (hc : c m = c m.succ) :
         length c m.succ = length c m := length_eq_length c m ▸ length_eq_length c m.succ ▸ strict_index.succ_length_eq hc hmonotone
 
+      def prefix_chain (I : Ideal α) (c : chain α) : chain α := ⟨fun n => match n with | 0 => I | n+1 => c n⟩
+
+      namespace prefix_chain
+
+        theorem ascending {I : Ideal α} {c : chain α} (hI : I ⊆ c 0) (hc : c.ascending) : (prefix_chain I c).ascending :=
+          fun n => match n with | 0 => hI | n+1 => hc n
+        theorem descending {I : Ideal α} {c : chain α} (hI : c 0 ⊆ I) (hc : c.descending) : (prefix_chain I c).descending :=
+          fun n => match n with | 0 => hI | n+1 => hc n
+        theorem is_prime {I : Ideal α} {c : chain α} (hI : I.is_prime) (hc : c.is_prime) : (prefix_chain I c).is_prime :=
+          fun n => match n with | 0 => hI | n+1 => hc n
+
+        theorem strict_stable {I : Ideal α} {c : chain α} (hc : c.strict_stable) (hI : I ≠ c 0) : (prefix_chain I c).strict_stable :=
+          ⟨(c.stable_length hc).succ, fun k hk => match k with | 0 => hI | k+1 => (c.stable_length_spec hc).left k (Nat.lt_of_succ_lt_succ hk),
+            fun k hk => match k with | k+1 => (c.stable_length_spec hc).right k (Nat.le_of_succ_le_succ hk)⟩
+        theorem stable_length {I : Ideal α} {c : chain α} (hc : c.strict_stable) (hI : I ≠ c 0) :
+          (prefix_chain I c).stable_length (strict_stable hc hI) = (c.stable_length hc).succ :=
+            stable_length_eq _ (fun k hk => match k with | 0 => by exact hI | k+1 => (c.stable_length_spec hc).left k (Nat.lt_of_succ_lt_succ hk))
+              fun k hk => match k with | k+1 => (c.stable_length_spec hc).right k (Nat.le_of_succ_le_succ hk)
+
+        theorem strict_infinite {I : Ideal α} {c : chain α} (hc : c.strict_infinite) (hI : I ≠ c 0) : (prefix_chain I c).strict_infinite :=
+          fun n => match n with | 0 => hI | n+1 => hc n
+
+      end prefix_chain
     end chain
   end Ideal
 
@@ -555,21 +595,22 @@ namespace M4R
 
   namespace Ring
     namespace krull_dim
+      open chain
       variable (α : Type _) [Ring α]
 
       def krull_chain : Set (chain α) := {c | c.is_prime ∧ c.ascending}
 
-      def krull_dim_infinite : Prop := chain.length_infinite (krull_chain α)
-      def has_krull_dim : Prop := chain.length_finite (krull_chain α)
+      def krull_dim_infinite : Prop := length_infinite (krull_chain α)
+      def has_krull_dim : Prop := length_finite (krull_chain α)
 
       variable {α}
 
       theorem has_krull_dim_iff_not_infinite [Ring α] (h : Ring.is_NonTrivial α) : has_krull_dim α ↔ ¬krull_dim_infinite α :=
         let ⟨I, hI⟩ := exists_prime_ideal_of_nontrivial h
-        chain.length_finite_iff_not_infinite ⟨chain.const_chain I, ⟨chain.const_chain.is_prime hI,
-          chain.const_chain.ascending I⟩, chain.const_chain.strict_stable I⟩
+        length_finite_iff_not_infinite ⟨const_chain I, ⟨const_chain.is_prime hI,
+          const_chain.ascending I⟩, const_chain.strict_stable I⟩
 
-      noncomputable def dim : has_krull_dim α → Nat := chain.length_of_finite
+      noncomputable def dim : has_krull_dim α → Nat := length_of_finite
 
     end krull_dim
   end Ring
@@ -626,10 +667,16 @@ namespace M4R
     def height_le (n : Nat) : Prop := ∃ h : I.height_finite, Ideal.height h ≤ n
     def height_eq (n : Nat) : Prop := ∃ h : I.height_finite, Ideal.height h = n
 
+    theorem height_eq_rfl (h : Ideal.height_finite P) : P.height_eq (Ideal.height h) := ⟨h, rfl⟩
+
     theorem height_le_of_eq {n : Nat} : P.height_eq n → P.height_le n := fun ⟨h, hn⟩ => ⟨h, Nat.le_of_eq hn⟩
     theorem height_eq_of_le {n : Nat} : P.height_le n → ∃ m, P.height_eq m ∧ m ≤ n := fun ⟨h, hn⟩ => ⟨Ideal.height h, ⟨h, rfl⟩, hn⟩
 
     theorem height_le_trans {m n : Nat} (hmn : m ≤ n) : P.height_le m → P.height_le n := fun ⟨h, hm⟩ => ⟨h, Nat.le_trans hm hmn⟩
+
+    theorem height_eq_of_finite (h₁ : ∀ c ∈ height_chain P, ¬c.strict_infinite) {c : chain α} (hc : c.strict_stable) (hch : c ∈ height_chain P)
+      (h₂ : ∀ (d : chain α) (hd : d.strict_stable), d ∈ height_chain P → d.stable_length hd ≤ c.stable_length hc) :
+        Ideal.height ⟨h₁, c, hc, hch, h₂⟩ = c.stable_length hc := length_eq_of_finite h₁ hc hch h₂
 
     theorem height_le_of_strict_lt {N : Nat} (h : ∀ c ∈ height_chain P, (∀ n, n < N → c n ≠ c n.succ) → c N = c N.succ) : P.height_le N :=
       have hle : ∀ c ∈ height_chain P, (hc : c.strict_stable) → c.stable_length hc ≤ N :=
@@ -645,11 +692,10 @@ namespace M4R
       ⟨fun ⟨hP, he⟩ => ⟨is_prime_of_height_finite hP, zero_ideal_in P, by
         intro J hJ _ hJP
         apply Classical.byContradiction; intro hJP'
-        let c : chain α := ⟨fun n => match n with | 0 => P | n+1 => J⟩
-        let hc : c.strict_stable := ⟨1, fun n hn => Nat.le_zero.mp (Nat.le_of_succ_le_succ hn) ▸ Ne.symm hJP',
-          fun n hn => match n with | 0 => absurd Nat.zero_lt_one (Nat.not_lt.mpr hn) | n+1 => rfl⟩
-        have : c.stable_length hc = 0 := Nat.le_zero.mp (he ▸ (Ideal.height_spec hP).right c hc ⟨rfl, fun n => match n with | 0 => hJP | n+1 => Subset.refl J,
-          fun n => match n with | 0 => is_prime_of_height_finite hP | n+1 => hJ⟩)
+        let c : chain α := prefix_chain P (const_chain J)
+        let hc : c.strict_stable := prefix_chain.strict_stable (const_chain.strict_stable J) (Ne.symm hJP')
+        have : c.stable_length hc = 0 := Nat.le_zero.mp (he ▸ (Ideal.height_spec hP).right c hc ⟨rfl, prefix_chain.descending
+          hJP (const_chain.descending J), prefix_chain.is_prime (is_prime_of_height_finite hP) (const_chain.is_prime hJ)⟩)
         have : c 1 = c 0 := this ▸ (c.stable_length_spec hc).right 1 (this ▸ Nat.le_of_lt Nat.zero_lt_one)
         exact absurd this hJP'⟩,
       fun ⟨h₁, _, h₂⟩ =>
@@ -657,20 +703,73 @@ namespace M4R
           (h₂ (hch.right.right 1) (zero_ideal_in _) (hch.left ▸ hch.right.left 0)).symm)
         ⟨h, Nat.le_zero.mp h0⟩⟩
 
-      theorem height_gt_one {I J K : Ideal α} (hI : I.is_prime) (hJ : J.is_prime) (hK : K.is_prime) (hIJ : I ⊊ J) (hJK : J ⊊ K) :
-        ¬K.height_le 1 := fun ⟨h, h1⟩ =>
-          let c : chain α := ⟨fun n => match n with | 0 => K | 1 => J | n+2 => I⟩
-          have hc₁ : ∀ n, n < 2 → c n ≠ c n.succ := fun n hn =>
-            match n with
-            | 0 => (Ideal.subsetneq.mp hJK).right.symm
-            | 1 => (Ideal.subsetneq.mp hIJ).right.symm
-            | n+2 => absurd hn (Nat.not_lt.mpr (Nat.le_add_left 2 n))
-          have hc₂ : ∀ n, 2 ≤ n → c n = c 2 := fun n hn => match n with | n+2 => rfl
-          have := (Ideal.height_spec h).right c ⟨2, hc₁, hc₂⟩ ⟨rfl,
-            fun n => match n with | 0 => hJK.left | 1 => hIJ.left | n+2 => Subset.refl _,
-            fun n => match n with | 0 => hK | 1 => hJ | n+2 => hI⟩
-          absurd (chain.stable_length_eq 2 hc₁ hc₂ ▸ Nat.le_trans this h1 : 2 ≤ 1)
-            (Nat.not_le.mpr (Nat.succ_lt_succ Nat.zero_lt_one))
+    theorem height_gt_one {I J K : Ideal α} (hI : I.is_prime) (hJ : J.is_prime) (hK : K.is_prime) (hIJ : I ⊊ J) (hJK : J ⊊ K) :
+      ¬K.height_le 1 := fun ⟨h, h1⟩ =>
+        let c : chain α := ⟨fun n => match n with | 0 => K | 1 => J | n+2 => I⟩
+        have hc₁ : ∀ n, n < 2 → c n ≠ c n.succ := fun n hn =>
+          match n with
+          | 0 => (Ideal.subsetneq.mp hJK).right.symm
+          | 1 => (Ideal.subsetneq.mp hIJ).right.symm
+          | n+2 => absurd hn (Nat.not_lt.mpr (Nat.le_add_left 2 n))
+        have hc₂ : ∀ n, 2 ≤ n → c n = c 2 := fun n hn => match n with | n+2 => rfl
+        have := (Ideal.height_spec h).right c ⟨2, hc₁, hc₂⟩ ⟨rfl,
+          fun n => match n with | 0 => hJK.left | 1 => hIJ.left | n+2 => Subset.refl _,
+          fun n => match n with | 0 => hK | 1 => hJ | n+2 => hI⟩
+        absurd (chain.stable_length_eq 2 hc₁ hc₂ ▸ Nat.le_trans this h1 : 2 ≤ 1)
+          (Nat.not_le.mpr (Nat.succ_lt_succ Nat.zero_lt_one))
+
+    theorem height_le_succ {n : Nat} (h : ∀ Q : Ideal α, Q.is_prime → Q ⊊ P → Q.height_le n) : P.height_le n.succ := by
+      have : ∀ c ∈ height_chain P, ¬c.strict_infinite := fun c hch hcstrict => by
+        let ⟨h, hn⟩ := h (c 1) (hch.right.right 1) (Ideal.subsetneq.mpr ⟨hch.left ▸ hch.right.left 0, hch.left ▸ (hcstrict 0).symm⟩)
+        exact absurd (chain.shift_strict_infinite 1 hcstrict) (h.left (c.shift 1) ⟨rfl, chain.shift_descending 1 hch.right.left,
+          chain.shift_prime 1 hch.right.right⟩)
+      byCases hex : ∃ Q : Ideal α, Q.is_prime ∧ Q ⊊ P
+      { let ⟨m, hm, hmax⟩ := maximal.max_exists {m | ∃ Q : Ideal α, Q.is_prime ∧ Q ⊊ P ∧ Q.height_eq m}
+          (let ⟨Q, hQ, hQP⟩ := hex; let ⟨h, _⟩ := h Q hQ hQP; ⟨Ideal.height h, Q, hQ, hQP, height_eq_rfl h⟩)
+          id ⟨n, by intro m ⟨Q, hQ₁, hQ₂, ⟨h', hm⟩⟩; let ⟨_, hn⟩ := h Q hQ₁ hQ₂; exact hm ▸ hn⟩
+        let ⟨Q, hQ₁, hQ₂, ⟨hQ₃, hQm⟩⟩ := hm
+        let ⟨c, hcstrict, hch, hceq⟩ := (Ideal.height_spec hQ₃).left
+        let d : chain α := prefix_chain P c
+        have hPc : P ≠ c 0 := hch.left ▸ (Ideal.subsetneq.mp hQ₂).right.symm
+        have hdh : d ∈ height_chain P := ⟨rfl, prefix_chain.descending (hch.left ▸ hQ₂.left) hch.right.left,
+          prefix_chain.is_prime hP hch.right.right⟩
+        have hdmax : ∀ (d' : chain α) (hd' : d'.strict_stable), d' ∈ height_chain P → d'.stable_length hd' ≤
+          d.stable_length (prefix_chain.strict_stable hcstrict hPc) := by
+            intro d' hd' hdh'; byCases hd'01 : d' 1 = P
+            { exact Nat.le_trans (Nat.not_lt.mp (mt ((d'.stable_length_spec hd').left 0)
+              (iff_not_not.mpr (hdh'.left ▸ hd'01.symm)))) (Nat.zero_le _) }
+            { rw [prefix_chain.stable_length hcstrict hPc]
+              let ⟨hd1, hd1n⟩ := h (d' 1) (hdh'.right.right 1) (Ideal.subsetneq.mpr ⟨hdh'.left ▸ hdh'.right.left 0, hd'01⟩)
+              have := (Ideal.height_spec hd1).right (d'.shift 1) (chain.shift_strict_stable 1 hd')
+                ⟨rfl, chain.shift_descending 1 hdh'.right.left, chain.shift_prime 1 hdh'.right.right⟩;
+              rw [chain.shift_stable_length 1 hd'] at this;
+              exact Nat.le_trans (Nat.le_succ_pred _) (Nat.succ_le_succ (Nat.le_trans this (hceq ▸ hQm ▸ hmax (Ideal.height hd1)
+                ⟨d' 1, hdh'.right.right 1, Ideal.subsetneq.mpr ⟨hdh'.left ▸ hdh'.right.left 0, hd'01⟩, height_eq_rfl hd1⟩))) }
+        exact ⟨⟨this, ⟨d, prefix_chain.strict_stable hcstrict hPc, hdh, hdmax⟩⟩, by
+          rw [height_eq_of_finite this (prefix_chain.strict_stable hcstrict hPc) hdh hdmax, prefix_chain.stable_length hcstrict hPc]
+          let ⟨_, hn⟩ := h Q hQ₁ hQ₂; exact Nat.succ_le_succ (hceq ▸ hn)⟩ }
+      { let ⟨h, h0⟩ := height_eq_zero.mpr ⟨hP, zero_ideal_in P, fun hJ _ hJP => Classical.byContradiction fun h =>
+          absurd (Ideal.subsetneq.mpr ⟨hJP, h⟩) (not_and.mp (not_exists.mp hex _) hJ)⟩; exact ⟨h, h0 ▸ Nat.zero_le _⟩ }
+
+    theorem height_le_subset {Q : Ideal α} (hPQ : P ⊆ Q) {n : Nat} (hQn : Q.height_le n) : P.height_le n := by
+      byCases hPQeq : P = Q
+      { exact hPQeq ▸ hQn }
+      { let ⟨hQfin, hQfinn⟩ := hQn;
+        have : P.height_finite := Classical.byContradiction fun h => (of_not_not (mt (Ideal.height_finite_iff_not_infinite hP).mpr h)).elim
+          (fun ⟨c, hch, hcstrict⟩ => absurd (prefix_chain.strict_infinite hcstrict (hch.left ▸ Ne.symm hPQeq))
+            (hQfin.left (prefix_chain Q c) ⟨rfl, prefix_chain.descending (hch.left ▸ hPQ) hch.right.left,
+              prefix_chain.is_prime (is_prime_of_height_finite hQfin) hch.right.right⟩))
+          (fun h =>
+            let ⟨c, hc, hch, hle⟩ := h (Ideal.height hQfin)
+            have hQc : Q ≠ c 0 := hch.left ▸ Ne.symm hPQeq
+            have := (Ideal.height_spec hQfin).right (prefix_chain Q c) (prefix_chain.strict_stable hc hQc) ⟨rfl, prefix_chain.descending
+              (hch.left ▸ hPQ) hch.right.left, prefix_chain.is_prime (is_prime_of_height_finite hQfin) hch.right.right⟩
+            absurd (prefix_chain.stable_length hc hQc ▸ this) (Nat.not_le.mpr (Nat.succ_le_succ hle)));
+        exact ⟨this, Nat.le_trans (let ⟨c, hc, hch, hceq⟩ := (Ideal.height_spec this).left
+          have hQc : Q ≠ c 0 := hch.left ▸ Ne.symm hPQeq
+          have := (Ideal.height_spec hQfin).right (prefix_chain Q c) (prefix_chain.strict_stable hc hQc) ⟨rfl, prefix_chain.descending
+            (hch.left ▸ hPQ) hch.right.left, prefix_chain.is_prime (is_prime_of_height_finite hQfin) hch.right.right⟩
+          Nat.le_trans (Nat.le_succ _) (hceq ▸ prefix_chain.stable_length hc hQc ▸ this)) hQfinn⟩ }
 
     open localisation
 
@@ -769,7 +868,6 @@ namespace M4R
             (Nat.lt_of_succ_lt_succ ((Nat.succ_pred_eq_of_pos (Nat.sub_pos_of_lt (Nat.lt_of_succ_lt_succ hn))).symm ▸
             Nat.lt_of_le_of_lt (N.sub_le n) (Nat.lt.base N)))).symm : c (N - n) ≠ c (N - n).pred),
         fun n hn => match n with
-          | 0   => by contradiction
           | n+1 => (N.sub_self ▸ congrArg _ ((N.sub_eq_zero_iff_le n).mpr (Nat.le_of_succ_le_succ hn)) : c (N - n) = c (N - N))⟩
 
       theorem is_height_chain : reverse_chain_at c N P ∈ height_chain P :=
@@ -783,7 +881,6 @@ namespace M4R
             (Nat.lt_of_succ_lt_succ ((Nat.succ_pred_eq_of_pos (Nat.sub_pos_of_lt (Nat.lt_of_succ_lt_succ hn))).symm ▸
             Nat.lt_of_le_of_lt (N.sub_le n) (Nat.lt.base N)))).symm : c (N - n) ≠ c (N - n).pred))
         fun n hn => match n with
-          | 0   => by contradiction
           | n+1 => (N.sub_self ▸ congrArg _ ((N.sub_eq_zero_iff_le n).mpr (Nat.le_of_succ_le_succ hn)) : c (N - n) = c (N - N))
     end reverse_chain_at
 

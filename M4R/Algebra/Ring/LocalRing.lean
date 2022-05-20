@@ -139,16 +139,12 @@ namespace M4R
     theorem local_krull_height_theorem {α : Type u} [NoetherianLocalRing α] (f : Finset α) (hP : m.minimal_prime_ideal_of (from_set f.toSet))
       (ih : ∀ m, m < f.length → ∀ (α : Type u) [NoetherianRing α] (f : Finset α) (hfm : f.length = m) (P : Ideal α),
         P.minimal_prime_ideal_of (from_set f.toSet) → P.height_le f.length) : (m : Ideal α).height_le f.length :=
-          (Nat.lt_trichotomy f.length 1).elim
-            (fun hf1 => by
-              have : f.length = 0 := Nat.lt_one hf1
-              rw [Finset.eq_empty_of_length_eq_zero this] at hP
-              exact this ▸ Ideal.height_le_of_eq (Ideal.height_eq_zero.mpr (from_set.empty ▸ hP)))
-            (Or.elim · (fun hf1 =>
-              let ⟨a, ha⟩ := Finset.length.eq_one.mp hf1
-              have : from_set f.toSet = principal a := by rw [ha, Finset.singleton_toSet, from_set.is_principal]
-              hf1 ▸ local_krull_principal_ideal_theorem (by rw [this] at hP; exact hP))
-            (fun hf1 => by
+          (f.length.le_or_lt 0).elim
+            (fun hf0 => by
+              have hf0 := Nat.le_zero.mp hf0
+              rw [Finset.eq_empty_of_length_eq_zero hf0] at hP
+              exact hf0 ▸ Ideal.height_le_of_eq (Ideal.height_eq_zero.mpr (from_set.empty ▸ hP)))
+            fun hf0 =>
               /-
                 • sufficient to show height Q ≤ f.length - 1 for any prime ideal Q such that Q ⊊ m with no prime Q' in between (NOT Q ⊊ Q' ⊊ m)
                 • from_set f ⊈ Q as m is minimal prime, so f must contain at least one generator g ∉ Q
@@ -164,14 +160,15 @@ namespace M4R
                   violating the height condition.
                 • As Q is a minimal prime of from_set d (with d.length + 1 = f.length), ih gives height Q ≤ n - 1
               -/
-              have : ∀ Q : Ideal α, Q.is_prime → Q ⊊ m → (∀ Q' : Ideal α, Q'.is_prime → Q' ⊊ m → Q' ⊆ Q) → Q.height_le f.length.pred := fun Q hQ hQm hQmax => by
+              have : ∀ Q : Ideal α, Q.is_prime → Q ⊊ m → (∀ Q' : Ideal α, Q'.is_prime → Q ⊆ Q' → Q' ⊊ m → Q' ⊆ Q) → Q.height_le f.length.pred := fun Q hQ hQm hQmax => by
                 let ⟨g, hgf, hgQ⟩ : ∃ g : α, g ∈ f ∧ g ∉ Q := Classical.byContradiction fun h =>
                   absurd ((hP.right.right hQ (from_set.ideal_contained fun x hx => of_not_not (not_and.mp
                     (not_exists.mp h x) hx)) hQm.left) ▸ Subset.refl _) (ProperSubset.toNotSubset hQm)
                 have hprimes_maximal : Ring.Spec (QClass (Q + principal g)) ⊆ Ring.MaxSpec (QClass (Q + principal g)) := fun Q' hQ' =>
                   have := contraction_prime (QuotientRing.natural_hom (Q + principal g)) hQ'
                   Classical.byContradiction fun h' => absurd (Subset.trans (quotient_contraction_contains Q')
-                    (hQmax _ this (Ideal.subsetneq.mpr ⟨subset_m this.left, fun h => absurd (quotient_of_contraction_maximal
+                    (hQmax _ this (Subset.trans (add.subset Q (principal g)) (quotient_contraction_contains Q'))
+                    (Ideal.subsetneq.mpr ⟨subset_m this.left, fun h => absurd (quotient_of_contraction_maximal
                     (h ▸ m_max)) h'⟩)) (add.subset' _ _ (generator_in_principal g))) hgQ
                 have : Ring.MaxSpec (QClass (Q + principal g)) = Set.singleton (extension (QuotientRing.natural_hom (Q + principal g)).hom m) :=
                   Set.ext.mp fun I => ⟨fun hI => contraction_extension_eq_of_surjective (QuotientRing.natural_hom (Q + principal g)).preserve_mul_left
@@ -225,9 +222,12 @@ namespace M4R
                   rw [UnorderedList.pmap_length]
                   conv => rhs rw [f.erase_cons hgf, Finset.length_cons]
                   exact Nat.lt.base _
-                exact Q.height_le_trans (Nat.le_of_succ_le_succ (Nat.succ_pred_eq_of_pos (Nat.lt_trans Nat.zero_lt_one hf1) ▸ hdf))
+                exact Q.height_le_trans (Nat.le_of_succ_le_succ (Nat.succ_pred_eq_of_pos hf0 ▸ hdf))
                   (ih d.length hdf α d rfl Q this)
-              sorry))
+              Nat.succ_pred_eq_of_pos hf0 ▸ height_le_succ (maximal_is_prime m_max) fun Q hQ hQm =>
+                let ⟨P, ⟨hP, hPm, hQP⟩, hPmax⟩ := @NoetherianRing.exists_maximal _ _ {P : Ideal α | P.is_prime ∧ P ⊊ m ∧ Q ⊆ P} ⟨Q, hQ, hQm, Subset.refl Q⟩
+                have := this P hP hPm (fun Q' hQ' hPQ' hQm' => hPmax Q' ⟨hQ', hQm', Subset.trans hQP hPQ'⟩ hPQ' ▸ Subset.refl _)
+                height_le_subset hQ hQP this
 
   end NoetherianLocalRing
 
