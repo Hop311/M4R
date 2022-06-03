@@ -122,7 +122,7 @@ namespace M4R
     Or.comm'.trans or_iff_not_imp_left
 
   @[simp] theorem of_not_not : ¬ ¬ p → p := Decidable.of_not_not
-  
+
   theorem iff_not_not : ¬ ¬ p ↔ p := ⟨of_not_not, fun _ _ => by contradiction⟩
 
   theorem not_imp_symm (h : ¬a → b) (hb : ¬b) : a := byContradiction (hb ∘ h)

@@ -1,5 +1,4 @@
 import M4R.Set.MemStructure
-import M4R.Logic
 
 namespace List
   open M4R
@@ -41,7 +40,7 @@ namespace List
 
   theorem mem_cons_self (a : α) (l : List α) : a ∈ a :: l :=
     Or.inl rfl
-  
+
   @[simp] theorem mem_cons_of_mem (y : α) {a : α} {l : List α} : a ∈ l → a ∈ y :: l :=
     Or.inr
 
@@ -69,7 +68,7 @@ namespace List
         cases hx with
         | inl h => rw [h]; exact h₁
         | inr h => exact h₂ x h⟩
-  
+
   theorem forall_mem_of_forall_mem_cons {p : α → Prop} {a : α} {l : List α}
     (h : ∀ x ∈ a :: l, p x) : ∀ x ∈ l, p x :=
       (forall_mem_cons.mp h).right
@@ -81,11 +80,11 @@ namespace List
     fun h₁ h₂ h₃ => Or.elim (eq_or_mem_of_mem_cons h₃) h₁ h₂
 
   theorem mem_split {l : List α} (h : a ∈ l) : ∃ s t : List α, l = s ++ a :: t := by
-    induction l with 
+    induction l with
     | nil         => contradiction
     | cons b l ih => apply Or.elim h (fun ab =>
       by rw [ab]; exact ⟨[], l, rfl⟩) (fun ainl =>
-        by let ⟨s, t, p⟩ := ih ainl; rw [p]; exact ⟨b::s, t, rfl⟩); 
+        by let ⟨s, t, p⟩ := ih ainl; rw [p]; exact ⟨b::s, t, rfl⟩);
 
   theorem mem_of_ne_of_mem {a y : α} {l : List α} (h₁ : a ≠ y) (h₂ : a ∈ y :: l) : a ∈ l :=
     Or.elim (eq_or_mem_of_mem_cons h₂) (fun e => absurd e h₁) id
@@ -141,7 +140,7 @@ namespace List
       | cons c _ ih =>
         cases (eq_or_mem_of_mem_cons h) with
         | inl h' => exact ⟨c, mem_cons_self _ _, h'.symm⟩
-        | inr h' => let ⟨a, ha₁, ha₂⟩ := ih h'; exact ⟨a, mem_cons_of_mem _ ha₁, ha₂⟩ 
+        | inr h' => let ⟨a, ha₁, ha₂⟩ := ih h'; exact ⟨a, mem_cons_of_mem _ ha₁, ha₂⟩
 
     @[simp] theorem mem_map {f : α → β} {b : β} {l : List α} : b ∈ l.map f ↔ ∃ a, a ∈ l ∧ f a = b :=
       ⟨exists_of_mem_map, fun ⟨a, la, h⟩ => by rw [←h]; exact mem_map_of_mem f la⟩
@@ -391,7 +390,7 @@ namespace List
   section insert
     protected noncomputable def insert (a : α) (l : List α) : List α :=
       if a ∈ l then l else a :: l
-      
+
     @[simp] theorem insert_nil (a : α) : ([]).insert a = [a] := by simp only [List.insert, mem_nil_iff, ite_false]
 
     @[simp] theorem insert_of_mem {a : α} {l : List α} (h : a ∈ l) : l.insert a = l := by
@@ -419,7 +418,7 @@ namespace List
 
     @[simp] theorem foldr_cons (f : α → β → β) (init : β) (a : α) (l : List α) :
       foldr f init (a::l) = f a (foldr f init l) := rfl
-        
+
     @[simp] theorem foldl_append (f : α → β → α) (a : α) (l₁ l₂ : List β) :
       foldl f a (l₁++l₂) = foldl f (foldl f a l₁) l₂ :=
         match l₁ with
@@ -453,7 +452,7 @@ namespace List
       | nil => simp
       | cons x l ih =>
         simp only [cons_union, mem_insert_iff, mem_cons_iff, ih, Or.assoc]; exact Iff.refl _
-    
+
     theorem sublist_suffix_of_union : ∀ l₁ l₂ : List α, ∃ t, t <+ l₁ ∧ t ++ l₂ = l₁ ∪ l₂
     | []   , l₂ => ⟨[], Sublist.refl _, rfl⟩
     | a::l₁, l₂ =>
@@ -629,7 +628,7 @@ namespace List
 
     theorem mem_of_mem_erasep {a : α} {l : List α} : a ∈ l.erasep p → a ∈ l :=
       @erasep_subset _ _ _ _ _
-    
+
     @[simp] theorem mem_erasep_of_neg {a : α} {l : List α} (pa : ¬ p a) : a ∈ l.erasep p ↔ a ∈ l :=
       ⟨mem_of_mem_erasep, fun al => by
         cases exists_or_eq_self_of_erasep p l with
@@ -743,7 +742,7 @@ namespace List
     | l₁, a::l₂ => if a ∈ l₁ then List.diff (l₁.erase a) l₂ else List.diff l₁ l₂
 
     @[simp] theorem diff_nil (l : List α) : l.diff [] = l := rfl
-    
+
     @[simp] theorem diff_cons (l₁ l₂ : List α) (a : α) : l₁.diff (a::l₂) = (l₁.erase a).diff l₂ :=
       if h : a ∈ l₁ then by simp only [List.diff, if_pos h]
       else by simp only [List.diff, if_neg h, erase_of_not_mem h]
@@ -856,7 +855,7 @@ namespace List
       simp only [mem_filter']; exact Iff.rfl
 
   end countp
-  
+
   theorem Sublist.countp_le {l₁ l₂ : List α} (s : l₁ <+ l₂) : countp p l₁ ≤ countp p l₂ := by
     simp only [countp_eq_length_filter']
     exact length_le_of_sublist (@Sublist.filter' _ p _ _ s)

@@ -5,7 +5,7 @@ import M4R.Numbers
 inductive M4R.Pairwise (r : α → α → Prop) : List α → Prop
 | nil  : Pairwise r []
 | cons : ∀ {x : α} {l : List α}, (∀ a ∈ l, r x a) → Pairwise r l → Pairwise r (x::l)
-    
+
 def List.nodup : List α → Prop := M4R.Pairwise (· ≠ ·)
 
 namespace M4R
@@ -17,7 +17,7 @@ namespace M4R
 
     theorem singleton (r : α → α → Prop) (a : α) : Pairwise r [a] := by
       simp only [consIff]; exact ⟨by intros; contradiction, nil⟩
-      
+
     theorem appendIff {r : α → α → Prop} {l₁ l₂ : List α} : Pairwise r (l₁++l₂) ↔
       Pairwise r l₁ ∧ Pairwise r l₂ ∧ ∀ x ∈ l₁, ∀ y ∈ l₂, r x y := by
       induction l₁ with

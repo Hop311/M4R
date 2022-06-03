@@ -99,7 +99,7 @@ namespace M4R
     namespace append
       instance UnorderedListAdd : Add (UnorderedList α) where add := UnorderedList.append
 
-      theorem comm (s t : UnorderedList α) : s + t = t + s := 
+      theorem comm (s t : UnorderedList α) : s + t = t + s :=
         @Quotient.inductionOn₂ _ _ _ _ (fun (l₁ l₂ : UnorderedList α) => l₁ + l₂ = l₂ + l₁) s t
           fun _ _ => Quot.sound Perm.append_comm
 
@@ -349,7 +349,7 @@ namespace M4R
             ndunion (l₁.cons a) l₂ = ndinsert a (ndunion l₁ l₂)) s t fun _ _ => rfl
 
       @[simp] theorem mem_ndunion {s t : UnorderedList α} {a : α} : a ∈ ndunion s t ↔ a ∈ s ∨ a ∈ t :=
-        @Quotient.inductionOn₂ _ _ _ _ 
+        @Quotient.inductionOn₂ _ _ _ _
           (fun (l₁ l₂ : UnorderedList α) => a ∈ ndunion l₁ l₂ ↔ a ∈ l₁ ∨ a ∈ l₂) s t
           (fun l₁ l₂ => List.mem_union)
 

@@ -8,6 +8,9 @@ namespace M4R
       neg := fun (x₁, x₂) => (-x₁, -x₂)
       add_neg := fun (a₁, a₂) => by simp [HAdd.hAdd, Add.add, product_zero]; exact ⟨add_neg a₁, add_neg a₂⟩
 
+    theorem product_neg {α₁ : Type _} {α₂ : Type _} [Group α₁] [Group α₂] : ∀ x : α₁ × α₂, -x = (-x.fst, -x.snd) :=
+      fun (x₁, x₂) => rfl
+
     protected instance multi_product.Neg {ι : Type _} (fι : ι → Type _) [∀ i, Neg (fι i)] : Neg (MultiProd fι) where
       neg := (- · ·)
     protected theorem multi_product.Neg_def {ι : Type _} {fι : ι → Type _} [∀ i, Neg (fι i)] (a : MultiProd fι) :
@@ -61,7 +64,7 @@ namespace M4R
       add_assoc : ∀ a b c : α, (a + b) + c = a + (b + c)
       add_neg   : ∀ a : α, a + (-a) = 0
 
-    protected instance construct {α : Type _} (c : Group.constructor_g α) : Group α where
+    protected def construct {α : Type _} (c : Group.constructor_g α) : Group α where
       add_zero := c.add_zero
       zero_add := fun a => by
         rw [←c.add_neg a, c.add_assoc]
@@ -87,7 +90,7 @@ namespace M4R
 
     protected class constructor_ab (α : Type _) extends Group.constructor_g α, CommMonoid.constructor_cm α
 
-    protected instance construct {α : Type _} (c : AbelianGroup.constructor_ab α) : AbelianGroup α where
+    protected def construct {α : Type _} (c : AbelianGroup.constructor_ab α) : AbelianGroup α where
       toGroup  := Group.construct c.toconstructor_g
       add_comm := c.add_comm
 

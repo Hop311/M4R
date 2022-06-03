@@ -153,14 +153,40 @@ namespace M4R
 
   -- Theorem 1.3
   private theorem t1_3 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
-    ⋂₀ fI.toSet = ∏ fI := by
-      sorry
+    ⋂₀ fI.toSet = ∏ fI := @Finset.cons_induction _ (fun f => f ⊆ fI → ⋂₀ f.toSet = ∏ f)
+      (fun _ => by rw [Finset.empty_toSet, Ideal.sIntersection.empty]; rfl)
+      (fun J s hJs ih hsfI => by
+        rw [Finset.prod.cons, Ideal.product.coprime_eq_inter ((Ideal.coprime.comm _ _).mp (Ideal.product.prod_coprime
+          (fun K hK => hfI J (hsfI (s.mem_cons_self hJs)) K (hsfI (Finset.mem_cons_self' hJs hK))
+          fun h => absurd (h ▸ hK) hJs))), ←ih fun x hx => hsfI (Finset.mem_cons_self' hJs hx),
+          ←Ideal.sIntersection.insert, Finset.cons_toSet])
+      fI (Subset.refl fI)
 
   open QuotientRing
 
-  -- Theorem 1.3
-  private def t1_4 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
-    QClass (⋂₀ fI.toSet) ≅ᵣ MultiProd (fun i : fI => QClass i.val) := by
-      sorry
+  -- Theorem 1.4
+  private noncomputable def t1_4 (fI : Finset (Ideal A)) (hfI : ∀ I ∈ fI, ∀ J ∈ fI, I ≠ J → Ideal.coprime I J) :
+    QClass (⋂₀ fI.toSet) ≅ᵣ MultiProd (fun i : fI => QClass i.val) :=
+      Classical.choice (@Finset.cons_induction _ (fun f : Finset (Ideal A) => f ⊆ fI →
+        Nonempty (QClass (⋂₀ f.toSet) ≅ᵣ MultiProd (fun i : f => QClass i.val)))
+        (fun _ => by
+          rw [Finset.empty_toSet, Ideal.sIntersection.empty]
+          exact ⟨{
+            hom           := fun _ _ => 0
+            preserve_zero := rfl
+            preserve_add  := fun _ _ => (add_zero _).symm
+            preserve_neg  := fun _ => Group.neg_zero.symm
+            preserve_mul  := fun _ _ => (mul_zero _).symm
+            inv           := fun _ => 0
+            left_inv      := fun x => (QuotientRing.trivial_zero x).symm
+            right_inv     := fun x => funext fun ⟨_, _⟩ => by contradiction
+          }⟩)
+        (fun I s hI ih hs => by
+          have f₁ := chinese_remainder_theorem (⋂₀ s.toSet) I ((Ideal.coprime.comm _ _).mp (Ideal.sIntersection.sinter_coprime
+            (fun J hJ => hfI I (hs (s.mem_cons_self hI)) J (hs (Finset.mem_cons_self' hI hJ)) fun h => absurd (h ▸ hJ) hI)))
+          have f₂ : QClass (⋂₀Finset.toSet s) × QClass I ≅ᵣ MultiProd (fun i : s => QClass i.val) × QClass I :=
+            (Classical.choice (ih (fun x hx => hs (Finset.mem_cons_self' hI hx)))).Product RIsomorphism.Identity
+          rw [Finset.cons_toSet, Ideal.sIntersection.insert]
+          exact ⟨(f₁.comp f₂).comp (RIsomorphism.MultiProd_cons QClass hI)⟩) fI (Subset.refl _))
 
 end M4R

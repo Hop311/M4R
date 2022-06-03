@@ -5,14 +5,14 @@ open Classical
 
 namespace M4R
 
-  namespace Finsupp        
+  namespace Finsupp
 
     protected noncomputable instance one (α : Type _) (β : Type _) [Zero α] [Zero β] [One β] :
       One (α →₀ β) where one := single 0 1
 
     theorem one_def [Zero α] [Zero β] [One β] : (1 : α →₀ β) = single 0 1 := rfl
 
-    theorem all_trivial (α : Type _) (β : Type _) [Zero α] [NCSemiring β] (h10 : (1 : β) = 0) 
+    theorem all_trivial (α : Type _) (β : Type _) [Zero α] [NCSemiring β] (h10 : (1 : β) = 0)
       (x : α →₀ β) : x = 0 :=
         zero_fun fun a => NCSemiring.all_trivial h10 _
 
@@ -35,7 +35,7 @@ namespace M4R
                 Monoid.add_zero, NCSemiring.mul_one]
           simp only [mul_def, one_def, mul_eq, this, map_sum.sum_single]
         one_mul           := fun x => by
-          have : (fun (a₂ : α) (b₂ : β) => single (0 + a₂) (1 * b₂)) = fun a₂ b₂ => single a₂ b₂ := by  
+          have : (fun (a₂ : α) (b₂ : β) => single (0 + a₂) (1 * b₂)) = fun a₂ b₂ => single a₂ b₂ := by
             apply funext; intro a₂; apply funext; intro b₂
             rw [Monoid.zero_add, NCSemiring.one_mul]
           simp only [mul_def, one_def, mul_eq]

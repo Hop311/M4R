@@ -45,7 +45,7 @@ namespace Nat
 
   theorem lt_add_right (n m k : Nat) (h : n < m) : n < m + k := by
     induction k with
-    | zero      => rw [Nat.add_zero] exact h
+    | zero      => rw [Nat.add_zero]; exact h
     | succ k ih => rw [Nat.add_succ]; exact Nat.lt_succ_of_le (Nat.le_of_lt ih)
 
   theorem lt_add_left (n m k : Nat) (h : n < m) : n < k + m := by
@@ -306,13 +306,13 @@ namespace Nat
      fun h => by cases n with
       | zero   => exact Nat.zero_le m
       | succ n => exact Nat.le_of_succ_le_succ h⟩
-  
+
   theorem le_pred_iff {n m : Nat} (hm : m > 0) : n ≤ m.pred ↔ n.succ ≤ m :=
     ⟨fun h => succ_pred_eq_of_pos hm ▸ Nat.succ_le_succ h,
      fun h => by cases m with
       | zero   => exact absurd hm (Nat.lt_irrefl 0)
       | succ m => exact Nat.le_of_succ_le_succ h⟩
-  
+
   theorem sub_le_iff_right {a b c : Nat} : a - c ≤ b ↔ a ≤ b + c := by
     induction c generalizing b with
     | zero      => rw [Nat.sub_zero, Nat.add_zero]; exact Iff.rfl
@@ -523,7 +523,7 @@ namespace Int
   | ofNat   a, ofNat   b,         c => add_assoc₁ a b c
   | ofNat   a,         b, ofNat   c => by
     rw [Int.add_comm, ←add_assoc₁, Int.add_comm (ofNat c), add_assoc₁, Int.add_comm b]
-  |         a, ofNat   b, ofNat   c => by 
+  |         a, ofNat   b, ofNat   c => by
     rw [Int.add_comm, Int.add_comm a, ←add_assoc₁, Int.add_comm a, Int.add_comm (ofNat c)]
   | negSucc a, negSucc b, ofNat   c => add_assoc₂ a b c
   | negSucc a, ofNat   b, negSucc c => by

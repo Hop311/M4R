@@ -125,7 +125,7 @@ namespace M4R
 
   end UnorderedList.map_fold_mul
 
-  def UnorderedList.prod [Semiring α] (s : UnorderedList α) : α := 
+  def UnorderedList.prod [Semiring α] (s : UnorderedList α) : α :=
     s.fold_mul 1
   def UnorderedList.map_prod [Semiring β] (s : UnorderedList α) (f : α → β) : β :=
     s.map_fold_mul 1 f

@@ -76,7 +76,7 @@ namespace M4R
       ∀ a, a ∈ support_of_fun x y f h ↔ f a ≠ 0 := fun _ => by
         simp [support_of_fun]; exact Iff.refl _
 
-    noncomputable def finsupp_fun [Zero β] (f : (α →₀ β) → (α →₀ β) → α → β)  
+    noncomputable def finsupp_fun [Zero β] (f : (α →₀ β) → (α →₀ β) → α → β)
       (h : ∀ (x y : α →₀ β) (a : α), x a = 0 → y a = 0 → f x y a = 0) (x y : α →₀ β) : α →₀ β where
       to_fun := f x y
       support := support_of_fun x y (f x y) (h x y)
@@ -319,7 +319,7 @@ namespace M4R
           (fun a b y hay hb hy => by simp only [f.preserve_add, g.preserve_add, hy, h a b])
 
     theorem add_hom_ext' [Monoid β] [Monoid γ] ⦃f g : (α →₀ β) →₊ γ⦄
-      (h : ∀ x, f.comp (single_add_hom x) = g.comp (single_add_hom x)) :
+      (h : ∀ x, (single_add_hom x).comp f = (single_add_hom x).comp g) :
         f = g := add_hom_ext fun x => MHomomorphism.congr_fun (h x)
 
     protected def map_sum [Zero β] [CommMonoid γ] (f : α →₀ β) (g : α → β → γ) : γ :=
@@ -417,7 +417,7 @@ namespace M4R
           apply MHomomorphism.ext.mpr; apply funext; exact map_sum.sum_zero
         preserve_add := fun x y => by
           apply MHomomorphism.ext.mpr; apply funext; intros; exact map_sum.sum_add
-        inv := fun f x => f.comp (single_add_hom x)
+        inv := fun f x => (single_add_hom x).comp f
         left_inv := by
           intro x; apply funext; intro a; apply MHomomorphism.ext.mpr; apply funext; intro b
           exact map_sum.single a b _ (x a).preserve_zero

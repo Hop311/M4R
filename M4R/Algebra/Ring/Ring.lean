@@ -17,6 +17,8 @@ namespace M4R
       rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_right, neg_add, zero_mul]
     theorem mul_neg [NCRing α] (a b : α) : a * -b = -(a * b) := by
       rw [←add_right_cancel _ _ (a * b), neg_add, ←mul_distrib_left, neg_add, mul_zero]
+    theorem mul_neg_swap [NCRing α] (a b : α) : a * -b = -a * b := by
+      rw [mul_neg, neg_mul]
 
     theorem neg_one_mul [NCRing α] (a : α) : -1 * a = -a := by
       rw [neg_mul, one_mul]
@@ -37,7 +39,7 @@ namespace M4R
       mul_distrib_left  : ∀ a b c : α, a * (b + c) = a * b + a * c
       mul_distrib_right : ∀ a b c : α, (a + b) * c = a * c + b * c
 
-    protected instance construct {α : Type _} (c : NCRing.constructor_ncr α) : NCRing α where
+    protected def construct {α : Type _} (c : NCRing.constructor_ncr α) : NCRing α where
       toNCSemiring := NCSemiring.construct
         {
           toconstructor_cm  := {
@@ -103,7 +105,7 @@ namespace M4R
       mul_distrib_left  : ∀ a b c : α, a * (b + c) = a * b + a * c
       mul_comm          : ∀ a b : α, a * b = b * a
 
-    protected instance construct {α : Type _} (c : Ring.constructor_r α) : Ring α where
+    protected def construct {α : Type _} (c : Ring.constructor_r α) : Ring α where
       toNCRing := NCRing.construct
         {
           mul_one           := c.mul_one

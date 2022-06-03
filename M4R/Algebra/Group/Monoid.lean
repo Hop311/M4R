@@ -13,12 +13,14 @@ namespace M4R
         exact ⟨add_assoc a₁ b₁ c₁, add_assoc a₂ b₂ c₂⟩
 
     theorem product_zero (α₁ : Type _) (α₂ : Type _) [Monoid α₁] [Monoid α₂] : (0 : α₁ × α₂) = (0, 0) := rfl
+    theorem product_add {α₁ : Type _} {α₂ : Type _} [Monoid α₁] [Monoid α₂] : ∀ x y : α₁ × α₂, x + y = (x.fst + y.fst, x.snd + y.snd) :=
+      fun (x₁, x₂) (y₁, y₂) => rfl
 
     protected instance multi_product.Zero {ι : Type _} (fι : ι → Type _) [∀ i, Zero (fι i)] : Zero (MultiProd fι) where
       zero := fun _ => 0
     protected theorem multi_product.Zero_def {ι : Type _} {fι : ι → Type _} [∀ i, Zero (fι i)] : ∀ i, (0 : MultiProd fι) i = 0 :=
       fun _ => rfl
-    
+
     protected instance multi_product.Add {ι : Type _} (fι : ι → Type _) [∀ i, Add (fι i)] : Add (MultiProd fι) where
       add := fun a b i => a i + b i
     protected theorem multi_product.Add_def {ι : Type _} {fι : ι → Type _} [∀ i, Add (fι i)] (a b : MultiProd fι) :
@@ -49,7 +51,7 @@ namespace M4R
       add_assoc : ∀ a b c : α, (a + b) + c = a + (b + c)
       add_comm  : ∀ a b : α, a + b = b + a
 
-    protected instance construct {α : Type _} (c : CommMonoid.constructor_cm α) : CommMonoid α where
+    protected def construct {α : Type _} (c : CommMonoid.constructor_cm α) : CommMonoid α where
       add_zero  := c.add_zero
       zero_add  := fun a => by rw [c.add_comm]; exact c.add_zero a
       add_assoc := c.add_assoc

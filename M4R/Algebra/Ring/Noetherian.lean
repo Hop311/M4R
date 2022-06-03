@@ -453,7 +453,7 @@ namespace M4R
               have : next_term c m (strict_index c m n) := of_not_not (mt def_not_exists (neq_m_lt_length hn))
               let ⟨k, hk⟩ := next_term_m_succ hmonotone (ih (Nat.lt_trans (Nat.lt.base n) hn)) this;
               exact (def_exists this).trans (hk.trans (def_exists k).symm)
-        
+
         theorem strict_index.ge_length_of_m_eq_m_succ {c : chain α} {m n : Nat} (hmonotone : monotone_chain c)
           (hm : c m = c m.succ) (hn : length c m ≤ n) : strict_index c m.succ n = m.succ := by
             induction n with
@@ -871,7 +871,7 @@ namespace M4R
           | n+1 => (N.sub_self ▸ congrArg _ ((N.sub_eq_zero_iff_le n).mpr (Nat.le_of_succ_le_succ hn)) : c (N - n) = c (N - N))⟩
 
       theorem is_height_chain : reverse_chain_at c N P ∈ height_chain P :=
-          ⟨rfl, fun n => match n with | 0 => hNP.left | n+1 => chain.subset_ascending hcasc (N - n).pred_le, 
+          ⟨rfl, fun n => match n with | 0 => hNP.left | n+1 => chain.subset_ascending hcasc (N - n).pred_le,
             fun n => match n with | 0 => hP | n+1 => hcprime (N - n)⟩
 
       theorem length_eq_N_succ : (reverse_chain_at c N P).stable_length (is_strict_stable hcstrict hNP) = N.succ :=

@@ -28,7 +28,7 @@ namespace M4R
     protected instance toSemiring [Semiring α] (s : SubSemiring α) : Semiring ↑s.subset where
       toNCSemiring := s.toNCSemiring
       mul_comm := fun ⟨a, _⟩ ⟨b, _⟩ => Set.elementExt (mul_comm a b)
-  
+
   end SubSemiring
 
   namespace SubRing
@@ -43,7 +43,7 @@ namespace M4R
     protected instance toNCRing [NCRing α] (s : SubRing α) : NCRing ↑s.subset where
       toNeg := s.toSubGroup.toGroup.toNeg
       add_neg := s.toSubGroup.toGroup.add_neg
-    
+
     protected instance toRing [Ring α] (s : SubRing α) : Ring ↑(s.subset) where
       mul_comm := s.toSemiring.mul_comm
 

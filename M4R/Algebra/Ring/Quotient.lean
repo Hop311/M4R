@@ -105,6 +105,9 @@ namespace M4R
     theorem is_zero [Ring α] {I : Ideal α} {a : α} : toQuotient I a = 0 ↔ a ∈ I :=
       not_iff_not.mp non_zero
 
+    protected theorem trivial_zero [Ring α] (x : QClass (1 : Ideal α)) : x = 0 :=
+      @Quot.ind _ _ (· = (0 : QClass 1)) (fun _ => is_zero.mpr trivial) x
+
     theorem preserve_pow_nat [Ring α] (I : Ideal α) (a : α) (n : Nat) : (toQuotient I a) ^ n = toQuotient I (a ^ n) := by
       induction n with
       | zero      => rfl
@@ -297,6 +300,52 @@ namespace M4R
         (fun y => ⟨natural_hom I y, by rw [toQuotient.def₂, natural_hom.def, ideal_quotient_map.def, (natural_hom I).preserve_mul]⟩) y,
         fun ⟨y, hy⟩ => hy ▸ @Quot.ind _ _ (fun y : QClass I => natural_hom I a * y ∈ (ideal_quotient_map I a).image.subset) (fun y =>
           ⟨natural_hom (ideal_quotient I a) y, by rw [toQuotient.def₂, natural_hom.def, ←(natural_hom I).preserve_mul, ←ideal_quotient_map.def]⟩) y⟩
+
+    private abbrev sub_kernel_lift [Ring β] (f : α →ᵣ β) {I : Ideal α} (hI : I ⊆ f.kernel_ideal) : QClass I → β :=
+      fun x => Quot.lift f.hom (fun a b (h : _ ∈ _) => by
+        have : _ = _ := hI h
+        rw [f.preserve_add, f.preserve_neg, sub_right, zero_add] at this
+        exact neg_inj this) x
+
+    def quotient_sub_kernel [Ring β] (f : α →ᵣ β) {I : Ideal α} (hI : I ⊆ f.kernel_ideal) : QClass I →ᵣ β := {
+      hom := sub_kernel_lift f hI
+      preserve_zero := @Quot.ind _ _ (fun x : QClass I => x = 0 → sub_kernel_lift f hI x = 0)
+        (fun x hx => hI (natural_hom.kernel.mp hx)) _ rfl
+      preserve_add := @Quotient.ind₂ _ _ (QSetoid I) (QSetoid I) (fun x y : QClass I => sub_kernel_lift f hI (x + y) =
+        sub_kernel_lift f hI x + sub_kernel_lift f hI y) f.preserve_add
+      preserve_neg := @Quot.ind _ _ (fun x : QClass I => sub_kernel_lift f hI (-x) = -sub_kernel_lift f hI x) f.preserve_neg
+      preserve_mul := @Quotient.ind₂ _ _ (QSetoid I) (QSetoid I) (fun x y : QClass I => sub_kernel_lift f hI (x * y) =
+        sub_kernel_lift f hI x * sub_kernel_lift f hI y) f.preserve_mul
+    }
+
+    def quotient_kernel [Ring β] (f : α →ᵣ β) : QClass f.kernel_ideal →ᵣ β := quotient_sub_kernel f (Subset.refl _)
+
+    theorem quotient_kernel_injective [Ring β] (f : α →ᵣ β) : Function.injective (quotient_kernel f).hom :=
+      @Quotient.ind₂ _ _ (QSetoid f.kernel_ideal) (QSetoid f.kernel_ideal) (fun x y : QClass f.kernel_ideal =>
+        quotient_kernel f x = quotient_kernel f y → x = y) fun x y (h : f x = f y) => (QClass.equiv _ x y).mpr
+          (by rw [f.preserve_add, f.preserve_neg, h, neg_add] : f _ = 0)
+
+    theorem chinese_remainder_theorem (I J : Ideal α) (hIJ : Ideal.coprime I J) :
+      QClass (I ∩ J) ≅ᵣ QClass I × QClass J :=
+        let f : α →ᵣ QClass I × QClass J := {
+          hom := fun x => (natural_hom I x, natural_hom J x)
+          preserve_zero := rfl
+          preserve_add := fun _ _ => rfl
+          preserve_neg := fun _ => rfl
+          preserve_mul := fun _ _ => rfl
+        }
+        have : I ∩ J = f.kernel_ideal := Ideal.ext'.mpr fun x =>
+          ⟨fun hx => (by rw [←natural_hom.kernel.mpr hx.left, ←natural_hom.kernel.mpr hx.right] : f x = (0, 0)),
+          fun hx => ⟨natural_hom.kernel.mp (Prod.mk.inj hx).left, natural_hom.kernel.mp (Prod.mk.inj hx).right⟩⟩
+        this ▸ RIsomorphism.of_bijection (quotient_kernel f) ⟨quotient_kernel_injective f,
+          fun (x, y) => let ⟨i, hi, j, hj, hij⟩ := is_unit_ideal.mp hIJ; @Quotient.ind₂ _ _ (QSetoid I) (QSetoid J)
+            (fun (x : QClass I) (y : QClass J) => ∃ a : QClass f.kernel_ideal, quotient_kernel f a = (x, y))
+              (fun x y => ⟨natural_hom _ (x * j + y * i),
+                have : ∀ (x y i j : α) (I : Ideal α), i + j = 1 → i ∈ I → natural_hom I (x * j + y * i) = natural_hom I x :=
+                  fun x y i j I hij hi => (QClass.equiv _ _ _).mpr (by
+                    rw [(sub_right.mp (add_comm i j ▸ hij) : j = 1 + -i), mul_distrib_left, mul_one, mul_neg_swap, add_assoc,
+                    ←mul_distrib_right, neg_add_distrib, add_assoc, neg_add, add_zero, ←neg_mul]; exact I.mul_closed _ hi)
+                Prod.mk.injEq _ _ _ _ ▸ ⟨this x y i j I hij hi, add_comm _ _ ▸ this y x j i J (add_comm i j ▸ hij) hj⟩⟩) x y⟩
 
   end QuotientRing
 end M4R

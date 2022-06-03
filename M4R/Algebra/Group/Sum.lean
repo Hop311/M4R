@@ -56,7 +56,7 @@ namespace M4R
 
   end UnorderedList.map_fold_add
 
-  def UnorderedList.sum [CommMonoid α] (s : UnorderedList α) : α := 
+  def UnorderedList.sum [CommMonoid α] (s : UnorderedList α) : α :=
     s.fold_add 0
 
   def UnorderedList.map_sum [CommMonoid β] (s : UnorderedList α) (f : α → β) : β :=

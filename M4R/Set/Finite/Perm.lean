@@ -12,24 +12,24 @@ namespace M4R
   | trans {l₁ l₂ l₃ : List α}     : Perm l₁ l₂ → Perm l₂ l₃ → Perm l₁ l₃
 
   infix:50 " ~ " => Perm
-  
+
   namespace Perm
 
     @[simp] protected theorem refl : ∀ (x : List α), x ~ x
     | []      => Perm.nil
     | (x::xl) => (Perm.refl xl).cons x
-    
-    protected theorem symm {x y : List α} (h : x ~ y) : y ~ x := 
+
+    protected theorem symm {x y : List α} (h : x ~ y) : y ~ x :=
       @Perm.recOn α (fun (a b : List α) _ => b ~ a) x y h
         Perm.nil
         (fun x _ _ _ r₁ => r₁.cons x)
         (fun x y l => swap y x l)
         (fun _ _ p₂₁ p₃₂ => p₃₂.trans p₂₁)
-    
+
     instance PermEquivalence : Equivalence (@Perm α) where
-    refl  := Perm.refl
-    symm  := Perm.symm
-    trans := Perm.trans
+      refl  := Perm.refl
+      symm  := Perm.symm
+      trans := Perm.trans
 
     instance PermSetoid (α : Type _) : Setoid (List α) where
       r := Perm
@@ -49,7 +49,7 @@ namespace M4R
 
     theorem mem_iff {l₁ l₂ : List α} (p : l₁ ~ l₂) (a : α) : a ∈ l₁ ↔ a ∈ l₂ :=
       Iff.intro (fun x => p.subset x) (fun x => p.symm.subset x)
-    
+
     theorem append_right {l₁ l₂ : List α} (t : List α) (p : l₁ ~ l₂) : l₁++t ~ l₂++t :=
       @Perm.recOn α (fun a b pab => a++t ~ b++t) _ _ p
         (Perm.refl ([] ++ t))
@@ -68,7 +68,7 @@ namespace M4R
     theorem middle (a : α) : ∀ (l₁ l₂ : List α), l₁++a::l₂ ~ a::(l₁++l₂)
     | []     , l₂ => Perm.refl _
     | (b::l₁), l₂ => ((@middle α a l₁ l₂).cons b).trans (swap a b _)
-    
+
     theorem append_singleton (a : α) (l : List α) : l ++ [a] ~ a::l := by
       have := middle a l []
       rw [List.append_nil] at this
@@ -262,7 +262,7 @@ namespace List.Sublist
 
   protected theorem subperm {l₁ l₂ : List α} (s : l₁ <+ l₂) : l₁ <+~ l₂ :=
     ⟨l₁, M4R.Perm.refl _, s⟩
-  
+
   theorem exists_perm_append {l₁ l₂ : List α} : l₁ <+ l₂ → ∃ l, l₂ ~ l₁ ++ l
   | nil             => ⟨[], Perm.refl _⟩
   | cons l₁ l₂ a s  =>
@@ -483,7 +483,6 @@ namespace M4R
     theorem count_eq {l₁ l₂ : List α} (p : l₁ ~ l₂) (a) : l₁.count a = l₂.count a :=
       p.countp_eq _
 
-
     theorem perm_iff_count {l₁ l₂ : List α} : l₁ ~ l₂ ↔ ∀ a, l₁.count a = l₂.count a :=
       ⟨count_eq, fun h => by
         induction l₁ generalizing l₂ with
@@ -557,7 +556,7 @@ namespace M4R
           ht.bag_inter_left l₂ ▸ hl.bag_inter_right _
 
     end bag_inter
-    
+
     theorem dedup {l₁ l₂ : List α} (p : l₁ ~ l₂) : l₁.dedup ~ l₂.dedup :=
       perm_iff_count.mpr fun a => by
         byCases h : a ∈ l₁

@@ -1,5 +1,4 @@
 import M4R.Set.Finite.Finset
-import M4R.Numbers
 
 namespace List
   open M4R

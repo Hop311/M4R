@@ -121,7 +121,7 @@ namespace M4R
           ⟨sa * sb, S.mul_closed hsaS hsbS, (by
             simp only [←mul_assoc]; rw [mul_right_comm _ _ a₂.denom, mul_right_comm sa,
               mul_right_comm _ sb, hsae, mul_assoc, mul_assoc, ←mul_assoc sb, hsbe,
-              ←mul_assoc, ←mul_assoc, mul_right_comm _ _ sb, mul_right_comm sa, mul_right_comm _ a₁.denom] : 
+              ←mul_assoc, ←mul_assoc, mul_right_comm _ _ sb, mul_right_comm sa, mul_right_comm _ a₁.denom] :
               sa * sb * (frac.num a₁ * frac.num b₁) * (frac.denom a₂ * frac.denom b₂) =
                 sa * sb * (frac.num a₂ * frac.num b₂) * (frac.denom a₁ * frac.denom b₁))⟩
     protected instance mul_inst : Mul (localisation S) where mul := localisation.mul
@@ -268,7 +268,7 @@ namespace M4R
         Ideal.antisymm (Ideal.contraction_extension _ I)
           fun x hx =>
             let ⟨r, s, hs, he⟩ := exists_frac x
-            have : r ∈ delocalise_ideal S I := 
+            have : r ∈ delocalise_ideal S I :=
               have : natural_hom S r = of_frac' s S.has_one * of_frac' r hs := by
                 rw [natural_hom_def, localisation.mul_def]
                 exact equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]; exact mul_comm r s⟩

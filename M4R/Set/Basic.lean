@@ -32,9 +32,9 @@ namespace M4R
     end equivalent
 
     protected theorem ext {s₁ s₂ : Set α} : Set.equivalent s₁ s₂ ↔ s₁ = s₂ := by
-          apply Iff.intro
-          { intro hiff; apply funext; intro a; exact propext (hiff a) }
-          { intro heq a; rw [heq]; exact Iff.refl (s₂ a) }
+      apply Iff.intro
+      { intro hiff; apply funext; intro a; exact propext (hiff a) }
+      { intro heq a; rw [heq]; exact Iff.refl (s₂ a) }
 
     protected theorem singleton.ext {s : Set α} {a : α} : s = Set.singleton a ↔ ∀ x, x ∈ s ↔ x = a :=
       Set.ext.symm.trans Iff.rfl

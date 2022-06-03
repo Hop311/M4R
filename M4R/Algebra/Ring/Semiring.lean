@@ -20,11 +20,14 @@ namespace M4R
       zero_mul          := fun (a₁, a₂) => by
         simp [HMul.hMul, Mul.mul, Monoid.product_zero]; exact ⟨zero_mul a₁, zero_mul a₂⟩
 
+    theorem product_mul {α₁ : Type _} {α₂ : Type _} [NCSemiring α₁] [NCSemiring α₂] : ∀ x y : α₁ × α₂, x * y = (x.fst * y.fst, x.snd * y.snd) :=
+      fun (x₁, x₂) (y₁, y₂) => rfl
+
     protected instance multi_product.One {ι : Type _} (fι : ι → Type _) [∀ i, One (fι i)] : One (MultiProd fι) where
       one := fun _ => 1
     protected theorem multi_product.One_def {ι : Type _} {fι : ι → Type _} [∀ i, One (fι i)] : ∀ i, (1 : MultiProd fι) i = 1 :=
       fun _ => rfl
-    
+
     protected instance multi_product.Mul {ι : Type _} (fι : ι → Type _) [∀ i, Mul (fι i)] : Mul (MultiProd fι) where
       mul := fun a b i => a i * b i
     protected theorem multi_product.Mul_def {ι : Type _} {fι : ι → Type _} [∀ i, Mul (fι i)] (a b : MultiProd fι) :
@@ -78,7 +81,7 @@ namespace M4R
       mul_zero          : ∀ a : α, a * 0 = 0
       zero_mul          : ∀ a : α, 0 * a = 0
 
-    protected instance construct {α : Type _} (c : NCSemiring.constructor_ncsr α) : NCSemiring α where
+    protected def construct {α : Type _} (c : NCSemiring.constructor_ncsr α) : NCSemiring α where
       toCommMonoid := CommMonoid.construct c.toconstructor_cm
       mul_one           := c.mul_one
       one_mul           := c.one_mul
@@ -147,7 +150,7 @@ namespace M4R
       rw [mul_comm]; exact mul_unit_inv h
 
     noncomputable instance UnitGroup [Semiring α] : Group ↑(unit_set α) := Group.construct
-    {  
+    {
       zero := ⟨1, ⟨1, by rw [mul_one]⟩⟩
       add := fun a b => ⟨a.val * b.val, unit_mul a.property b.property⟩
       neg := fun ⟨x, xs⟩ => ⟨unit_inv xs, x, unit_inv_mul xs⟩
@@ -161,7 +164,7 @@ namespace M4R
       | zero      => simp only [Nat.zero_eq, pow_nat_0, mul_one]
       | succ k ih => simp only [pow_nat_succ, ←mul_assoc, ih, mul_comm]
 
-    theorem pow_nat_comp [Semiring α] (a : α) (m n : Nat) : (a^m)^n = a^(m*n) := by 
+    theorem pow_nat_comp [Semiring α] (a : α) (m n : Nat) : (a^m)^n = a^(m*n) := by
       induction m with
       | zero => rw [Nat.zero_mul, pow_nat_0, pow_nat_one]
       | succ k ih => rw [pow_nat_succ, Nat.succ_mul, pow_nat_mul_distrib, ih, pow_nat_add_distrib]
@@ -173,7 +176,7 @@ namespace M4R
       mul_zero          : ∀ a : α, a * 0 = 0
       mul_comm          : ∀ a b : α, a * b = b * a
 
-    protected instance construct {α : Type _} (c : Semiring.constructor_sr α) : Semiring α where
+    protected def construct {α : Type _} (c : Semiring.constructor_sr α) : Semiring α where
       toCommMonoid      := CommMonoid.construct c.toconstructor_cm
       mul_one           := c.mul_one
       one_mul           := fun a => by rw [c.mul_comm]; exact c.mul_one a

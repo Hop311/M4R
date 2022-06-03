@@ -43,7 +43,7 @@ namespace M4R
         have ⟨_, h'⟩: Chain r c ∧ super_chain r c (choose h) := by
           exact @choose_spec _ (fun c' => Chain r c ∧ super_chain r c c') _
         simp only [succ_chain, dif_pos h, h']
-      
+
     theorem chain_succ {c : Set α} (hc : Chain r c) : Chain r (succ_chain r c) :=
       if h : ∃c', Chain r c ∧ super_chain r c c' then
         (succ_spec r h).left
@@ -68,7 +68,7 @@ namespace M4R
 
     theorem chain_closure_closure : chain_closure r (⋃₀ chain_closure r) :=
       chain_closure.union (fun _ => id)
-      
+
     private theorem chain_closure_succ_total_aux (hc₁ : chain_closure r c₁) (hc₂ : chain_closure r c₂)
       (h : ∀{c₃}, chain_closure r c₃ → c₃ ⊆ c₂ → c₂ = c₃ ∨ succ_chain r c₃ ⊆ c₂) : c₁ ⊆ c₂ ∨ succ_chain r c₂ ⊆ c₁ := by
         induction hc₁

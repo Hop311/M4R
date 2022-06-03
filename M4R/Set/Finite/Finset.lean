@@ -183,7 +183,7 @@ namespace M4R
         { exact hx.symm ▸ Or.inr h }
         { exact Or.inl hx }⟩
 
-    noncomputable def filter (p : α → Prop) (s : Finset α) : Finset α := ⟨UnorderedList.filter p s.elems, 
+    noncomputable def filter (p : α → Prop) (s : Finset α) : Finset α := ⟨UnorderedList.filter p s.elems,
       UnorderedList.nodup_filter p s.nodup⟩
 
     @[simp] theorem filter_val (p : α → Prop) (s : Finset α) : (s.filter p).elems = s.elems.filter p := rfl
@@ -257,6 +257,9 @@ namespace M4R
 
       theorem length_cons {a : α} (s : Finset α) (h : a ∉ s) : (s.cons a h).length = s.length + 1 :=
         UnorderedList.length.cons a s
+
+      theorem cons_toSet {a : α} {s : Finset α} (h : a ∉ s) : (s.cons a h).toSet = s.toSet.insert a :=
+        Set.ext.mp fun _ => Finset.mem_cons
 
     end cons
 
@@ -444,7 +447,7 @@ namespace M4R
           have := UnorderedList.mem_ndunion.mp h
           simp only [Set.mem_to_finset_val] at this
           exact this,
-        fun h => 
+        fun h =>
           Finset.mem_union.mpr (Or.elim h
             (fun h' => Or.inl (Set.mem_to_finset.mpr h'))
             (fun h' => Or.inr (Set.mem_to_finset.mpr h')))⟩)
@@ -476,7 +479,7 @@ namespace M4R
     theorem empty (α : Type _) : finite (∅ : Set α) := ⟨Fintype.Empty⟩
 
     theorem iff_exists_fintype {s : Set α} : finite s ↔ Nonempty (Fintype s) :=
-      ⟨fun ⟨h⟩ => ⟨h⟩, fun ⟨h⟩ => ⟨h⟩⟩      
+      ⟨fun ⟨h⟩ => ⟨h⟩, fun ⟨h⟩ => ⟨h⟩⟩
 
     noncomputable def to_fintype {s : Set α} (h : finite s) : Fintype s :=
       Classical.choice (iff_exists_fintype.mp h)

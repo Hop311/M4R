@@ -52,12 +52,6 @@ namespace M4R
         add_comm  := fun ⟨a, _⟩ ⟨b, _⟩ => by simp only [Ideal.image_eq]; exact r.add_comm a b
       }
 
-    def RHomomorphism.kernel_ideal [Ring α] [Ring β] (f : α →ᵣ β) : Ideal α where
-      subset     := f.kernel.subset
-      has_zero   := f.preserve_zero
-      add_closed := fun ha hb => (by rw [f.preserve_add, ha, hb, add_zero] : _ = (0 : β))
-      mul_closed := fun _ _ hb => (by rw [f.preserve_mul, hb, mul_zero] : _ = (0 : β))
-
     protected def equivalent [Ring α] (I J: Ideal α) : Prop := I.subset = J.subset
     protected theorem ext [Ring α] : ∀ {I J : Ideal α}, Ideal.equivalent I J ↔ I = J
     | ⟨_, _, _, _⟩, ⟨_, _, _, _⟩ =>
@@ -132,9 +126,15 @@ namespace M4R
         { intro x ⟨i, hi, y, ⟨j, hj, k, hk, hjky⟩, hiyx⟩;
           exact ⟨i + j, ⟨i, hi, j, hj, rfl⟩, k, hk, add_assoc i j k ▸ hjky ▸ hiyx⟩ }
 
+      protected theorem add_one [Ring α] (I : Ideal α) : I + 1 = 1 :=
+        Ideal.antisymm (fun _ _ => trivial) (add.subset' I 1)
+
     end add
 
     def coprime [Ring α] (I J : Ideal α) : Prop := I + J = 1
+
+    theorem coprime.comm [Ring α] (I J : Ideal α) : coprime I J ↔ coprime J I :=
+      (add.comm I J ▸ Iff.rfl : I + J = 1 ↔ J + I = 1)
 
     open Ring
 
@@ -239,6 +239,11 @@ namespace M4R
       protected theorem inter_one [Ring α] (I : Ideal α) : I ∩ 1 = I :=
         intersection.of_subset (in_unit_ideal I)
 
+      theorem inter_coprime [Ring α] {I J K : Ideal α} (hIJ : coprime I J) (hIK : coprime I K) : coprime I (J ∩ K) :=
+        let ⟨i₁, hi₁, j, hj, hij⟩ := is_unit_ideal.mp hIJ
+        let ⟨i₂, hi₂, k, hk, hik⟩ := is_unit_ideal.mp hIK
+        is_unit_ideal.mpr ⟨i₁*i₂ + i₁*k + j*i₂, mul_distrib_left i₁ i₂ k ▸ I.add_closed (I.mul_closed' hi₁ _) (I.mul_closed j hi₂), j*k,
+          ⟨J.mul_closed' hj k, K.mul_closed j hk⟩, by rw [←mul_distrib_left, add_assoc, ←mul_distrib_left, ←mul_distrib_right, hij, hik, mul_one]⟩
     end intersection
 
     protected def sIntersection [Ring α] (S : Set (Ideal α)) : Ideal α where
@@ -272,6 +277,21 @@ namespace M4R
       protected theorem single [Ring α] (I : Ideal α) : ⋂₀ Set.singleton I = I :=
         Ideal.ext'.mpr fun x => ⟨fun hx => hx _ ⟨I, rfl, rfl⟩, fun hx s ⟨J, hJI, hJs⟩ => hJs ▸ hJI ▸ hx⟩
 
+      protected theorem empty (α : Type _) [Ring α] : ⋂₀ (∅ : Set (Ideal α)) = 1 :=
+        Ideal.ext'.mpr fun x => by rw [sIntersection.mem]; exact ⟨fun _ => trivial, fun _ I hI => by contradiction⟩
+
+      protected theorem insert [Ring α] (S : Set (Ideal α)) (I : Ideal α) : ⋂₀ (S.insert I) = ⋂₀ S ∩ I :=
+        Ideal.ext'.mpr fun x => by
+          simp only [intersection.mem, sIntersection.mem]
+          exact ⟨fun hx => ⟨fun J hJ => hx J (Or.inr hJ), hx I (Or.inl rfl)⟩,
+            fun hx J => (Or.elim · (fun hJ => hJ ▸ hx.right) fun hJ => hx.left J hJ)⟩
+
+      theorem sinter_coprime [Ring α] {f : Finset (Ideal α)} {I : Ideal α} (h : ∀ J ∈ f, coprime I J) : coprime I (⋂₀ f.toSet) :=
+        @Finset.cons_induction _ (fun f' => f' ⊆ f → coprime I (⋂₀ f'.toSet))
+          (fun _ => by rw [Finset.empty_toSet, sIntersection.empty]; exact add.add_one I)
+          (fun J s hJs ih hsf => by
+            rw [Finset.cons_toSet, sIntersection.insert]
+            exact intersection.inter_coprime (ih fun x hx => hsf (Finset.mem_cons_self' hJs hx)) (h J (hsf (s.mem_cons_self hJs)))) f (Subset.refl f)
     end sIntersection
 
     noncomputable def from_set [Ring α] (S : Set α) : Ideal α := ⋂₀ {I : Ideal α | S ⊆ I.subset}
@@ -885,6 +905,23 @@ namespace M4R
         induction n with
         | zero      => trivial
         | succ n ih => rw [pow_nat_succ, pow_nat_succ]; exact from_set.contains_mem ⟨x ^ n, ih, x, hx, rfl⟩
+
+      theorem product_coprime [Ring α] {I J K : Ideal α} (hIJ : coprime I J) (hIK : coprime I K) : coprime I (J * K) :=
+        unit_ideal_in (by
+          rw [←hIJ, ←mul_one (I + J), ←hIK, mul_distrib_left, mul_distrib_right, mul_distrib_right, ←add_assoc]
+          exact add.subset_add_subset (add.subset_add (add.subset_add subset_left subset_right) subset_left) (Subset.refl _))
+
+      theorem prod_coprime [Ring α] {f : Finset (Ideal α)} {I : Ideal α} (h : ∀ J ∈ f, coprime I J) : coprime I (∏ f) :=
+        @Finset.cons_induction _ (fun f' => f' ⊆ f → coprime I (∏ f'))
+          (fun _ => add.add_one I)
+          (fun J s hJs ih hsf => Finset.prod.cons hJs ▸ product_coprime (ih fun x hx => hsf (Finset.mem_cons_self' hJs hx))
+            (h J (hsf (s.mem_cons_self hJs)))) f (Subset.refl f)
+
+      theorem coprime_eq_inter [Ring α] {I J : Ideal α} (h : coprime I J) : I * J = I ∩ J :=
+        Ideal.antisymm subset_inter (by
+          rw [←mul_one (I ∩ J), ←h, mul_distrib_left]
+          exact add.subset_add (Semiring.mul_comm _ _ ▸ mul_subset_mul (Subset.refl I) (intersection.subset_right I J))
+              (mul_subset_mul (intersection.subset_left I J) (Subset.refl J)))
     end product
 
     def ideal_quotient [Ring α] (I : Ideal α) (a : α) : Ideal α where
@@ -1026,7 +1063,7 @@ namespace M4R
           (contraction_extension hf (extension f.hom I))
 
     theorem contraction_extension_contraction (I : Ideal β) :
-      contraction hf (extension f (contraction hf I)) = contraction hf I := 
+      contraction hf (extension f (contraction hf I)) = contraction hf I :=
         Ideal.antisymm (contraction.subset hf (contraction_extension hf I))
           (extension_contraction hf (contraction hf I))
 
@@ -1130,4 +1167,10 @@ namespace M4R
     theorem extension_from_finset (fs : Finset α) : extension f (from_set fs.toSet) = from_set (fs.map f.hom).to_finset.toSet :=
       (extension_from_set hf fs.toSet).trans (congrArg _ (Set.ext.mp fun _ => Finset.map_mem.symm.trans UnorderedList.mem_to_finset.symm))
   end Ideal
+
+  def RMulMap.kernel_ideal [Ring α] [Ring β] (f : α →ᵣ β) : Ideal α where
+      subset     := f.kernel.subset
+      has_zero   := f.preserve_zero
+      add_closed := fun ha hb => (by rw [f.preserve_add, ha, hb, add_zero] : _ = (0 : β))
+      mul_closed := fun _ _ hb => (by rw [f.preserve_mul, hb, mul_zero] : _ = (0 : β))
 end M4R

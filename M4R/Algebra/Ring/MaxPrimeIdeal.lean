@@ -77,10 +77,10 @@ namespace M4R
       exact ⟨NonTrivialRingProperIdeal h.left, by
         intro J hIJ;
         cases Classical.em (I = J) with
-        | inl heq => exact Or.inl heq.symm 
+        | inl heq => exact Or.inl heq.symm
         | inr hneq =>
           apply Or.inr; apply is_unit_ideal.mpr;
-          let ⟨x, xJ, nxI⟩ := Classical.choice (Set.minus.nonempty 
+          let ⟨x, xJ, nxI⟩ := Classical.choice (Set.minus.nonempty
             (Set.subset.neq_proper hIJ (fun h' => hneq (Ideal.ext.mp h'))))
           let ⟨b, hb⟩ := h.right (non_zero.mpr nxI)
           exact @Quotient.ind α (QSetoid I) (fun (c : QClass I) => c = b → 1 ∈ J) (fun b' hb' => by
