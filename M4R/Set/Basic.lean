@@ -152,7 +152,7 @@ namespace M4R
         ⟨disjoint.comm, disjoint.comm⟩
 
       theorem elementwise {s₁ s₂ : Set α} : disjoint s₁ s₂ ↔ ∀ a ∈ s₁, a ∉ s₂ := by
-        apply Iff.intro;
+        apply Iff.intro
         { intro dis x xs₁ xs₂; have : x ∈ s₁ ∩ s₂ := ⟨xs₁, xs₂⟩; rw [dis] at this; contradiction }
         { exact fun h => Set.subset.antisymm (fun x xs => h x xs.left xs.right) (fun _ _ => by contradiction) }
 

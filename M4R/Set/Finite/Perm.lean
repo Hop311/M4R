@@ -100,15 +100,15 @@ namespace M4R
         exact Perm.recOn p h₁ h₂ (fun x y l => h₃ x y l l (Perm.refl l) (P_refl l)) (h₄ _ _ _)
 
     theorem invCore {a : α} {l₁ l₂ r₁ r₂ : List α} : l₁++a::r₁ ~ l₂++a::r₂ → l₁++r₁ ~ l₂++r₂ := by
-      generalize e₁ : l₁++a::r₁ = s₁; generalize e₂ : l₂++a::r₂ = s₂;
-      intro p; revert l₁ l₂ r₁ r₂ e₁ e₂;
+      generalize e₁ : l₁++a::r₁ = s₁; generalize e₂ : l₂++a::r₂ = s₂
+      intro p; revert l₁ l₂ r₁ r₂ e₁ e₂
       apply inductionOn (fun (t₁ t₂ : List α) => ∀ {l₁' l₂' r₁' r₂' : List α},
         l₁'++a::r₁' = t₁ → l₂'++a::r₂' = t₂ → l₁'++r₁' ~ l₂'++r₂') p
       { intro l₁ _ r₁ _ e₁ _
         have h₀ := List.not_mem_nil a; rw [←e₁] at h₀
         have : a ∈ l₁ ++ a :: r₁ := by apply (mem_iff (middle a l₁ r₁) _).mpr; apply Or.inl; rfl
         contradiction }
-      { intro _ _ _ p₁₂ ih l₁ l₂ _ _ e₁ e₂;
+      { intro _ _ _ p₁₂ ih l₁ l₂ _ _ e₁ e₂
         match l₁, l₂ with
         | [], [] =>
           simp only [List.nil_append, List.cons.injEq] at e₁ e₂ ⊢
@@ -118,7 +118,7 @@ namespace M4R
           rw [e₂.left, e₁.right, ←e₁.left]; apply trans p₁₂; rw [←e₂.right]; exact middle _ _ _
         | List.cons _ _, [] =>
           simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
-          rw [e₁.left, ←e₂.left, e₂.right]; apply Perm.symm; apply trans p₁₂.symm;
+          rw [e₁.left, ←e₂.left, e₂.right]; apply Perm.symm; apply trans p₁₂.symm
           rw [←e₁.right]; exact middle _ _ _
         | List.cons _ _, List.cons z l₂ =>
           simp only [List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
@@ -154,7 +154,7 @@ namespace M4R
               exact cons _ p₁₂
           | [], List.cons _ _ =>
             simp only [List.nil_append, List.cons_append, List.cons.injEq] at e₁ e₂ ⊢
-            rw [e₁.left, e₂.left, ←e₁.right.left, e₂.right.left, e₁.right.right];
+            rw [e₁.left, e₂.left, ←e₁.right.left, e₂.right.left, e₁.right.right]
               apply trans (cons _ p₁₂); rw [←e₂.right.right]; apply Perm.symm; apply trans (swap _ _ _);
                 apply cons; apply Perm.symm; exact middle _ _ _
           | List.cons _ _, [] =>
@@ -166,7 +166,7 @@ namespace M4R
             rw [e₁.left, e₂.left, e₁.right.left, e₂.right.left]; apply trans (swap _ _ _); apply cons;
               apply cons; exact ih e₁.right.right e₂.right.right }
       { intro _ t₂ _ p₁₂ p₂₃ ih₁ ih₂ l₁ _ r₁ _ e₁ e₃;
-          rw [←e₁] at p₁₂; rw [←e₃] at p₂₃;
+          rw [←e₁] at p₁₂; rw [←e₃] at p₂₃
           have : a ∈ t₂ := p₁₂.subset (by apply (mem_iff (middle a l₁ r₁) _).mpr; apply Or.inl; rfl)
           let ⟨l₂, r₂, e₂⟩ := List.mem_split this;
           exact trans (ih₁ e₁ e₂.symm) (ih₂ e₂.symm e₃) }
@@ -177,13 +177,13 @@ namespace M4R
     theorem pairwiseIff {r : α → α → Prop} (h : ∀ a b, r a b → r b a) :
       ∀ {l₁ l₂ : List α} (p : l₁ ~ l₂), Pairwise r l₁ ↔ Pairwise r l₂ := by
       have : ∀ {l₁ l₂}, l₁ ~ l₂ → Pairwise r l₁ → Pairwise r l₂ := by
-        intro l₁ l₂ p₁₂ pwl₁;
+        intro l₁ l₂ p₁₂ pwl₁
         induction pwl₁ generalizing l₂ with
         | nil => rw [p₁₂.nil_eq]; constructor
         | @cons a l₃ hl₃ pwl₃ ih =>
-          let ⟨s, t, e⟩ := List.mem_split (p₁₂.subset (List.mem_cons_self a l₃));
-          rw [e, Pairwise.middle, Pairwise.consIff]; rw [e] at p₁₂;
-          have p' : l₃ ~ s ++ t := (p₁₂.trans (middle _ _ _)).cons_inv;
+          let ⟨s, t, e⟩ := List.mem_split (p₁₂.subset (List.mem_cons_self a l₃))
+          rw [e, Pairwise.middle, Pairwise.consIff]; rw [e] at p₁₂
+          have p' : l₃ ~ s ++ t := (p₁₂.trans (middle _ _ _)).cons_inv
           exact And.intro (fun x xst => hl₃ x ((mem_iff p' _).mpr xst)) (ih p')
           exact h
       exact fun _ _ p => ⟨this p, this p.symm⟩
@@ -207,7 +207,7 @@ namespace M4R
           simp only [List.filterMap]
           cases f x with
           | none => exact ih
-          | some a => exact cons a ih;
+          | some a => exact cons a ih
         | swap x y l =>
           simp only [List.filterMap]
           cases f x with
@@ -339,7 +339,7 @@ namespace M4R
             have am : a ∈ r₂ := h₂.resolve_left (fun e => h₁ (e.symm ▸ bm))
             cases List.mem_split bm with
             | intro t₁ t₂ =>
-              let ⟨t₂, h⟩ := t₂; rw [h];
+              let ⟨t₂, h⟩ := t₂; rw [h]
               have st : t₁ ++ t₂ <+ l₁ := by
                 rw [h]; exact (List.Sublist.append_sublist_append_left t₁).mpr
                   (List.Sublist.cons t₂ t₂ b (List.Sublist.refl t₂))
@@ -363,7 +363,7 @@ namespace M4R
           exact cons_subperm_of_mem d (fun h' => by apply h _ h'; rfl) H₁ (IH H₂)
 
       @[simp] theorem subperm_nil {l : List α} (h : l <+~ []) : l = [] := by
-        let ⟨t, p, s⟩ := h;
+        let ⟨t, p, s⟩ := h
         rw [List.Sublist.eq_nil_of_sublist_nil s] at p
         exact eq_nil p.symm
 
@@ -373,8 +373,7 @@ namespace M4R
           intro h; have := subperm_nil h
           contradiction
         | cons x l ih =>
-          intro h; apply ih;
-          exact (subperm_cons x).mp (subperm_swap_left h)
+          intro h; exact ih ((subperm_cons x).mp (subperm_swap_left h))
 
       theorem exists_of_length_lt {l₁ l₂ : List α} :
         l₁ <+~ l₂ → l₁.length < l₂.length → ∃ a, a :: l₁ <+~ l₂ := by
@@ -477,7 +476,7 @@ namespace M4R
         ht.diff_left l₂ ▸ hl.diff_right _
 
     theorem countp_eq (p : α → Prop) {l₁ l₂ : List α} (s : l₁ ~ l₂) : l₁.countp p = l₂.countp p := by
-      rw [List.countp_eq_length_filter', List.countp_eq_length_filter'];
+      rw [List.countp_eq_length_filter', List.countp_eq_length_filter']
       exact (s.filter' _).length_eq
 
     theorem count_eq {l₁ l₂ : List α} (p : l₁ ~ l₂) (a) : l₁.count a = l₂.count a :=
@@ -520,7 +519,7 @@ namespace M4R
                 { rw [List.cons_bag_inter_of_pos _ hy,
                     List.cons_bag_inter_of_pos _ ((List.mem_erase_of_ne hxy).mpr hx),
                     List.cons_bag_inter_of_pos _ ((List.mem_erase_of_ne (Ne.symm hxy)).mpr hy),
-                    List.erase_comm];
+                    List.erase_comm]
                   exact Perm.swap x y _ }
                 { rw [List.cons_bag_inter_of_neg _ hy,
                     List.cons_bag_inter_of_pos _ hx,

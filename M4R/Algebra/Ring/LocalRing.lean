@@ -113,7 +113,7 @@ namespace M4R
           have h₂ : extension (QuotientRing.natural_hom (symbolic_power hQ N.succ.succ)).hom (symbolic_power hQ N.succ) =
             extension (QuotientRing.natural_hom (symbolic_power hQ N.succ.succ)).hom (m * symbolic_power hQ N.succ) :=
               Ideal.antisymm (by
-                conv => lhs rw [this, QuotientRing.natural_hom.extension_add_I];
+                conv => lhs rw [this, QuotientRing.natural_hom.extension_add_I]
                 exact extension.subset _ (Ideal.product.mul_subset_mul hP.right.left (Subset.refl _)))
                 (extension_mul _ _ _ ▸ product.subset_right)
           rw [extension_mul] at h₂
@@ -194,17 +194,17 @@ namespace M4R
                       intro J hJ hgJ hJm
                       have : f.toSet ⊆ (contractionᵣ₁ (QuotientRing.natural_hom (from_set d.toSet)) J).subset := fun x hxf => by
                         byCases hxg : x = g
-                        { rw [←extension_principal] at hgJ;
+                        { rw [←extension_principal] at hgJ
                           apply contraction.subset (QuotientRing.natural_hom (from_set d.toSet)).preserve_mul_left hgJ;
-                          rw [←natural_hom.extension_add_I, hxg];
+                          rw [←natural_hom.extension_add_I, hxg]
                           exact extension_contraction _ _ (add.subset' (from_set d.toSet) (principal g) (generator_in_principal g)) }
-                        { have := hxQg x hxf;
+                        { have := Classical.choose_spec (Classical.choose_spec (hxQg x hxf)).right;
                           exact prime_radical (contraction_prime (QuotientRing.natural_hom (from_set d.toSet)) hJ) x n hn
-                            ((Classical.choose_spec (Classical.choose_spec this).right).right ▸ (contractionᵣ₁ (QuotientRing.natural_hom
-                              (from_set d.toSet)) J).add_closed (quotient_contraction_contains J (from_set.contains_mem (UnorderedList.mem_to_finset.mpr
+                            (this.right ▸ (contractionᵣ₁ (QuotientRing.natural_hom (from_set d.toSet)) J).add_closed
+                              (quotient_contraction_contains J (from_set.contains_mem (UnorderedList.mem_to_finset.mpr
                               (UnorderedList.mem_pmap.mpr ⟨x, Finset.mem_erase.mpr ⟨hxg, hxf⟩, rfl⟩))))
                             (Subset.trans (extension_principal _ g ▸ extension_contraction _ _) (contraction.subset (QuotientRing.natural_hom
-                              (from_set d.toSet)).preserve_mul_left hgJ) (Classical.choose_spec (Classical.choose_spec this).right).left)) }
+                              (from_set d.toSet)).preserve_mul_left hgJ) this.left)) }
                       have := hP.right.right (contraction_prime _ hJ) (from_set.ideal_contained this) (quotient_extension_contraction
                         (Subset.trans hdQ hQm.left) ▸ contraction.subset (QuotientRing.natural_hom (from_set d.toSet)).preserve_mul_left hJm)
                       exact contraction_extension_eq_of_surjective _ (natural_hom.surjective _) J ▸

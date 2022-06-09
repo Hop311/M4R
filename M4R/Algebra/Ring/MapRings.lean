@@ -29,7 +29,7 @@ namespace M4R
         mul_one           := fun x => by
           have : (fun (a₁ : α) (b₁ : β) => ∑ fun a₂ b₂ => single (a₁ + a₂) (b₁ * b₂) in single 0 1)
             = fun a₁ b₁ => single a₁ b₁ := by
-              apply funext; intro a₁; apply funext; intro b₁;
+              apply funext; intro a₁; apply funext; intro b₁
               rw [map_sum.single (0 : α) (1 : β) (fun a₂ b₂ => single (a₁ + a₂) (b₁ * b₂))
                 (by simp only [NCSemiring.mul_zero, single.zero]),
                 Monoid.add_zero, NCSemiring.mul_one]
@@ -42,7 +42,7 @@ namespace M4R
           rw [map_sum.single 0 1 _ (by simp only [NCSemiring.zero_mul, single.zero, map_sum.sum_zero]),
             this, map_sum.sum_single]
         mul_assoc         := fun x y z => by
-          simp only [mul_def];
+          simp only [mul_def]
           have h₁ : ∀ a, (∑ fun a₂ b₂ => single (a + a₂) (0 * b₂) in z) = 0 := by
             intros; simp only [NCSemiring.zero_mul, single.zero, map_sum.sum_zero]
           have h₂ : ∀ (a : α) (b₁ b₂ : β),

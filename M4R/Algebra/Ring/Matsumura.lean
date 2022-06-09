@@ -54,7 +54,7 @@ namespace M4R
       exact absurd (Ideal.is_unit_ideal.mpr this) hM.left,
     fun hx => Ideal.sIntersection.mem.mpr fun M hM => Classical.byContradiction fun h =>
       let ⟨m, hm, x', ⟨s, hs⟩, h'⟩ := Ideal.is_unit_ideal.mp ((hM.right (Ideal.add.subset M (Ideal.principal x))).resolve_left
-        (fun h' => h (h' ▸ Ideal.add.subset' _ _ (Ideal.generator_in_principal x))));
+        (fun h' => h (h' ▸ Ideal.add.subset' _ _ (Ideal.generator_in_principal x))))
       have : 1 + -s * x ∈ M := by rw [←h', ←hs, mul_comm, neg_mul, add_assoc, add_neg, add_zero]; exact hm
       absurd (Ideal.is_unit_ideal'.mpr ⟨1 + -s * x, hx ⟨-s, rfl⟩, this⟩) hM.left⟩
 
@@ -64,8 +64,8 @@ namespace M4R
       byCases hf : f = ∅
       { rw [hf, Finset.empty_toSet, Ideal.from_set.empty] at hfM; exact hfM }
       { let ⟨g, hg⟩ : ∃ g, g ∈ f := Classical.byContradiction fun h => hf (Finset.ext fun x => by
-          rw [Finset.mem_empty, iff_false]; exact not_exists.mp h x);
-        have : g ∈ I * M := hIM ▸ hfM ▸ Ideal.from_set.contains_mem hg;
+          rw [Finset.mem_empty, iff_false]; exact not_exists.mp h x)
+        have : g ∈ I * M := hIM ▸ hfM ▸ Ideal.from_set.contains_mem hg
         let ⟨c, hcI, hfc⟩ : ∃ c : A → A, (∀ x, c x ∈ I) ∧ g = ∑ x in f, c x * x :=
           let ⟨fs, c, hf, hc⟩ := Ideal.from_set.mem_as_sum.mp this
           @Finset.cons_induction _ (fun fs : Finset A => fs.toSet ⊆ Ideal.product_gen I M → ∀ g, g = (∑ x in fs, c x * x) →
@@ -78,7 +78,7 @@ namespace M4R
               let ⟨mc, hmc⟩ := Ideal.from_set.mem_as_sum_finset.mp (hfM ▸ hm : m ∈ Ideal.from_set f.toSet)
               ⟨fun y => c' y + c x * i * mc y, fun y => I.add_closed (hc' y) (mul_right_comm _ _ _ ▸ I.mul_closed _ hi),
               by simp only [mul_distrib_right, Finset.map_sum.distrib, mul_assoc,
-                ←Finset.map_sum.mul_sum]; rw [←hgc', ←hmc, ←him, Group.sub_add]⟩) fs hf g hc;
+                ←Finset.map_sum.mul_sum]; rw [←hgc', ←hmc, ←him, Group.sub_add]⟩) fs hf g hc
         let ⟨u, hu⟩ : isUnit (1 - c g) := by exact jacobson_radical.units.mp (hI (hcI g)) ⟨-1, by rw [neg_one_mul, Group.sub_def]⟩
         have : (1 - c g) * g = ∑ x in f.erase g, c x * x := by
           rw [sub_mul_distrib_right, one_mul, Group.sub_eq, ←Finset.map_sum.sum_term _ _ hg, hfc]

@@ -28,7 +28,7 @@ namespace M4R
       Eq.trans (add_neg a) (Eq.symm (neg_add a))
 
     theorem neg_zero [Group α] : -(0 : α) = 0 := by
-      rw [←zero_add (-0), add_neg];
+      rw [←zero_add (-0), add_neg]
 
     theorem sub_def [Group α] (a b : α) : a - b = a + -b := rfl
     theorem sub_self [Group α] (a : α) : a - a = 0 := by rw [sub_def, add_neg]

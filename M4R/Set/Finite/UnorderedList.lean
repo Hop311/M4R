@@ -454,7 +454,7 @@ namespace M4R
 
       theorem le_cons_of_not_mem (m : a ∉ s) : s ≤ t.cons a ↔ s ≤ t :=
         ⟨have : ∀ {t' : UnorderedList α} (h₁ : s ≤ t') (h₂ : a ∈ t'), s.cons a ≤ t' := by
-          intro t' h; revert m;
+          intro t' h; revert m
           exact @le_induction_on α s t' (fun l₁ l₂ => a ∉ l₁ → a ∈ l₂ → l₁.cons a ≤ l₂) h (by
             intro l₁ l₂ s m₁ m₂; let ⟨r₁, r₂, h'⟩ := List.mem_split m₂; rw [h'] at s ⊢
             exact (Perm.middle a r₁ r₂).subperm_left.mpr ((Perm.Subperm.subperm_cons a).mpr ((List.Sublist.sublist_or_mem_of_sublist s).resolve_right m₁).subperm))
@@ -483,8 +483,7 @@ namespace M4R
           fun l₁ l₂ l₃ => Perm.Subperm.subperm_append_left l₁
 
       theorem add_le_add_right {s t : UnorderedList α} (u : UnorderedList α): s + u ≤ t + u ↔ s ≤ t := by
-        rw [append.comm s, append.comm t];
-        exact add_le_add_left u
+        rw [append.comm s, append.comm t]; exact add_le_add_left u
 
       theorem add_le_add_cancel {s t u : UnorderedList α} : s + t ≤ s + u → t ≤ u :=
         (add_le_add_left s).mp
@@ -719,8 +718,7 @@ namespace M4R
           rw [erase.erase_of_not_mem h]
 
       @[simp] theorem sub (a : α) (s t : UnorderedList α) : count a (s - t) = count a s - count a t := by
-        revert s;
-        exact @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
+        revert s; exact @Quotient.inductionOn _ _ (fun (l : UnorderedList α) =>
           ∀ (s : UnorderedList α), count a (s - l) = count a s - count a l) t
           (fun l => by
             induction l with
@@ -888,10 +886,10 @@ namespace M4R
             | cons a s ih =>
               intro t; byCases h : a ∈ t
               { have := le.cons_le_cons a (ih (t.erase a));
-                rw [erase.cons_erase h, ←cons_inter_of_pos _ h] at this;
+                rw [erase.cons_erase h, ←cons_inter_of_pos _ h] at this
                 exact this }
-              { simp only [list_coe_eq, cons_eq];
-                rw [cons_inter_of_neg _ h];
+              { simp only [list_coe_eq, cons_eq]
+                rw [cons_inter_of_neg _ h]
                 exact ih t })
 
       theorem le_inter {s t : UnorderedList α} (h₁ : s ≤ t) (h₂ : s ≤ u) : s ≤ t ∩ u := by
@@ -900,8 +898,8 @@ namespace M4R
             induction l with
             | nil => intro _ _ h _; simp only [list_coe_eq, empty_eq, zero_inter]; exact h
             | cons a t ih =>
-              intro u s h₁ h₂;
-              byCases h : a ∈ u;
+              intro u s h₁ h₂
+              byCases h : a ∈ u
               { rw [list_coe_eq, cons_eq, cons_inter_of_pos _ h, ←erase.erase_le_iff_le_cons]
                 exact ih (erase.erase_le_iff_le_cons.mpr h₁) (erase.erase_le_erase _ h₂) }
               { rw [list_coe_eq, cons_eq, cons_inter_of_neg _ h]

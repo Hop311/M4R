@@ -25,13 +25,13 @@ namespace M4R
     protected theorem ext [Zero β] {x y : α →₀ β} : x.to_fun = y.to_fun → x = y :=
       match x, y with | ⟨xs, _, xc⟩, ⟨ys, _, yc⟩ => fun hf => by
         simp at hf
-        rw [Finsupp.mk.injEq];
+        rw [Finsupp.mk.injEq]
         exact ⟨Finset.ext fun _ => by rw [xc, yc, hf]; exact Iff.refl _, hf⟩
 
     protected theorem ext' [Zero β] {x y : α →₀ β} : x = y ↔ x.support = y.support ∧ ∀ a ∈ x.support, x a = y a :=
       ⟨fun h => by rw [h]; exact ⟨rfl, fun _ _ => rfl⟩, fun h => by
-        apply Finsupp.ext; apply funext; intro a;
-        byCases hx : a ∈ x.support;
+        apply Finsupp.ext; apply funext; intro a
+        byCases hx : a ∈ x.support
         exact h.right a hx
         have hy : a ∉ y.support := by rw [h.left] at hx; exact hx
         rw [of_not_not (mt mem_support_iff.mpr hx),
@@ -117,8 +117,8 @@ namespace M4R
 
     theorem support_add [Monoid β] {f₁ f₂ : α →₀ β} :
       (f₁ + f₂).support ⊆ f₁.support ∪ f₂.support := by
-        intro x hx;
-        apply Classical.byContradiction; intro h;
+        intro x hx
+        apply Classical.byContradiction; intro h
         simp only [Finset.mem_union, not_or_iff_and_not] at h
         have : (f₁ + f₂) x = f₁ x + f₂ x := rfl
         rw [not_mem_support_iff.mp h.left, not_mem_support_iff.mp h.right, Monoid.add_zero] at this
@@ -130,23 +130,23 @@ namespace M4R
       support := if b = 0 then ∅ else Finset.singleton a
       to_fun := fun a' => if a' = a then b else 0
       mem_support_to_fun := fun a' => by
-        byCases hb : b = 0;
+        byCases hb : b = 0
         exact ⟨fun h _ => by simp only [hb] at h; exact h,
           fun h => by
-            simp only [hb] at h ⊢; apply h; byCases ha : a' = a;
+            simp only [hb] at h ⊢; apply h; byCases ha : a' = a
             repeat { simp only [ha]; rfl }⟩
         exact ⟨fun h => by
             simp only [hb] at h; have := Finset.in_singleton h
             simp only [this]; exact hb,
           fun h => by
-            byCases ha : a' = a;
+            byCases ha : a' = a
             { simp only [hb, ha]; exact Finset.self_singleton a }
             { simp only [ha] at h; contradiction }⟩
 
     namespace single
 
       @[simp] protected theorem zero {α : Type _} (β : Type _) [Zero β] (a : α) : single a (0 : β) = 0 := by
-        apply Finsupp.ext; apply funext; intro x; simp only [single]; byCases hx : x = a;
+        apply Finsupp.ext; apply funext; intro x; simp only [single]; byCases hx : x = a
         repeat { simp only [hx]; rfl }
 
       @[simp] theorem eq_same [Zero β] (a : α) (b : β): single a b a = b :=
@@ -157,8 +157,8 @@ namespace M4R
 
       @[simp] protected theorem add [Monoid β] (a : α) (b₁ b₂ : β) :
         single a (b₁ + b₂) = single a b₁ + single a b₂ := by
-        apply Finsupp.ext; apply funext; intro x;
-        byCases h : x = a;
+        apply Finsupp.ext; apply funext; intro x
+        byCases h : x = a
         { rw [h, add_apply, eq_same, eq_same, eq_same] }
         { rw [add_apply, eq_of_ne (b₁ + b₂) h, eq_of_ne b₁ h, eq_of_ne b₂ h, Monoid.zero_add] }
 
@@ -216,7 +216,7 @@ namespace M4R
 
       @[simp] theorem erase_of_not_mem_support [Zero β] {f : α →₀ β} {a} (haf : a ∉ f.support) : erase a f = f := by
         apply Finsupp.ext; apply funext; intro x
-        byCases h : x = a;
+        byCases h : x = a
         { rw [h, erase_same]; exact (not_mem_support_iff.mp haf).symm }
         { rw [erase_ne h] }
 
@@ -247,9 +247,9 @@ namespace M4R
         (f.update a b : α → β) = Function.update f a b := rfl
 
       @[simp] theorem update_self (a : α) : f.update a (f a) = f := by
-        apply Finsupp.ext; apply funext; intro x;
+        apply Finsupp.ext; apply funext; intro x
         simp only [update, Function.update_apply]
-        byCases hx : x = a;
+        byCases hx : x = a
         { simp only [hx, ite_true] }
         { simp only [hx, ite_false] }
 
@@ -313,7 +313,7 @@ namespace M4R
     theorem add_hom_ext [Monoid β] [Monoid γ] ⦃f g : (α →₀ β) →₊ γ⦄
       (h : ∀ x y, f (single x y) = g (single x y)) :
       f = g := by
-        apply MHomomorphism.ext.mpr; apply funext; intro x;
+        apply MHomomorphism.ext.mpr; apply funext; intro x
         exact Finsupp.induction (fun s => f s = g s) x
           (by simp only [f.preserve_zero, g.preserve_zero])
           (fun a b y hay hb hy => by simp only [f.preserve_add, g.preserve_add, hy, h a b])
@@ -358,7 +358,7 @@ namespace M4R
 
       @[simp] protected theorem single [Zero β] [CommMonoid γ]
         (a : α) (b : β) (f : α → β → γ) (h : f a 0 = 0) : (∑ f in single a b) = f a b := by
-          byCases hb : b = 0;
+          byCases hb : b = 0
           { simp [support_sum, single, hb, h] }
           { simp [support_sum, Finset.map_sum, single, hb, Finset.singleton] }
 

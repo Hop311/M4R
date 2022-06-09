@@ -22,32 +22,32 @@ namespace M4R
       Pairwise r l₁ ∧ Pairwise r l₂ ∧ ∀ x ∈ l₁, ∀ y ∈ l₂, r x y := by
       induction l₁ with
       | nil =>
-        apply Iff.intro; intro prl; apply And.intro Pairwise.nil; simp only [nil] at prl;
+        apply Iff.intro; intro prl; apply And.intro Pairwise.nil; simp only [nil] at prl
         apply And.intro prl; exact (fun x _ _ _ => by have := List.not_mem_nil x; contradiction)
         exact (fun x => x.right.left)
       | cons x l₁ IH =>
-        simp; apply Iff.intro;
-        intro h; apply And.intro;
-        exact And.intro (fun y yl => h.left y (Or.inl yl)) (IH.mp h.right).left;
-        apply And.intro; exact (IH.mp h.right).right.left;
-        intro a axl b; apply Or.elim axl; intro ax bl; rw [ax]; exact h.left b (Or.inr bl);
-        intro al bl; exact (IH.mp h.right).right.right a al b bl;
-        intro h; apply And.intro; intro a all; apply Or.elim all (h.left.left a);
-        apply h.right.right x (List.mem_cons_self x l₁) a;
-        apply IH.mpr; apply And.intro h.left.right; apply And.intro h.right.left;
+        simp; apply Iff.intro
+        intro h; apply And.intro
+        exact And.intro (fun y yl => h.left y (Or.inl yl)) (IH.mp h.right).left
+        apply And.intro; exact (IH.mp h.right).right.left
+        intro a axl b; apply Or.elim axl; intro ax bl; rw [ax]; exact h.left b (Or.inr bl)
+        intro al bl; exact (IH.mp h.right).right.right a al b bl
+        intro h; apply And.intro; intro a all; apply Or.elim all (h.left.left a)
+        apply h.right.right x (List.mem_cons_self x l₁) a
+        apply IH.mpr; apply And.intro h.left.right; apply And.intro h.right.left
         intro _ al _ bl; apply h.right.right; exact Or.inr al; exact bl
 
     theorem appendComm {r : α → α → Prop} (h : ∀ a b, r a b → r b a) {l₁ l₂ : List α} :
       Pairwise r (l₁++l₂) ↔ Pairwise r (l₂++l₁) := by
       have : ∀ s t : List α, Pairwise r (s++t) → Pairwise r (t++s) := by
-        intro s t p; rw [appendIff] at *; apply And.intro p.right.left; apply And.intro p.left;
-        intro x xt y ys; exact h y x (p.right.right y ys x xt);
-      exact ⟨this l₁ l₂, this l₂ l₁⟩;
+        intro s t p; rw [appendIff] at *; apply And.intro p.right.left; apply And.intro p.left
+        intro x xt y ys; exact h y x (p.right.right y ys x xt)
+      exact ⟨this l₁ l₂, this l₂ l₁⟩
 
     theorem middle {r : α → α → Prop} (h : ∀ a b, r a b → r b a) {a : α} {l₁ l₂ : List α} :
       Pairwise r (l₁ ++ a::l₂) ↔ Pairwise r (a::(l₁++l₂)) := by
         have : Pairwise r (l₁ ++ ([a] ++ l₂)) ↔ Pairwise r ([a] ++ l₁ ++ l₂) := by
-          {rw [←List.append_assoc, appendIff, @appendIff _ _ ([a] ++ l₁), appendComm h];
+          {rw [←List.append_assoc, appendIff, @appendIff _ _ ([a] ++ l₁), appendComm h]
           simp only [List.mem_append, Or.comm']; apply Iff.refl}
         simp only [List.appendSingleton] at this; exact this
 
@@ -56,7 +56,7 @@ namespace M4R
       induction p with
       | nil => exact nil
       | @cons a l lr p ih =>
-        constructor; exact fun b bl => h (List.mem_cons_self a l) (Or.inr bl) (lr b bl);
+        constructor; exact fun b bl => h (List.mem_cons_self a l) (Or.inr bl) (lr b bl)
         exact ih (fun xl yl => h (Or.inr xl) (Or.inr yl))
 
     theorem imp {r s : α → α → Prop} (h : ∀ a b, r a b → s a b) {l : List α} :
@@ -68,16 +68,16 @@ namespace M4R
         imp_of_mem (fun al bl => (H al bl).mpr)⟩
 
     theorem and_mem {r : α → α → Prop} {l : List α} : Pairwise r l ↔ Pairwise (fun x y => x ∈ l ∧ y ∈ l ∧ r x y) l := by
-      apply iff_of_mem (fun al bl => ⟨fun rab => ⟨al, bl, rab⟩, fun ⟨_, _, rab⟩ => rab⟩);
+      apply iff_of_mem (fun al bl => ⟨fun rab => ⟨al, bl, rab⟩, fun ⟨_, _, rab⟩ => rab⟩)
 
     theorem map {r : α → α → Prop} (f : β → α) : ∀ {l : List β},
       Pairwise r (l.map f) ↔ Pairwise (fun a b : β => r (f a) (f b)) l
     | []     => by simp only [List.map, Pairwise.nil]
     | b::l => by
       have : (∀ a b', b' ∈ l → f b' = a → r (f b) a) ↔ ∀ (b' : β), b' ∈ l → r (f b) (f b') := by
-        apply Iff.intro (fun h x xl => h (f x) x xl rfl);
-        intro h _ y yl eq; rw [←eq]; exact h y yl;
-      simp [List.map, consIff, List.mem_map, exists_imp_distrib, and_imp, this, map];
+        apply Iff.intro (fun h x xl => h (f x) x xl rfl)
+        intro h _ y yl eq; rw [←eq]; exact h y yl
+      simp [List.map, consIff, List.mem_map, exists_imp_distrib, and_imp, this, map]
 
     theorem of_pairwise_map {r : α → α → Prop} {S : β → β → Prop} (f : α → β) (H : ∀ a b : α, S (f a) (f b) → r a b)
       {l : List α} (p : Pairwise S (l.map f)) : Pairwise r l :=
@@ -162,8 +162,7 @@ namespace List
       induction l with
       | nil => intros; exact nodup_nil
       | cons a l ih =>
-        intro h;
-        exact nodup_cons_of_nodup (fun al => h a ((Sublist.singleton_sublist.mpr al).cons_cons a))
+        intro h; exact nodup_cons_of_nodup (fun al => h a ((Sublist.singleton_sublist.mpr al).cons_cons a))
           (ih fun a s => h a (Sublist.sublist_cons_of_sublist _ s))⟩
 
   theorem nodup_iff_count_le_one {l : List α} : l.nodup ↔ ∀ a : α, List.count a l ≤ 1 := by

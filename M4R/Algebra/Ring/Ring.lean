@@ -130,10 +130,7 @@ namespace M4R
   instance IntRing : NonTrivialRing Int where
     toRing := Ring.construct
       {
-        add_zero          := Int.add_zero
-        add_assoc         := Int.add_assoc
-        add_neg           := Int.add_neg
-        add_comm          := Int.add_comm
+        toconstructor_ab  := IntGroup.to_constructor
         mul_one           := Int.mul_one
         mul_assoc         := Int.mul_assoc
         mul_distrib_left  := Int.mul_distrib_left

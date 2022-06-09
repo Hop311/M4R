@@ -202,8 +202,8 @@ namespace M4R
       UnorderedList.sub.mem_sub_of_nodup s.nodup
 
     theorem union_sdiff_of_subset {s₁ s₂ : Finset α} (h : s₁ ⊆ s₂) : s₁ ∪ (s₂ ∖ s₁) = s₂ := by
-      apply Finset.ext; intro x;
-      simp only [Finset.mem_union, Finset.mem_sdiff];
+      apply Finset.ext; intro x
+      simp only [Finset.mem_union, Finset.mem_sdiff]
       exact ⟨fun h' => Or.elim h' (h ·) And.left,
         fun h' => Or.elim (Classical.em (x ∈ s₁)) Or.inl (Or.inr ⟨h', ·⟩)⟩
 
@@ -385,7 +385,7 @@ namespace M4R
 
     def to_finset (s : Set α) [Fintype s] : Finset α :=
       ⟨(@Finset.Universal s).elems.map Subtype.val, by
-        apply UnorderedList.nodup_map; apply Set.elementExt; exact Finset.Universal.nodup;⟩
+        apply UnorderedList.nodup_map; apply Set.elementExt; exact Finset.Universal.nodup⟩
 
     @[simp] theorem mem_to_finset {s : Set α} [Fintype s] {a : α} : a ∈ s.to_finset ↔ a ∈ s :=
       ⟨fun h => by let ⟨⟨x, hx⟩, _, h'⟩ := UnorderedList.map.mem_map.mp h; rw [←h']; exact hx,

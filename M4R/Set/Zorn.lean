@@ -12,18 +12,18 @@ namespace M4R
 
     theorem chain_insert {c : Set α} {a : α} (hc : Chain r c) (ha : ∀ b ∈ c, b ≠ a → a ≤ b ∨ b ≤ a) :
       Chain r (c.insert a) := by
-        intro x hx y hy hxy;
+        intro x hx y hy hxy
         cases hx with
         | inl hx =>
-          rw [hx] at hxy; rw [hx];
-          exact ha y (hy.resolve_left hxy.symm) hxy.symm;
+          rw [hx] at hxy; rw [hx]
+          exact ha y (hy.resolve_left hxy.symm) hxy.symm
         | inr hx =>
           cases hy with
           | inl hy =>
-            rw [hy] at hxy; rw [hy];
+            rw [hy] at hxy; rw [hy]
             exact (ha x hx hxy).comm
           | inr hy =>
-            exact hc x hx y hy hxy;
+            exact hc x hx y hy hxy
 
     /-- `super_chain c₁ c₂` means that `c₂ is a chain that strictly includes `c₁`. -/
     def super_chain (c₁ c₂ : Set α) : Prop := Chain r c₂ ∧ c₁ ⊊ c₂
@@ -52,14 +52,14 @@ namespace M4R
 
     theorem super_of_not_max {c : Set α} (hc₁ : Chain r c) (hc₂ : ¬ is_max_chain r c) :
       super_chain r c (succ_chain r c) := by
-        simp only [is_max_chain, not_and_iff_or_not, iff_not_not] at hc₂;
+        simp only [is_max_chain, not_and_iff_or_not, iff_not_not] at hc₂
         exact Or.elim hc₂ (fun _ => by contradiction) (fun ⟨c', hc'⟩ => succ_spec r ⟨c', hc₁, hc'⟩)
 
     theorem succ_increasing {c : Set α} : c ⊆ succ_chain r c :=
       if h : ∃c', Chain r c ∧ super_chain r c c' then
         (succ_spec r h).right.left
       else
-        by simp only [succ_chain, dif_neg h, Subset.refl];
+        by simp only [succ_chain, dif_neg h, Subset.refl]
 
     /-- Set of sets reachable from `∅` using `succ_chain` and `⋃₀`. -/
     inductive chain_closure : Set α → Prop
@@ -98,10 +98,10 @@ namespace M4R
           | inr h₁ => exact (Or.inl (Set.subset.antisymm h₁ h))
         case union s hs ih =>
           apply Or.imp_left (fun h' => Set.subset.antisymm h' h)
-          apply byContradiction;
-          simp [not_or_iff_and_not, Set.SoSUnion.subset_iff, not_forall, and_imp];
-          intro c₃ hc₃ h₁ h₂;
-          have := chain_closure_succ_total_aux r hc₁ (hs c₃ hc₃) (ih _ hc₃);
+          apply byContradiction
+          simp [not_or_iff_and_not, Set.SoSUnion.subset_iff, not_forall, and_imp]
+          intro c₃ hc₃ h₁ h₂
+          have := chain_closure_succ_total_aux r hc₁ (hs c₃ hc₃) (ih _ hc₃)
           cases this with
           | inl h =>
             cases ih c₃ hc₃ hc₁ h with
@@ -159,7 +159,7 @@ namespace M4R
     If every chain has an upper bound, then there is a maximal element -/
     theorem exists_maximal_of_chains_bounded (h : ∀ c : Set α, Chain r c → ∃ ub : α, ∀ a ∈ c, a ≤ ub)
       (trans : ∀ {a b c : α}, a ≤ b → b ≤ c → a ≤ c) : ∃ m : α, ∀ a : α, m ≤ a → a ≤ m :=
-        have ⟨ub, hub⟩ : ∃ ub : α, ∀ a ∈ max_chain r, a ≤ ub := h _ (max_chain_spec r).left;
+        have ⟨ub, hub⟩ : ∃ ub : α, ∀ a ∈ max_chain r, a ≤ ub := h _ (max_chain_spec r).left
         ⟨ub, fun a ha =>
           have : Chain r ((max_chain r).insert a) :=
             chain_insert r (max_chain_spec r).left (fun b hb _ => Or.inr (trans (hub b hb) ha))

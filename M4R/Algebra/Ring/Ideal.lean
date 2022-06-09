@@ -59,7 +59,7 @@ namespace M4R
     protected theorem ext' [Ring α] {I J : Ideal α} : I = J ↔ ∀ x, x ∈ I ↔ x ∈ J := by
       simp only [←Ideal.ext, Ideal.equivalent, ←Set.ext]; exact Iff.rfl
     protected theorem antisymm [Ring α] {I J : Ideal α} (h₁ : I ⊆ J) (h₂ : J ⊆ I) : I = J := by
-      rw [←Ideal.ext]; simp only [Ideal.equivalent]; rw [←Set.ext]; simp only [Set.equivalent];
+      rw [←Ideal.ext]; simp only [Ideal.equivalent]; rw [←Set.ext]; simp only [Set.equivalent]
       exact fun x => ⟨fun h => h₁ h, fun h => h₂ h⟩
     protected theorem subsetneq [Ring α] {I J : Ideal α} : I ⊊ J ↔ I ⊆ J ∧ I ≠ J :=
       ⟨(And.imp_right (fun h₁ h₂ => let ⟨x, hxI, hxJ⟩ := h₁
@@ -89,7 +89,7 @@ namespace M4R
 
       protected theorem comm [Ring α] (I J : Ideal α) : I + J = J + I :=
         have : ∀ {K L : Ideal α}, K + L ⊆ L + K := by
-          intro K L x ⟨i, hi, j, hj, hij⟩;
+          intro K L x ⟨i, hi, j, hj, hij⟩
           exact ⟨j, hj, i, hi, by rw [add_comm]; exact hij⟩
         Ideal.antisymm this this
 
@@ -140,7 +140,7 @@ namespace M4R
 
     def principal [r : Ring α] (a : α) : Ideal α where
       subset     := {x | a ÷ x}
-      has_zero   := divides_zero a;
+      has_zero   := divides_zero a
       add_closed := divides_add
       mul_closed := fun x => divides_mul' x
 
@@ -154,7 +154,7 @@ namespace M4R
       ⟨a, ⟨divides_self a, fun _ => id⟩⟩
 
     theorem principal_of_is_principal [Ring α] (I : Ideal α) (h : is_principal I) : ∃ a, I = principal a := by
-      let ⟨a, ⟨aI, ha⟩⟩ := h;
+      let ⟨a, ⟨aI, ha⟩⟩ := h
       exact ⟨a, by apply Ideal.ext.mp; apply Set.subset.antisymm ha;
                     intro x xp; let ⟨b, ab⟩ := xp; rw [←ab]; exact I.mul_closed' aI b⟩
 
@@ -174,7 +174,7 @@ namespace M4R
       Ideal.antisymm hI (zero_ideal_in I)
 
     theorem principal_in [Ring α] {I : Ideal α} {a : α} (ha : a ∈ I) : principal a ⊆ I := by
-      intro _ ⟨y, ayx⟩; rw [←ayx]; exact mul_closed' _ ha _;
+      intro _ ⟨y, ayx⟩; rw [←ayx]; exact mul_closed' _ ha _
     theorem unit_principal [Ring α] {u : α} (hu : isUnit u) : principal u = 1 :=
       Ideal.antisymm (in_unit_ideal _) (fun y _ => unit_divides u y hu)
     theorem unit_not_principal [Ring α] {u : α} (hu : ¬isUnit u) : (principal u).proper_ideal :=
@@ -188,7 +188,7 @@ namespace M4R
     theorem is_unit_ideal [Ring α] {I : Ideal α} : I = 1 ↔ 1 ∈ I :=
       is_unit_ideal'.trans ⟨fun ⟨x, ⟨y, hxy⟩, hxI⟩ => hxy ▸ I.mul_closed' hxI y, fun h => ⟨1, isUnit_1, h⟩⟩
     theorem is_zero_ideal [Ring α] {I : Ideal α} : I = 0 ↔ ∀ a ∈ I, a = 0 := by
-      simp only [←Ideal.ext, Ideal.equivalent, ←Set.ext, Set.equivalent];
+      simp only [←Ideal.ext, Ideal.equivalent, ←Set.ext, Set.equivalent]
       exact propext_iff.mpr (forall_congr fun _ => propext ⟨Iff.mp, fun h => ⟨h, (· ▸ I.has_zero)⟩⟩)
 
     theorem div_mem [Ring α] {I : Ideal α} {a : α} : a ∈ I ↔ ∃ b ∈ I, b ÷ a :=
@@ -209,7 +209,7 @@ namespace M4R
     theorem zero_ideal_proper (α) [NonTrivialRing α] : (ZeroIdeal α).proper_ideal :=
       zero_ideal_proper_of_nontrivial NonTrivial.one_neq_zero
     theorem eq_zero_ideal_of_trivial [Ring α] (h : ¬Ring.is_NonTrivial α) (I : Ideal α) : I = 0 :=
-      is_zero_ideal.mpr fun x _ => by rw [←one_mul x, of_not_not h, zero_mul]
+      is_zero_ideal.mpr fun x _ => all_trivial (of_not_not h) x
 
     protected def intersection [Ring α] (I J : Ideal α) : Ideal α where
       subset     := I.subset ∩ J.subset
@@ -516,7 +516,7 @@ namespace M4R
                       simp only [Finset.map_sum.cons, mul_distrib_right, ih, Finset.map_cons, mul_assoc]
                       byCases h : x * k ∈ s.map (· * k)
                       { rw [UnorderedList.to_finset_cons_of_pos h, Finset.map_sum.sum_term _ _ (UnorderedList.mem_to_finset.mpr h),
-                          Finset.map_sum.sum_term _ _ (UnorderedList.mem_to_finset.mpr h), add_assoc, ←mul_distrib_right];
+                          Finset.map_sum.sum_term _ _ (UnorderedList.mem_to_finset.mpr h), add_assoc, ←mul_distrib_right]
                         have hxs : x ∉ (finite.subset s.to_finite (fun _ => And.left : mult_fibre s k (x * k) ⊆ s.toSet)).to_finset :=
                           fun h => hx ((finite.mem_to_finset _).mp h).left
                         have : (finite.subset (s.cons x hx).to_finite (fun _ => And.left : mult_fibre (s.cons x hx) k (x * k) ⊆ (s.cons x hx).toSet)).to_finset =
@@ -862,9 +862,9 @@ namespace M4R
                         have : x ∈ s ↔ x ∈ s.cons a ha := by simp only [Finset.mem_cons,
                           (Finset.mem_erase.mp hx).left, false_or]; exact Iff.rfl
                         simp only [distrib_coeff, this])) }
-                    { have ha'' : a ∉ s ∪ fik := fun h => absurd (Finset.mem_union.mp h) (not_or_iff_and_not.mpr ⟨ha, ha'⟩);
+                    { have ha'' : a ∉ s ∪ fik := fun h => absurd (Finset.mem_union.mp h) (not_or_iff_and_not.mpr ⟨ha, ha'⟩)
                       have : (s.cons a ha) ∪ fik = (s ∪ fik).cons a ha'' := by
-                        apply Finset.ext; intro; simp only [Finset.mem_union, Finset.mem_cons] exact Or.assoc.symm;
+                        apply Finset.ext; intro; simp only [Finset.mem_union, Finset.mem_cons] exact Or.assoc.symm
                       rw [this, Finset.map_sum.cons, distrib_coeff_only_left cij cik (s.mem_cons_self ha) ha']
                       exact congrArg (· + _) (Finset.map_sum.congr rfl fun x hx => congrArg (· * x) (by
                         have : x ≠ a := fun h => ha'' (h ▸ hx)

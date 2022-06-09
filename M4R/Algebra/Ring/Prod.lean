@@ -98,7 +98,7 @@ namespace M4R
 
     theorem append [Semiring α] (init : α) (s t : UnorderedList α) : (s + t).fold_mul init * init = s.fold_mul init * t.fold_mul init := by
       have : (s + t).fold_mul init = t.fold_mul (s.fold_mul init) := by
-        simp only [fold_mul, fold.append];
+        simp only [fold_mul, fold.append]
       rw [this, init_swap, mul_comm]
 
   end UnorderedList.fold_mul

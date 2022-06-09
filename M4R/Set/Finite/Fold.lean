@@ -74,7 +74,7 @@ namespace M4R
 
       theorem cons (init : α) (f : β → α) (s : UnorderedList β) (b : β):
         (s.cons b).map_fold op hcomm hassoc init f = (s.map_fold op hcomm hassoc init f) ⋆ (f b) := by
-          simp [map_fold, fold.cons'];
+          simp [map_fold, fold.cons']
 
       theorem distrib (init : α) (f g : β → α) (s : UnorderedList β) :
         init ⋆ s.map_fold op hcomm hassoc init (fun b => f b ⋆ g b) =

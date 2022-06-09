@@ -58,8 +58,7 @@ namespace M4R
     protected instance toAbelianGroup [AbelianGroup α] (s : SubGroup α) : AbelianGroup ↑s.subset where
       add_comm := s.toCommMonoid.add_comm
 
-    def is_normal [Group α] (s : SubGroup α) : Prop :=
-      ∀ a : α, a ∈ s → ∀ g, -g + a + g ∈ s
+    def is_normal [Group α] (s : SubGroup α) : Prop := ∀ a ∈ s, ∀ g, -g + a + g ∈ s
 
     theorem abelian_is_normal [AbelianGroup α] (s : SubGroup α) : s.is_normal :=
       fun a ha g => CommMonoid.add_comm _ _ ▸ add_assoc _ _ _ ▸ add_neg _ ▸ (zero_add _).symm ▸ ha
@@ -72,23 +71,22 @@ namespace M4R
     -- i.e. left coset equivalence
     def QuotientRelation (a b : α) : Prop := -a + b ∈ s
     theorem QuotientRelation.refl [Group α] (s : SubGroup α) (a : α) : QuotientRelation s a a := by
-      simp only [QuotientRelation]; rw [neg_add]; exact s.has_zero;
+      simp only [QuotientRelation]; rw [neg_add]; exact s.has_zero
 
-    def QuotClass : Type _ :=
-      Quot (QuotientRelation s)
+    def QuotClass : Type _ := Quot (QuotientRelation s)
 
     def QuotAdd (N : s.is_normal) : QuotClass s → QuotClass s → QuotClass s :=
       Function.Quotient.map₂ (QuotientRelation s) (QuotientRelation s) (QuotientRelation s)
-        (QuotientRelation.refl s) (QuotientRelation.refl s) (fun x y => x + y) (fun a₁ a₂ b₁ b₂ ha hb => by
-          simp only [QuotientRelation] at *; rw [neg_add_distrib, ←add_zero (-b₁), ←add_neg b₂, ←add_assoc (-b₁),
-          add_assoc, add_assoc]; apply s.add_closed; exact hb; rw [←add_assoc, ←add_assoc, add_assoc (-b₂)];
-          exact N (-a₁ + a₂) ha b₂)
+        (QuotientRelation.refl s) (QuotientRelation.refl s) (fun x y => x + y) fun a₁ a₂ b₁ b₂ ha hb => by
+          simp only [QuotientRelation]; rw [neg_add_distrib, ←add_zero (-b₁), ←add_neg b₂, ←add_assoc (-b₁),
+          add_assoc, add_assoc]; apply s.add_closed _ hb; rw [←add_assoc, ←add_assoc, add_assoc (-b₂)]
+          exact N (-a₁ + a₂) ha b₂
 
     def QuotNeg (N : s.is_normal) : QuotClass s → QuotClass s :=
       Function.Quotient.map (QuotientRelation s) (QuotientRelation s) (fun x => -x)
-        (fun x y hxy => by
-          simp only [QuotientRelation] at *; rw [←neg_add_distrib]; apply s.neg_closed;
-          rw[←zero_add y, ←neg_add (-x), add_assoc (- -x)]; exact N (-x + y) hxy (-x))
+        fun x y hxy => by
+          simp only [QuotientRelation]; rw [←neg_add_distrib]; apply s.neg_closed
+          rw[←zero_add y, ←neg_add (-x), add_assoc (- -x)]; exact N (-x + y) hxy (-x)
 
     protected instance toGroup (α : Type _) (N : s.is_normal) : Group (QuotClass s) := Group.construct
     {
@@ -96,14 +94,14 @@ namespace M4R
       add := QuotAdd s N
       neg := QuotNeg s N
       add_zero := by
-        apply Quot.ind; intro a; apply Quot.sound; simp only [QuotientRelation];
+        apply Quot.ind; intro a; apply Quot.sound; simp only [QuotientRelation]
         rw [neg_add_distrib, neg_zero, zero_add, neg_add]; exact s.has_zero
       add_assoc := by
-        apply Function.Quotient.ind₃; intro a b c; apply Quot.sound; simp only [QuotientRelation];
+        apply Function.Quotient.ind₃; intro a b c; apply Quot.sound; simp only [QuotientRelation]
         rw [neg_add_distrib, neg_add_distrib, ←add_assoc, add_assoc (-c), add_assoc (-b), neg_add,
         add_zero, ←add_assoc, add_assoc (-c), neg_add, add_zero, neg_add]; exact s.has_zero
       add_neg := by
-        apply Quot.ind; intro a; apply Quot.sound; simp only [QuotientRelation];
+        apply Quot.ind; intro a; apply Quot.sound; simp only [QuotientRelation]
         rw [add_neg, neg_add]; exact s.has_zero
     }
     def LeftCoset (a : α) (s : Set α) : Set α := {x | -a + x ∈ s}

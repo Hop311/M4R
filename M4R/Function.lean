@@ -73,7 +73,7 @@ namespace M4R
     theorem surj_image (f : α → β) : surjective f ↔ image f = Set.Universal := by
       apply Iff.intro
       { intro surj; apply Set.subset.antisymm;
-        { exact Set.subset.subUniversal _; }
+        { exact Set.subset.subUniversal _ }
         { intro y _; exact surj y } }
       intro heq y; simp only [image, Set.Universal] at heq; rw [congrFun heq y]; trivial
 

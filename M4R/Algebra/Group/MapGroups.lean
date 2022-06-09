@@ -62,16 +62,16 @@ namespace M4R
 
     instance MHomomorphismCommMonoid (α : Type _) (β : Type _) [Monoid α] [CommMonoid β] : CommMonoid (α →₊ β) where
       add_zero := fun x => by
-        apply MHomomorphism.ext.mpr; apply funext; intro a;
+        apply MHomomorphism.ext.mpr; apply funext; intro a
         rw [MHomomorphismAdd.def, MHomomorphismZero.def]; exact Monoid.add_zero _
       zero_add := fun x => by
-        apply MHomomorphism.ext.mpr; apply funext; intro a;
+        apply MHomomorphism.ext.mpr; apply funext; intro a
         rw [MHomomorphismAdd.def, MHomomorphismZero.def]; exact Monoid.zero_add _
       add_assoc := fun x y z => by
-        apply MHomomorphism.ext.mpr; apply funext; intro a;
+        apply MHomomorphism.ext.mpr; apply funext; intro a
         simp only [MHomomorphismAdd.def]; exact Monoid.add_assoc _ _ _
       add_comm := fun x y => by
-        apply MHomomorphism.ext.mpr; apply funext; intro a;
+        apply MHomomorphism.ext.mpr; apply funext; intro a
         simp only [MHomomorphismAdd.def]; exact CommMonoid.add_comm _ _
 
   end MHomomorphism

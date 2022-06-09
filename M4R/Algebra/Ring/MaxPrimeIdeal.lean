@@ -30,8 +30,8 @@ namespace M4R
       ⟨hP, Subset.refl P, fun _ h₁ h₂ => (Ideal.antisymm h₂ h₁)⟩
 
     theorem ProperIdeal_is_NonTrivial [Ring α] {I : Ideal α} (hI : I.proper_ideal) : Ring.is_NonTrivial (QClass I) := by
-      intro h10;
-      have := @Quotient.exact α (QSetoid I) 0 1 h10.symm;
+      intro h10
+      have := @Quotient.exact α (QSetoid I) 0 1 h10.symm
       simp only [HasEquiv.Equiv, Setoid.r, QRel] at this
       rw [neg_zero, zero_add] at this
       exact hI (Ideal.is_unit_ideal.mpr this)
@@ -40,7 +40,7 @@ namespace M4R
       (ProperIdeal_is_NonTrivial hI).toNonTrivialRing
 
     theorem NonTrivialRingProperIdeal [Ring α] {I : Ideal α} (h : Ring.is_NonTrivial (QClass I)) : I.proper_ideal := by
-      intro hu;
+      intro hu
       have : (1 : QClass I) = (0 : QClass I) := by
         apply Eq.symm; apply Quot.sound; simp only [Setoid.r, QRel]
         rw [neg_zero, zero_add]; exact Ideal.is_unit_ideal.mp hu
@@ -48,7 +48,7 @@ namespace M4R
 
     theorem maximal_has_inverses [Ring α] {I : Ideal α} (hI : I.is_maximal) :
       ∀ {a : α}, toQuotient I a ≠ 0 → ∃ r : α, (toQuotient I a) * (toQuotient I r) = 1 := by
-        intro a ha;
+        intro a ha
         have : I ⊊ I + (principal a) :=
           ⟨Ideal.add.subset I (principal a), a, non_zero.mp ha, 0, I.has_zero, a, ⟨1, mul_one a⟩, zero_add a⟩
         have ⟨i, hi, j, ⟨r, hj⟩, hij⟩ :=
@@ -75,16 +75,16 @@ namespace M4R
     theorem FieldMaximal [Ring α] {I : Ideal α} (h : is_Field (QClass I)) : I.is_maximal := by
       simp only [is_maximal, is_Field] at *
       exact ⟨NonTrivialRingProperIdeal h.left, by
-        intro J hIJ;
+        intro J hIJ
         cases Classical.em (I = J) with
         | inl heq => exact Or.inl heq.symm
         | inr hneq =>
-          apply Or.inr; apply is_unit_ideal.mpr;
+          apply Or.inr; apply is_unit_ideal.mpr
           let ⟨x, xJ, nxI⟩ := Classical.choice (Set.minus.nonempty
             (Set.subset.neq_proper hIJ (fun h' => hneq (Ideal.ext.mp h'))))
           let ⟨b, hb⟩ := h.right (non_zero.mpr nxI)
           exact @Quotient.ind α (QSetoid I) (fun (c : QClass I) => c = b → 1 ∈ J) (fun b' hb' => by
-            rw [←hb'] at hb;
+            rw [←hb'] at hb
             have := @Quotient.exact α (QSetoid I) _ _ hb
             simp only [HasEquiv.Equiv, Setoid.r, QRel] at this
             have := J.add_closed (J.mul_closed b' xJ) (hIJ this)

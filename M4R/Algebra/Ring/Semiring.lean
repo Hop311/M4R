@@ -45,7 +45,7 @@ namespace M4R
     theorem ofNat.preserve_succ [NCSemiring α] (n : Nat) : n.succ = (n : α) + 1 := by
       induction n with
       | zero => simp only [NCSemiring.ofNat, Monoid.zero_add]
-      | succ k ih => simp only [NCSemiring.ofNat]
+      | succ k ih => rfl
 
     theorem ofNat.preserve_add [NCSemiring α] (m n : Nat) : m + n = (m : α) + n := by
       induction n with
@@ -63,7 +63,7 @@ namespace M4R
     theorem pow_nat_one [NCSemiring α] (n : Nat) : (1 : α)^n = 1 := by
       induction n with
       | zero      => rfl
-      | succ k ih => rw [pow_nat_succ, ih, one_mul];
+      | succ k ih => rw [pow_nat_succ, ih, one_mul]
     theorem pow_nat_0 [NCSemiring α] (a : α) : a ^ (0 : Nat) = 1 := rfl
     theorem pow_nat_1 [NCSemiring α] (a : α) : a ^ (1 : Nat) = a := rfl
 
@@ -131,14 +131,14 @@ namespace M4R
       intro h₁ ⟨_, h₂⟩; rw [zero_mul] at h₂; exact h₁ h₂
     theorem unit_mul [Semiring α] {a b : α} : isUnit a → isUnit b → isUnit (a * b)
     | ⟨x, xs⟩, ⟨y, ys⟩ => by
-      apply Exists.intro (y * x); rw [mul_assoc, ←mul_assoc b, ys, one_mul, xs];
+      apply Exists.intro (y * x); rw [mul_assoc, ←mul_assoc b, ys, one_mul, xs]
     theorem divides_unit [Semiring α] {a b : α} : isUnit b → a ÷ b → isUnit a := by
-      intro ub ab;
-      let ⟨binv, bbinv⟩ := Classical.indefiniteDescription _ ub;
-      let ⟨c, ac⟩ := Classical.indefiniteDescription _ ab;
-      exact ⟨c * binv, by rw [←mul_assoc, ac, bbinv];⟩
+      intro ub ab
+      let ⟨binv, bbinv⟩ := Classical.indefiniteDescription _ ub
+      let ⟨c, ac⟩ := Classical.indefiniteDescription _ ab
+      exact ⟨c * binv, by rw [←mul_assoc, ac, bbinv]⟩
     theorem unit_divides [Semiring α] : ∀ a b : α, isUnit a → a ÷ b := by
-      intro a b ⟨c, ac⟩; exact ⟨c * b, by rw [←mul_assoc, ac, one_mul];⟩
+      intro a b ⟨c, ac⟩; exact ⟨c * b, by rw [←mul_assoc, ac, one_mul]⟩
 
     def unit_set (α : Type _) [Semiring α] : Set α := {x | isUnit x}
 
@@ -199,9 +199,7 @@ namespace M4R
 
   instance NatSemiring : Semiring Nat := Semiring.construct
     {
-      add_zero          := Nat.add_zero
-      add_assoc         := Nat.add_assoc
-      add_comm          := Nat.add_comm
+      toconstructor_cm  := NatMonoid.to_constructor
       mul_one           := Nat.mul_one
       mul_assoc         := Nat.mul_assoc
       mul_distrib_left  := Nat.left_distrib

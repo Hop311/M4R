@@ -21,7 +21,7 @@ namespace M4R
       toNonTrivial := Field.toNCField.toNonTrivial
 
     theorem inv_nonzero [NCField α] : ∀ {a : α}, (h : a ≠ 0) → inv h ≠ 0 := by
-      intro a h hi;
+      intro a h hi
       have := mul_inv h
       rw [hi, mul_zero] at this
       exact one_neq_zero this.symm
@@ -34,7 +34,7 @@ namespace M4R
       fun h => by rw [←mul_right_cancel (inv_nonzero h), inv_mul, mul_inv]
 
     theorem integral [NCField α] : ∀ {a b : α}, a ≠ 0 → b ≠ 0 → a * b ≠ 0 := by
-      intro a b ha hb hab;
+      intro a b ha hb hab
       rw [←zero_mul b, mul_right_cancel hb] at hab
       exact ha hab
 

@@ -445,7 +445,7 @@ namespace Int
           intro e; simp only [e]
           cases (Nat.le.dest (Nat.le_of_sub_eq_zero e)) with
           | intro k h =>
-            rw [h.symm, Nat.add_sub_cancel_left];
+            rw [h.symm, Nat.add_sub_cancel_left]
             exact hp k n
         | succ k' =>
           intro heq; simp only [heq]
@@ -482,7 +482,7 @@ namespace Int
     subNatNat_of_sub_eq_zero (Nat.sub_eq_zero_of_le h)
 
   theorem subNatNat_of_lt {m n : Nat} (h : m < n) : subNatNat m n = negSucc (n - m).pred := by
-    rw [subNatNat_of_sub_eq_succ];
+    rw [subNatNat_of_sub_eq_succ]
     exact Eq.symm (Nat.succ_pred_eq_of_pos (Nat.sub_pos_of_lt h))
 
   theorem subNatNat_sub {m n : Nat} (h : m ≥ n) (k : Nat) : subNatNat (m - n) k = subNatNat m (k + n) := by

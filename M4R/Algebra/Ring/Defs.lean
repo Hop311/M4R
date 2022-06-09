@@ -29,8 +29,10 @@ namespace M4R
   structure SubSemiring (α : Type _) [NCSemiring α] extends SubMonoid α where
     has_one    : 1 ∈ subset
     mul_closed : ∀ a ∈ subset, ∀ b ∈ subset,  a * b ∈ subset
+  instance SubSemiringMem [NCSemiring α] : Mem α (SubSemiring α) where mem := fun x S => x ∈ S.subset
 
   structure SubRing (α : Type _) [NCRing α] extends SubSemiring α, SubGroup α
+  instance SubRingMem [NCRing α] : Mem α (SubRing α) where mem := fun x S => x ∈ S.subset
 
   namespace NCSemiring
     protected def ofNat [NCSemiring α] (n : Nat) : α :=
@@ -39,7 +41,6 @@ namespace M4R
       | Nat.succ m => match m with
         | Nat.zero => 1
         | _        => (NCSemiring.ofNat m) + 1
-    @[defaultInstance high]
     instance RingOfNatCoe [NCSemiring α] : Coe Nat α where coe := NCSemiring.ofNat
 
     protected def pow_nat [NCSemiring α] (a : α) (n : Nat) : α :=
@@ -67,9 +68,8 @@ namespace M4R
     instance SemiringAssociateEq [Semiring α] : RingEq α where
       ringeq := associates
 
-    def nonZeroNonUnit [Semiring α] (a : α) : Prop := a ≠ 0 ∧ ¬isUnit a
     def irreducible [Semiring α] (a : α) : Prop :=
-      nonZeroNonUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
+      a ≠ 0 ∧ ¬isUnit a ∧ ∀ x y, x * y = a → (isUnit x ∨ isUnit y)
 
   end Semiring
 

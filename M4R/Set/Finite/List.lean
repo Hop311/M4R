@@ -24,7 +24,7 @@ namespace List
     ⟨by match l with
     | nil => intro; contradiction
     | cons a l =>
-      intro h;
+      intro h
       simp at h
       rw [eq_nil_of_length_eq_zero h]
       exact ⟨a, rfl⟩,
@@ -84,7 +84,7 @@ namespace List
     | nil         => contradiction
     | cons b l ih => apply Or.elim h (fun ab =>
       by rw [ab]; exact ⟨[], l, rfl⟩) (fun ainl =>
-        by let ⟨s, t, p⟩ := ih ainl; rw [p]; exact ⟨b::s, t, rfl⟩);
+        by let ⟨s, t, p⟩ := ih ainl; rw [p]; exact ⟨b::s, t, rfl⟩)
 
   theorem mem_of_ne_of_mem {a y : α} {l : List α} (h₁ : a ≠ y) (h₂ : a ∈ y :: l) : a ∈ l :=
     Or.elim (eq_or_mem_of_mem_cons h₂) (fun e => absurd e h₁) id
@@ -94,7 +94,7 @@ namespace List
   | a::l, s => False.elim (s (mem_cons_self a l))
 
   protected theorem in_singleton {a a' : α} : a' ∈ [a] → a' = a := by
-    intro ha';
+    intro ha'
     simp only [Mem.mem, List.mem, or_false] at ha'
     exact ha'
 
@@ -158,9 +158,9 @@ namespace List
       | cons a b ih => simp only [map, id_eq, ih]
 
     theorem filterMap_Eq_map (f : α → β) : filterMap (some ∘ f) = map f := by
-      apply funext; intro l;
+      apply funext; intro l
       induction l with
-      | nil => simp only [filterMap, map];
+      | nil => simp only [filterMap, map]
       | cons _ _ ih => simp only [filterMap, map, cons.injEq, true_and]; exact ih
 
     theorem map_congr {f g : α → β} {s t : List α} (h₁ : s = t) (h₂ : ∀ x ∈ t, f x = g x) :
@@ -169,7 +169,7 @@ namespace List
         induction t with
         | nil => rfl
         | cons a l ih₂ =>
-          simp only [List.map_cons, List.cons_ext];
+          simp only [List.map_cons, List.cons_ext]
           exact ⟨h₂ a (List.mem_cons_self a l), ih₂ fun x hx => h₂ x (mem_cons_of_mem a hx)⟩
 
     @[simp] theorem length_map (f : α → β) (l : List α) : (l.map f).length = l.length := by
@@ -316,12 +316,12 @@ namespace List
         induction s with
         | nil => simp
         | cons l₁ l₂ a s ih =>
-          simp only [filterMap];
+          simp only [filterMap]
           cases f a with
           | none => exact ih
           | some b => exact Sublist.cons _ _ b ih
         | cons' l₁ l₂ a s ih =>
-          simp only [filterMap];
+          simp only [filterMap]
           cases f a with
           | none => exact ih
           | some b => exact Sublist.cons' _ _ b ih
@@ -400,7 +400,7 @@ namespace List
       by simp only [List.insert, if_neg h]
 
     @[simp] theorem mem_insert_iff {l : List α} : a ∈ l.insert b ↔ a = b ∨ a ∈ l := by
-      byCases h : b ∈ l;
+      byCases h : b ∈ l
       { rw [insert_of_mem h]; exact ⟨Or.inr, fun h' => Or.elim h' (fun h'' => by rw [h'']; exact h) id⟩ }
       simp only [insert_of_not_mem h, mem_cons_iff]; exact Iff.refl _
 
@@ -488,14 +488,15 @@ namespace List
       byCases pa : p a; repeat { simp [pa, filter'_append] }
 
     theorem filter_map_eq_filter' (p : α → Prop) : filterMap (Option.guard p) = filter' p := by
-      apply funext; intro l;
+      apply funext; intro l
       induction l with
       | nil => rfl
       | cons a l ih =>
-        byCases pa : p a;
-        { simp only [filterMap, Option.guard, if_pos pa, filter'_cons_of_pos _ pa];
-        exact cons_ext.mpr ⟨rfl, ih⟩ }
-        simp only [filterMap, Option.guard, if_neg pa, filter'_cons_of_neg _ pa]; exact ih
+        byCases pa : p a
+        { simp only [filterMap, Option.guard, if_pos pa, filter'_cons_of_pos _ pa]
+          exact cons_ext.mpr ⟨rfl, ih⟩ }
+        { simp only [filterMap, Option.guard, if_neg pa, filter'_cons_of_neg _ pa]
+          exact ih }
 
     @[simp] theorem filter'_sublist {p : α → Prop} : ∀ (l : List α), filter' p l <+ l
     | []   => Sublist.nil
@@ -537,9 +538,9 @@ namespace List
       | nil => simp only [filter'_nil, true_iff]; exact forall_mem_nil p
       | cons a l ih =>
         rw [forall_mem_cons]; byCases h : p a
-        { rw [filter'_cons_of_pos _ h, List.cons.injEq, ih];
+        { rw [filter'_cons_of_pos _ h, List.cons.injEq, ih]
           exact ⟨fun h' => ⟨h, h'.right⟩, fun h' => ⟨rfl, h'.right⟩⟩ }
-        { rw [filter'_cons_of_neg _ h];
+        { rw [filter'_cons_of_neg _ h]
           exact iff_of_false (by
             intro e; have := @filter'_sublist α p l
             rw [e] at this
@@ -585,7 +586,7 @@ namespace List
         induction l with
         | nil => cases al
         | cons b l ih =>
-          byCases pb : p b;
+          byCases pb : p b
           { exact ⟨b, [], l, forall_mem_nil _, pb, by simp only [pb, nil_append, erasep_cons_of_pos]⟩ }
           cases al with
           | inl h => rw [h] at pa; exact absurd pa pb
@@ -665,7 +666,7 @@ namespace List
 
     theorem erase_cons (a b : α) (l : List α) :
       (b :: l).erase a = (if b = a then l else b :: List.erase l a) := by
-        byCases h₁ : b = a;
+        byCases h₁ : b = a
         { have h₂ : a == a := decide_eq_true rfl
         simp only [h₁, List.erase, h₂, ite_true] }
         { have h₂ : (b == a) = false := decide_eq_false h₁
@@ -682,12 +683,12 @@ namespace List
       induction l with
       | nil => rfl
       | cons b l ih =>
-        byCases h : a = b;
+        byCases h : a = b
         { simp only [h, erase_cons_head, erasep_cons_of_pos] }
-        simp only [ne_eq, h, Ne.symm h, ih, erase_cons_tail, erasep_cons_of_neg]
+        { simp only [ne_eq, h, Ne.symm h, ih, erase_cons_tail, erasep_cons_of_neg] }
 
     @[simp] theorem erase_of_not_mem {a : α} {l : List α} (h : a ∉ l) : l.erase a = l := by
-      rw [erase_eq_erasep, erasep_of_forall_not];
+      rw [erase_eq_erasep, erasep_of_forall_not]
       intro b h' h''; rw [h''] at h; exact absurd h' h
 
     theorem exists_erase_eq {a : α} {l : List α} (h : a ∈ l) :
@@ -701,7 +702,7 @@ namespace List
 
     theorem erase_append_right {a : α} {l₁ : List α} (l₂) (h : a ∉ l₁) :
       (l₁++l₂).erase a = l₁ ++ l₂.erase a := by
-        rw [erase_eq_erasep, erase_eq_erasep, erasep_append_right];
+        rw [erase_eq_erasep, erase_eq_erasep, erasep_append_right]
         intro b h' h''; rw [h''] at h; exact absurd h' h
 
     theorem erase_sublist (a : α) (l : List α) : l.erase a <+ l := by
@@ -820,7 +821,7 @@ namespace List
     theorem repeat_add (a : α) (m n) : repeat a (m + n) = repeat a m ++ repeat a n := by
       induction m with
       | zero   => simp
-      | succ m ih => simp [Nat.succ_add, ih];
+      | succ m ih => simp [Nat.succ_add, ih]
 
     theorem repeat_subset_singleton (a : α) (n) : repeat a n ⊆ [a] := fun b h => by
       rw [eq_of_mem_repeat h]; exact List.self_singleton a

@@ -24,7 +24,7 @@ namespace M4R
 
     theorem append [CommMonoid α] (init : α) (s t : UnorderedList α) : (s + t).fold_add init + init = s.fold_add init + t.fold_add init := by
       have : (s + t).fold_add init = t.fold_add (s.fold_add init) := by
-        simp only [fold_add, fold.append];
+        simp only [fold_add, fold.append]
       rw [this, init_swap, add_comm]
 
   end UnorderedList.fold_add

@@ -7,14 +7,14 @@ namespace M4R
 
     def of_subtype_set {s : Set α} (ss : Set ↑s) : Set α := {x | ∃ y ∈ ss, y.val = x}
     theorem of_subtype_set.subset {s : Set α} (ss : Set ↑s) : (of_subtype_set ss) ⊆ s := by
-      intro _ ⟨⟨_, ys⟩, _, hyx⟩;
+      intro _ ⟨⟨_, ys⟩, _, hyx⟩
       rw [←hyx]; exact ys
 
     theorem ideal_zorn [Ring α] (S : Set (Ideal α)) (h : ∀ c : Set (Ideal α), c ⊆ S →
       Zorn.Chain Subset.subset c → ∃ ub ∈ S, ∀ a ∈ c, a ⊆ ub) : ∃ m ∈ S, ∀ a ∈ S, m ⊆ a → a = m := by
         have : ∀ c : Set S, Zorn.Chain subtype_subset c → ∃ ub : S, ∀ a ∈ c, a ≤ ub := fun c hc =>
           have : Zorn.Chain Subset.subset (of_subtype_set c) := by
-            intro x xc y yc hxy;
+            intro x xc y yc hxy
             let ⟨a, ac, hax⟩ := xc
             let ⟨b, bc, hbx⟩ := yc
             have := hc a ac b bc (fun hab => hxy (by rw [←hax, ←hbx]; exact congrArg Subtype.val hab))
@@ -57,9 +57,9 @@ namespace M4R
 
     theorem ideal_chain_proper [Ring α] (S : Set (Ideal α)) (hS : Nonempty S) (hc : Zorn.Chain Subset.subset S) :
       (∀ I ∈ S, I.proper_ideal) → (ideal_chain S hS hc).proper_ideal := by
-        intro h hU;
-        let ⟨_, ⟨I, IS, hI⟩, hIu⟩ := is_unit_ideal.mp hU;
-        rw [←hI] at hIu;
+        intro h hU
+        let ⟨_, ⟨I, IS, hI⟩, hIu⟩ := is_unit_ideal.mp hU
+        rw [←hI] at hIu
         exact absurd (is_unit_ideal.mpr hIu) (h I IS)
 
     theorem ideal_chain_disjoint [Ring α] (S : Set (Ideal α)) (hS : Nonempty S) (hc : Zorn.Chain Subset.subset S) (S' : Set α) :

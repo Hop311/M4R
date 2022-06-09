@@ -57,7 +57,7 @@ namespace M4R
         byCases h : n < N
         { exact ⟨N - n, fun m hm => (hN (n + m) (Nat.add_comm m n ▸ Nat.sub_le_iff_right.mp hm)).trans
           (congrArg c.f (Nat.add_sub_of_le (Nat.le_of_lt h))).symm⟩ }
-        { exact ⟨0, fun m hm => have h := Nat.not_lt.mp h;
+        { exact ⟨0, fun m hm => have h := Nat.not_lt.mp h
             (hN (n + m) (Nat.le_trans h (Nat.le_add_right n m))).trans (hN n h).symm⟩ }
       theorem shift_strict_infinite (n : Nat) (hc : c.strict_infinite) : (c.shift n).strict_infinite :=
         fun m => hc (n + m)
@@ -68,7 +68,7 @@ namespace M4R
             fun m hm => (hN₂ (n + m) (Nat.add_comm n m ▸ Nat.sub_le_iff_right.mp hm)).trans (congrArg c.f
               (Nat.add_sub_of_le (Nat.le_of_lt h))).symm⟩ }
         { exact ⟨0, fun m hm => absurd hm (Nat.not_lt_zero m), fun m hm =>
-            have h := Nat.not_lt.mp h;
+            have h := Nat.not_lt.mp h
             (hN₂ (n + m) (Nat.le_trans h (Nat.le_add_right n m))).trans (hN₂ n h).symm⟩ }
       theorem shift_stable_length (n : Nat) (hc : c.strict_stable) : (c.shift n).stable_length (shift_strict_stable n hc) =
         c.stable_length hc - n := by
@@ -143,9 +143,8 @@ namespace M4R
 
       theorem NonTrivial_of_length_infinite {S : Set (chain α)} (h : length_infinite S) : Ring.is_NonTrivial α :=
       fun h10 =>
-        have : ∀ x : α, x = 0 := fun x => by rw [←mul_one x, h10, mul_zero]
         have : ∀ I J : Ideal α, I = J := fun I J =>
-          Ideal.ext.mp (Set.ext.mp fun _ => by simp only [this, I.has_zero, J.has_zero])
+          Ideal.ext.mp (Set.ext.mp fun _ => by simp only [all_trivial h10, I.has_zero, J.has_zero])
         h.elim (fun ⟨c, hcS, hc⟩ => absurd (this _ _) (hc 0)) fun hc =>
           let ⟨c, hc, hcS, hc'⟩ := hc 1; absurd (this _ _) ((c.stable_length_spec hc).left 0 hc')
 
@@ -357,10 +356,10 @@ namespace M4R
           strict_index c m n.succ < m ∧ (∀ l, l ≤ strict_index c m n.succ → c l ≠ c m) ∧
           ∀ k, strict_index c m n ≤ k → k < strict_index c m n.succ → c k = c (strict_index c m n)) := by
             byCases h : next_term c m (strict_index c m n)
-            { apply Or.inr;
+            { apply Or.inr
               have hmin := minimal.min_exists _ h id
               have ⟨⟨h₁, h₂, h₃, h₄⟩, h₅⟩ := choose_spec hmin;
-              rw [def_exists h];
+              rw [def_exists h]
               exact ⟨h₁, h₂, h₃, h₄, fun k hk₁ hk₂ => (Nat.lt_or_eq_of_le hk₁).elim
                 (fun hk₁ => byContradiction fun h => have hkm := Nat.lt_trans hk₂ h₃; absurd (h₅ k ⟨hk₁, Ne.symm h, hkm, fun l hl =>
                   h₄ l (Nat.le_trans hl (Nat.le_of_lt hk₂))⟩) (Nat.not_le.mpr hk₂))
@@ -446,12 +445,12 @@ namespace M4R
           (hn : n < length c m) : strict_index c m n = strict_index c m.succ n := by
             induction n with
             | zero      =>
-              have h0 := mt def_zero_m (neq_m_lt_length hn);
-              have h0' := def_zero_0 fun h' => absurd (hmonotone 0 m.succ (Nat.zero_le _) h' m (Nat.zero_le m) (Nat.le_succ m)).symm h0;
+              have h0 := mt def_zero_m (neq_m_lt_length hn)
+              have h0' := def_zero_0 fun h' => absurd (hmonotone 0 m.succ (Nat.zero_le _) h' m (Nat.zero_le m) (Nat.le_succ m)).symm h0
               exact (def_zero_0 h0).trans h0'.symm
             | succ n ih =>
               have : next_term c m (strict_index c m n) := of_not_not (mt def_not_exists (neq_m_lt_length hn))
-              let ⟨k, hk⟩ := next_term_m_succ hmonotone (ih (Nat.lt_trans (Nat.lt.base n) hn)) this;
+              let ⟨k, hk⟩ := next_term_m_succ hmonotone (ih (Nat.lt_trans (Nat.lt.base n) hn)) this
               exact (def_exists this).trans (hk.trans (def_exists k).symm)
 
         theorem strict_index.ge_length_of_m_eq_m_succ {c : chain α} {m n : Nat} (hmonotone : monotone_chain c)
@@ -493,7 +492,7 @@ namespace M4R
             byCases hl : length c m = 0
             { exact hl ▸ c_zero c m.succ ▸ (length_zero.mp hl).symm }
             { let ⟨k, hk⟩ := Nat.ne_zero_dest hl;
-              rw [hk];
+              rw [hk]
               have hk' : k < length c m := hk ▸ Nat.lt.base k
               have he := lt_length_m_succ hmonotone hk'
               let ⟨n, hn, hnmin⟩ := minimal.min_exists {n | c n = c m} ⟨m, rfl⟩ id
@@ -514,7 +513,7 @@ namespace M4R
           (hm : c m ≠ c m.succ) : strict_index c m.succ (length c m).succ = m.succ :=
             have : ¬ next_term c m.succ (strict_index c m.succ (length c m)) := fun ⟨x, h₁, h₂, h₃, h₄⟩ => absurd (hmonotone (strict_index c m.succ
               (length c m)) m (Nat.le_trans (Nat.le_of_lt h₁) (Nat.le_of_succ_le_succ h₃)) (eq_length_of_m_neq_m_succ hmonotone hm) x (Nat.le_of_lt h₁)
-              (Nat.le_of_succ_le_succ h₃)).symm h₂;
+              (Nat.le_of_succ_le_succ h₃)).symm h₂
             def_not_exists this
 
         theorem strict_index.succ_length_le {c : chain α} (hmonotone : monotone_chain c) (m : Nat) : length c m ≤ length c m.succ :=
@@ -742,7 +741,7 @@ namespace M4R
               let ⟨hd1, hd1n⟩ := h (d' 1) (hdh'.right.right 1) (Ideal.subsetneq.mpr ⟨hdh'.left ▸ hdh'.right.left 0, hd'01⟩)
               have := (Ideal.height_spec hd1).right (d'.shift 1) (chain.shift_strict_stable 1 hd')
                 ⟨rfl, chain.shift_descending 1 hdh'.right.left, chain.shift_prime 1 hdh'.right.right⟩;
-              rw [chain.shift_stable_length 1 hd'] at this;
+              rw [chain.shift_stable_length 1 hd'] at this
               exact Nat.le_trans (Nat.le_succ_pred _) (Nat.succ_le_succ (Nat.le_trans this (hceq ▸ hQm ▸ hmax (Ideal.height hd1)
                 ⟨d' 1, hdh'.right.right 1, Ideal.subsetneq.mpr ⟨hdh'.left ▸ hdh'.right.left 0, hd'01⟩, height_eq_rfl hd1⟩))) }
         exact ⟨⟨this, ⟨d, prefix_chain.strict_stable hcstrict hPc, hdh, hdmax⟩⟩, by
@@ -754,7 +753,7 @@ namespace M4R
     theorem height_le_subset {Q : Ideal α} (hPQ : P ⊆ Q) {n : Nat} (hQn : Q.height_le n) : P.height_le n := by
       byCases hPQeq : P = Q
       { exact hPQeq ▸ hQn }
-      { let ⟨hQfin, hQfinn⟩ := hQn;
+      { let ⟨hQfin, hQfinn⟩ := hQn
         have : P.height_finite := Classical.byContradiction fun h => (of_not_not (mt (Ideal.height_finite_iff_not_infinite hP).mpr h)).elim
           (fun ⟨c, hch, hcstrict⟩ => absurd (prefix_chain.strict_infinite hcstrict (hch.left ▸ Ne.symm hPQeq))
             (hQfin.left (prefix_chain Q c) ⟨rfl, prefix_chain.descending (hch.left ▸ hPQ) hch.right.left,
@@ -995,7 +994,7 @@ namespace M4R
           have hstrict : ∀ I J : Ideal β, I ⊊ J → contraction hf₁ I ≠ contraction hf₁ J ∨ extension f₂.hom I ≠ extension f₂.hom J :=
             fun I J h => by
               byCases he : extension f₂.hom I = extension f₂.hom J
-              { let ⟨x, hxI, hxJ, hxf⟩ := exists_kernel_element hf₂ h he;
+              { let ⟨x, hxI, hxJ, hxf⟩ := exists_kernel_element hf₂ h he
                 let ⟨y, hy⟩ := (hexact ▸ hxf : x ∈ f₁.image);
                 exact Or.inl (fun h => absurd ((hy ▸ (Ideal.ext'.mp h y).mpr : x ∈ J → x ∈ I) hxJ) hxI) }
               { exact Or.inr he }
@@ -1004,7 +1003,7 @@ namespace M4R
             { exact absurd (chain.strictified.strict_infinite h) (hα.left (chain.strictified h) ⟨chain.strictified.base h,
               chain.strictified.descending h (chain.contract_chain.descending hf₁ hc₂)⟩) }
             { simp only [not_forall, not_exists, iff_not_not] at h
-              let ⟨N, hN⟩ := h;
+              let ⟨N, hN⟩ := h
               have hstrict : ∀ n, N ≤ n → chain.extend_chain f₂.hom c n ≠ chain.extend_chain f₂.hom c n.succ :=
                 fun n hn => ((hstrict (c n.succ) (c n) (chain.subsetneq_succ_of_strict_infinite_descending hc₃ hc₂ n)).resolve_left
                   (iff_not_not.mpr ((hN n.succ (Nat.le_trans hn (Nat.le_succ n))).trans (hN n hn).symm))).symm
@@ -1054,7 +1053,7 @@ namespace M4R
                     exact fun h => absurd (extension_injective_of_injective_eq_image hf₁ hf₁' hf₁'' h) this))
             have hc'le : ∀ n, Nα + Nγ ≤ n → c' n = c' (Nα + Nγ) := fun n hn => by
               byCases hnα : Nα = 0
-              { rw [hnα, Nat.zero_add] at hn ⊢;
+              { rw [hnα, Nat.zero_add] at hn ⊢
                 exact (Nat.lt_or_eq_of_le hn).elim
                   (fun hnγ => by
                     rw [hc'α (Nat.not_le.mpr hnγ), hc'γ (Nat.le_refl Nγ)]
@@ -1072,7 +1071,7 @@ namespace M4R
                 exact congrArg (extension f₁.hom) (hNαle (n - Nγ) ((Nat.le_sub_iff_right (Nat.le_trans
                   (Nat.le_add_left Nγ Nα) hn)).mpr hn)) }
             ⟨c', ⟨Nα + Nγ, hc'lt, hc'le⟩,
-              ⟨have : contraction f₂.preserve_mul_left (cγ 0) = 1 := by rw [hbaseγ, contraction_unit];
+              ⟨have : contraction f₂.preserve_mul_left (cγ 0) = 1 := by rw [hbaseγ, contraction_unit]
                 (hc'γ (Nat.zero_le Nγ) ▸ this : c' 0 = 1),
               fun n => (Nat.lt_trichotomy n Nγ).elim
                 (fun hn => by
@@ -1327,7 +1326,7 @@ namespace M4R
             induction m with
             | zero      => exact (mul_one a).symm
             | succ m ih => rw [pow_nat_succ, Semiring.mul_comm _ b, ←mul_assoc, ←hab]; exact ih
-          apply ha;
+          apply ha
           rw [this m, hbm, mul_zero, zero_principal, zero_mul]⟩ }
   end ArtinianRing
 end M4R

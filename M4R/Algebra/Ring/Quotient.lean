@@ -9,13 +9,13 @@ namespace M4R
     theorem QRel.refl [Ring α] (I : Ideal α) (a : α) : QRel I a a := by
       simp only [QRel]; rw [neg_add]; exact I.has_zero
     theorem QRel.symm [Ring α] (I : Ideal α) {a b : α} : QRel I a b → QRel I b a := by
-      simp only [QRel]; intro h;
-      rw [←neg_neg a, ←neg_add_distrib];
+      simp only [QRel]; intro h
+      rw [←neg_neg a, ←neg_add_distrib]
       exact I.neg_closed h
     theorem QRel.trans [Ring α] (I : Ideal α) {a b c : α} : QRel I a b → QRel I b c → QRel I a c := by
-      simp only [QRel]; intro h₁ h₂;
+      simp only [QRel]; intro h₁ h₂
       have := I.add_closed h₁ h₂
-      rw [add_assoc, ←add_assoc b, add_neg, zero_add] at this;
+      rw [add_assoc, ←add_assoc b, add_neg, zero_add] at this
       exact this
 
     instance QEquivalence [Ring α] (I : Ideal α) : Equivalence (QRel I) where
@@ -41,7 +41,7 @@ namespace M4R
       Function.Quotient.map₂ (QRel I) (QRel I) (QRel I)
         (QRel.refl I) (QRel.refl I) (· + ·) (fun a₁ a₂ b₁ b₂ ha hb => by
           simp only [QRel] at *
-          rw [neg_add_distrib, add_comm (-b₁), add_assoc, ←add_assoc (-b₁), add_comm (-b₁), add_assoc, ←add_assoc];
+          rw [neg_add_distrib, add_comm (-b₁), add_assoc, ←add_assoc (-b₁), add_comm (-b₁), add_assoc, ←add_assoc]
           exact I.add_closed ha hb)
 
     def QuotNeg [Ring α] (I : Ideal α) : QClass I → QClass I :=

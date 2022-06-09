@@ -12,8 +12,8 @@ namespace M4R
     coe := MHomomorphism.hom
 
   structure MIsomorphism (α : Type _) (β : Type _) [Monoid α] [Monoid β] extends α →₊ β where
-    inv : β → α
-    left_inv : Function.left_inverse inv hom
+    inv       : β → α
+    left_inv  : Function.left_inverse inv hom
     right_inv : Function.right_inverse inv hom
   infixr:25 " ≅₊ " => MIsomorphism
   instance MIsomorphismFun [Monoid α] [Monoid β] : CoeFun (α ≅₊ β) (fun _ => α → β) where
@@ -190,7 +190,7 @@ namespace M4R
     protected def comp (hab : α →₋ β) (hbc : β →₋ γ) : α →₋ γ where
       toMHomomorphism := hab.toMHomomorphism.comp hbc.toMHomomorphism
       preserve_neg  := fun a => by
-        simp only [MHomomorphism.comp, Function.comp];
+        simp only [MHomomorphism.comp, Function.comp]
         rw [hab.preserve_neg, hbc.preserve_neg]
 
     protected def Identity : α →₋ α where

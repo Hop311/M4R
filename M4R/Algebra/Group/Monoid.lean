@@ -72,9 +72,9 @@ namespace M4R
     }
 
   instance UnorderedListMonoid (α : Type _) : CommMonoid (UnorderedList α) := CommMonoid.construct {
-    add_zero := UnorderedList.append.add_zero
+    add_zero  := UnorderedList.append.add_zero
     add_assoc := UnorderedList.append.assoc
-    add_comm := UnorderedList.append.comm
+    add_comm  := UnorderedList.append.comm
   }
 
 end M4R

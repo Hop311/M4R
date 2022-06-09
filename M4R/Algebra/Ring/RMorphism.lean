@@ -54,8 +54,7 @@ namespace M4R
       preserve_mul    := fun _ _ => rfl
 
     protected theorem preserve_one_of_1_in_image {f : α →* β} (h1 : 1 ∈ Function.image f.hom) : f 1 = 1 := by
-      let ⟨x, hx⟩ := h1
-      rw [←hx, ←mul_one x, f.preserve_mul, hx, one_mul]
+      let ⟨x, hx⟩ := h1; rw [←hx, ←mul_one x, f.preserve_mul, hx, one_mul]
 
     protected theorem preserve_one_of_surjective {f : α →* β} (hf : Function.surjective f.hom) : f 1 = 1 :=
       SMulMap.preserve_one_of_1_in_image (hf 1)
