@@ -51,23 +51,14 @@ namespace M4R
         intro a ha
         have : I ⊊ I + (principal a) :=
           ⟨Ideal.add.subset I (principal a), a, non_zero.mp ha, 0, I.has_zero, a, ⟨1, mul_one a⟩, zero_add a⟩
-        have ⟨i, hi, j, ⟨r, hj⟩, hij⟩ :=
-          is_unit_ideal.mp (maximal_neq hI this)
-        exact ⟨r, Quot.sound (by
-            simp only [QRel]
-            rw [hj, add_comm, ←sub_right.mp hij]
-            exact hi)⟩
+        have ⟨i, hi, j, ⟨r, hj⟩, hij⟩ := is_unit_ideal.mp (maximal_neq hI this)
+        exact ⟨r, Quot.sound (by simp only [QRel]; rw [hj, add_comm, ←sub_right.mp hij]; exact hi)⟩
     theorem maximal_has_inverses' [Ring α] {I : Ideal α} (hI : I.is_maximal) :
       ∀ {a : QClass I}, a ≠ 0 → ∃ r : QClass I, a * r = 1 :=
         @Quotient.ind α (QSetoid I) (fun (a : QClass I) => a ≠ 0 → ∃ r : QClass I, a * r = 1) (fun _ ha =>
-          have ⟨r, hr⟩ := maximal_has_inverses hI ha
-          ⟨toQuotient I r, hr⟩)
-    noncomputable def maximal_inv [Ring α] {I : Ideal α} (hI : I.is_maximal) : {a : QClass I} → a ≠ 0 → QClass I :=
-      fun ha => Classical.choose (maximal_has_inverses' hI ha)
-
+          have ⟨r, hr⟩ := maximal_has_inverses hI ha; ⟨toQuotient I r, hr⟩)
     theorem maximal_is_Field [Ring α] {I : Ideal α} (hI : I.is_maximal) : Ring.is_Field (QClass I) :=
-      ⟨ProperIdeal_is_NonTrivial hI.left, fun hx => ⟨maximal_inv hI hx,
-        Classical.choose_spec (maximal_has_inverses' hI hx)⟩⟩
+      ⟨ProperIdeal_is_NonTrivial hI.left, maximal_has_inverses' hI⟩
 
     noncomputable instance MaximalField [Ring α] {I : Ideal α} (hI : I.is_maximal) : Field (QClass I) :=
       (maximal_is_Field hI).toField
@@ -109,7 +100,7 @@ namespace M4R
         intro r s hrs
         apply Classical.byContradiction
         intro h'
-        simp only [not_or_iff_and_not] at h'
+        rw [not_or_iff_and_not] at h'
         exact non_zero.mp (h.right (non_zero.mpr h'.left) (non_zero.mpr h'.right)) hrs⟩
 
     theorem maximal_is_prime [Ring α] {I : Ideal α} (h : I.is_maximal) : I.is_prime :=
@@ -117,25 +108,23 @@ namespace M4R
 
     theorem contraction_prime [Ring α] [Ring β] (f : α →ᵣ₁ β) {P : Ideal β} (hP : P.is_prime) :
       (contractionᵣ₁ f P).is_prime :=
-        ⟨contraction.proper_of_preserve_one f.preserve_mul_left f.preserve_one hP.left,
+        ⟨contraction.proper_of_preserve_one f.preserve_mul_right f.preserve_one hP.left,
           fun r s (h : _ ∈ P) => by rw [f.preserve_mul] at h; exact hP.right _ _ h⟩
 
     theorem quotient_extension_maximal [Ring α] {I : Ideal α} {P : Ideal α} (hP₁ : P.is_maximal) (hP₂ : I ⊆ P) :
       (extension (natural_hom I).hom P).is_maximal :=
-        ⟨quotient_extension_proper hP₂ hP₁.left,
-        by
-          intro J hJ
-          have : P ⊆ contractionᵣ₁ (natural_hom I) J :=
-            fun x hx => hJ (from_set.contains_mem ⟨x, hx, rfl⟩)
-          exact Or.imp (fun h => contraction_extension_eq_of_surjective (natural_hom I).preserve_mul_left
-            (natural_hom.surjective I) J ▸ congrArg (extension (natural_hom I).hom ·) h)
-            (fun h => contraction_extension_eq_of_surjective (natural_hom I).preserve_mul_left
-              (natural_hom.surjective I) J ▸ extension_unit_of_surjective (natural_hom.surjective I)
-              ▸ congrArg (extension (natural_hom I).hom ·) h) (hP₁.right this)⟩
+        ⟨quotient_extension_proper hP₂ hP₁.left, by
+        intro J hJ
+        have : P ⊆ contractionᵣ₁ (natural_hom I) J := fun x hx => hJ (from_set.contains_mem ⟨x, hx, rfl⟩)
+        exact Or.imp (fun h => contraction_extension_eq_of_surjective (natural_hom I).preserve_mul_right
+          (natural_hom.surjective I) J ▸ congrArg (extension (natural_hom I).hom ·) h)
+          (fun h => contraction_extension_eq_of_surjective (natural_hom I).preserve_mul_right
+            (natural_hom.surjective I) J ▸ extension_unit_of_surjective (natural_hom.surjective I)
+            ▸ congrArg (extension (natural_hom I).hom ·) h) (hP₁.right this)⟩
 
     theorem quotient_contraction_maximal [Ring α] {I : Ideal α} {M : Ideal (QClass I)} (hM : M.is_maximal) :
       (contractionᵣ₁ (natural_hom I) M).is_maximal :=
-        ⟨contraction.proper_of_preserve_one (natural_hom I).preserve_mul_left (natural_hom I).preserve_one hM.left,
+        ⟨contraction.proper_of_preserve_one (natural_hom I).preserve_mul_right (natural_hom I).preserve_one hM.left,
         fun hJ => by
           have hIJ := Subset.trans (quotient_contraction_contains M) hJ
           rw [←quotient_extension_contraction hIJ] at hJ
@@ -145,7 +134,7 @@ namespace M4R
 
     theorem quotient_of_contraction_maximal [Ring α] {I : Ideal α} {M : Ideal (QClass I)}
       (hM : (contractionᵣ₁ (natural_hom I) M).is_maximal) : M.is_maximal :=
-        contraction_extension_eq_of_surjective (natural_hom I).preserve_mul_left (natural_hom.surjective I) M ▸
+        contraction_extension_eq_of_surjective (natural_hom I).preserve_mul_right (natural_hom.surjective I) M ▸
           quotient_extension_maximal hM (quotient_contraction_contains _)
 
     theorem quotient_extension_prime [Ring α] {I P : Ideal α} (hP : P.is_prime) (hIP : I ⊆ P) :

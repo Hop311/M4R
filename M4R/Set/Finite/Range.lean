@@ -116,7 +116,7 @@ namespace List
     simp only [range_eq_range', nodup_range']
 
   def antidiagonal (n : Nat) : List (Nat × Nat) :=
-    (range (n+1)).map (fun i => (i, n - i))
+    (range (n+1)).map fun i => (i, n - i)
 
   theorem nodup_antidiagonal (n : Nat) : nodup (antidiagonal n) :=
     nodup_map_on (fun _ _ _ _ hxy => by simp only [congrArg Prod.fst hxy]) (nodup_range (n+1))

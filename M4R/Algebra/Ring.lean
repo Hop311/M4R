@@ -18,5 +18,6 @@ import M4R.Algebra.Ring.IdealZorn
 import M4R.Algebra.Ring.Radical
 import M4R.Algebra.Ring.Localisation
 import M4R.Algebra.Ring.Matsumura
-import M4R.Algebra.Ring.Noetherian
+import M4R.Algebra.Ring.IdealChain
+import M4R.Algebra.Ring.ChainProperties
 import M4R.Algebra.Ring.LocalRing

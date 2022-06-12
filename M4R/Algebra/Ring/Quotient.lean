@@ -54,8 +54,8 @@ namespace M4R
         (QRel.refl I) (QRel.refl I) (· * ·) (fun a₁ a₂ b₁ b₂ ha hb => by
           simp only [QRel] at *
           have := I.add_closed (I.mul_closed b₁ ha) (I.mul_closed a₂ hb)
-          rw [mul_distrib_left, mul_distrib_left, NCRing.mul_neg, mul_comm, mul_comm b₁, add_assoc, ←add_assoc (a₂ * b₁),
-            NCRing.mul_neg, add_neg, zero_add] at this; exact this)
+          rw [mul_distrib_left, mul_distrib_left, NCRing.mul_neg, mul_comm, mul_comm b₁, add_assoc,
+            ←add_assoc (a₂ * b₁), NCRing.mul_neg, add_neg, zero_add] at this; exact this)
   end QuotientRing
 
   open QuotientRing
@@ -196,7 +196,7 @@ namespace M4R
         exact this.symm)
 
     theorem quotient_zero_iso (α : Type _) [Ring α] : α ≅ᵣ QClass (0 : Ideal α) where
-      toRMulMap    := (natural_hom 0).toRMulMap
+      toRMulMap       := (natural_hom 0).toRMulMap
       inv             := quotient_zero.inv_map
       left_inv        := fun x => @Quot.ind _ _ (fun y : QClass 0 => ∀ x, y = natural_hom 0 x →
         quotient_zero.inv_map y = x) (fun _ _ h => h ▸ rfl) (natural_hom 0 x) x rfl
@@ -265,7 +265,7 @@ namespace M4R
     theorem ideal_quotient_map.def [Ring α] (I : Ideal α) (a x : α) :
       ideal_quotient_map I a (natural_hom (ideal_quotient I a) x) = natural_hom I (a * x) := rfl
 
-    theorem ideal_quotient_map.preserve_mul_left : preserve_mul_left (ideal_quotient_map I a) :=
+    theorem ideal_quotient_map.preserve_mul_right : preserve_mul_right (ideal_quotient_map I a).toMHomomorphism :=
       fun x y => @Quotient.ind₂ _ _ (QSetoid (ideal_quotient I a)) (QSetoid (ideal_quotient I a))
         (fun x y : QClass (ideal_quotient I a) => ∃ c : QClass I, ideal_quotient_map I a (x * y) =
         c * ideal_quotient_map I a y) (fun x y => ⟨natural_hom I x, (by rw [mul_left_comm, (natural_hom I).preserve_mul] :
@@ -286,13 +286,13 @@ namespace M4R
               simp only [toQuotient.def₁, natural_hom.def, ideal_quotient_map.def]
               rw [←(natural_hom I).preserve_mul, mul_left_comm]; rfl⟩))
 
-    theorem ideal_quotient_map.extension_contraction_eq : ∀ J, contraction (ideal_quotient_map.preserve_mul_left I a)
+    theorem ideal_quotient_map.extension_contraction_eq : ∀ J, contraction (ideal_quotient_map.preserve_mul_right I a)
       (extension (ideal_quotient_map I a).hom J) = J :=
-        extension_contraction_eq_of_injective_eq_image (ideal_quotient_map.preserve_mul_left I a)
+        extension_contraction_eq_of_injective_eq_image (ideal_quotient_map.preserve_mul_right I a)
           (ideal_quotient_map.injective I a) (ideal_quotient_map.extension_eq_image I a)
 
     theorem ideal_quotient_map.extension_injective : Function.injective (extension (ideal_quotient_map I a).hom) :=
-      extension_injective_of_extension_contraction (ideal_quotient_map.preserve_mul_left I a)
+      extension_injective_of_extension_contraction (ideal_quotient_map.preserve_mul_right I a)
         (ideal_quotient_map.extension_contraction_eq I a)
 
     theorem ideal_quotient_map.image : (ideal_quotient_map I a).image.subset = (principal (natural_hom I a)).subset :=

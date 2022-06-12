@@ -1,4 +1,4 @@
-import M4R.Algebra.Ring.Noetherian
+import M4R.Algebra.Ring.ChainProperties
 
 namespace M4R
   open Semiring localisation Ideal QuotientRing
@@ -89,7 +89,7 @@ namespace M4R
           have h₂ : Q'.is_prime := Ideal.contraction_prime _ hQ
           have := quotient_extension_maximal m_max (subset_m hP.right_proper)
           rw [←hP.right.right h₂ h₁ (subset_m h₂.left)] at this
-          exact contraction_extension_eq_of_surjective (QuotientRing.natural_hom (principal a)).preserve_mul_left
+          exact contraction_extension_eq_of_surjective (QuotientRing.natural_hom (principal a)).preserve_mul_right
             (natural_hom.surjective (principal a)) Q ▸ this
         have : ∀ Q Q' : Ideal α, Q.is_prime → Q'.is_prime → Q' ⊊ Q → Q ⊊ m → False := fun Q Q' hQ hQ' hQ'Q hQm => by
           have haQ : a ∉ Q := fun h => absurd (hP.right.right hQ (principal_in h) hQm.left) (Ideal.subsetneq.mp hQm).right
@@ -122,13 +122,13 @@ namespace M4R
             rw [jacobson_radical_eq_m, localisation_at.m_def]; exact Subset.refl m
           have h₂ : localiseₚ hQ Q ^ N.succ = localiseₚ hQ Q ^ N.succ.succ :=
             ((extension_pow (natural_homₚ hQ).toRMulMap Q N.succ_ne_zero).symm.trans ((extension_contraction_extension
-              (natural_homₚ hQ).preserve_mul_left (Q ^ N.succ)).trans ((congrArg (localiseₚ hQ) this).trans (extension_contraction_extension
-              (natural_homₚ hQ).preserve_mul_left (Q ^ N.succ.succ)).symm))).trans (extension_pow (natural_homₚ hQ).toRMulMap Q N.succ.succ_ne_zero)
+              (natural_homₚ hQ).preserve_mul_right (Q ^ N.succ)).trans ((congrArg (localiseₚ hQ) this).trans (extension_contraction_extension
+              (natural_homₚ hQ).preserve_mul_right (Q ^ N.succ.succ)).symm))).trans (extension_pow (natural_homₚ hQ).toRMulMap Q N.succ.succ_ne_zero)
           conv at h₂ => rhs rw [pow_nat_succ, mul_comm]
           have := congrArg Ideal.radical (Ring.nakayama (NoetherianRing.ideal_finitely_generated _) h₁ h₂)
           rw [radical_pow_of_prime (localisation_at.prime hQ) N.succ N.succ_ne_zero, Ring.nil_radical.def] at this
           have : delocaliseₚ hQ (localiseₚ hQ Q) ⊆ delocaliseₚ hQ (localiseₚ hQ Q') := contraction.subset
-            (natural_homₚ hQ).preserve_mul_left (this ▸ Ring.nil_radical.eq_prime_intersection (localisationₚ hQ)
+            (natural_homₚ hQ).preserve_mul_right (this ▸ Ring.nil_radical.eq_prime_intersection (localisationₚ hQ)
             ▸ Ideal.sIntersection.contains (localise_ideal.prime hQ' (PrimeComp.disjoint_subset hQ hQ'Q.left)))
           exact absurd (Ideal.antisymm hQ'Q.left (localise_ideal.prime_loc_deloc hQ (PrimeComp.disjoint_subset hQ (Subset.refl Q))
             ▸ localise_ideal.prime_loc_deloc hQ' (PrimeComp.disjoint_subset hQ hQ'Q.left) ▸ this)) (Ideal.subsetneq.mp hQ'Q).right
@@ -171,7 +171,7 @@ namespace M4R
                     (Ideal.subsetneq.mpr ⟨subset_m this.left, fun h => absurd (quotient_of_contraction_maximal
                     (h ▸ m_max)) h'⟩)) (add.subset' _ _ (generator_in_principal g))) hgQ
                 have : Ring.MaxSpec (QClass (Q + principal g)) = Set.singleton (extension (QuotientRing.natural_hom (Q + principal g)).hom m) :=
-                  Set.ext.mp fun I => ⟨fun hI => contraction_extension_eq_of_surjective (QuotientRing.natural_hom (Q + principal g)).preserve_mul_left
+                  Set.ext.mp fun I => ⟨fun hI => contraction_extension_eq_of_surjective (QuotientRing.natural_hom (Q + principal g)).preserve_mul_right
                     (natural_hom.surjective (Q + principal g)) I ▸ congrArg (extension (QuotientRing.natural_hom (Q + principal g)).hom ·)
                     (maximal_is_m (quotient_contraction_maximal hI)), fun hI => hI ▸ quotient_extension_maximal m_max (add.subset_add hQm.left
                     (principal_in (hP.right.left (from_set.contains_mem hgf))))⟩
@@ -195,7 +195,7 @@ namespace M4R
                       have : f.toSet ⊆ (contractionᵣ₁ (QuotientRing.natural_hom (from_set d.toSet)) J).subset := fun x hxf => by
                         byCases hxg : x = g
                         { rw [←extension_principal] at hgJ
-                          apply contraction.subset (QuotientRing.natural_hom (from_set d.toSet)).preserve_mul_left hgJ;
+                          apply contraction.subset (QuotientRing.natural_hom (from_set d.toSet)).preserve_mul_right hgJ;
                           rw [←natural_hom.extension_add_I, hxg]
                           exact extension_contraction _ _ (add.subset' (from_set d.toSet) (principal g) (generator_in_principal g)) }
                         { have := Classical.choose_spec (Classical.choose_spec (hxQg x hxf)).right;
@@ -204,9 +204,9 @@ namespace M4R
                               (quotient_contraction_contains J (from_set.contains_mem (UnorderedList.mem_to_finset.mpr
                               (UnorderedList.mem_pmap.mpr ⟨x, Finset.mem_erase.mpr ⟨hxg, hxf⟩, rfl⟩))))
                             (Subset.trans (extension_principal _ g ▸ extension_contraction _ _) (contraction.subset (QuotientRing.natural_hom
-                              (from_set d.toSet)).preserve_mul_left hgJ) this.left)) }
+                              (from_set d.toSet)).preserve_mul_right hgJ) this.left)) }
                       have := hP.right.right (contraction_prime _ hJ) (from_set.ideal_contained this) (quotient_extension_contraction
-                        (Subset.trans hdQ hQm.left) ▸ contraction.subset (QuotientRing.natural_hom (from_set d.toSet)).preserve_mul_left hJm)
+                        (Subset.trans hdQ hQm.left) ▸ contraction.subset (QuotientRing.natural_hom (from_set d.toSet)).preserve_mul_right hJm)
                       exact contraction_extension_eq_of_surjective _ (natural_hom.surjective _) J ▸
                         congrArg (extension (QuotientRing.natural_hom (from_set d.toSet)).hom ·) this⟩
                 rw [quotient_LocalRing.m_def hdproper] at this
@@ -250,7 +250,7 @@ namespace M4R
             have hf' : f'.length ≤ f.length := f.length_map (natural_homₚ hP.left).hom ▸
               (f.map (natural_homₚ hP.left).hom).to_finset_length_le
             have : m.minimal_prime_ideal_of (from_set f'.toSet) := by
-              exact extension_from_finset (natural_homₚ hP.left).preserve_mul_left f ▸ m_def hP.left
+              exact extension_from_finset (natural_homₚ hP.left).preserve_mul_right f ▸ m_def hP.left
                 ▸ minimal_prime_localisation hP (PrimeComp.disjoint hP.left)
             have := NoetherianLocalRing.local_krull_height_theorem f' this (fun m hm => ih m (hfn ▸ Nat.lt_of_lt_of_le hm hf'))
             P.height_le_trans hf' (local_height_le hP.left (PrimeComp.disjoint hP.left) f'.length (m_def hP.left ▸ this :

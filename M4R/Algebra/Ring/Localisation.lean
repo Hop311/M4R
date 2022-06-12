@@ -8,7 +8,7 @@ namespace M4R
     subset     : Set α
     has_one    : 1 ∈ subset
     mul_closed : ∀ {a b : α}, a ∈ subset → b ∈ subset → a * b ∈ subset
-  instance MultiplicativeSet.MultiplicativeSetMem [Ring α]: Mem α (MultiplicativeSet α) where mem := fun x I => x ∈ I.subset
+  instance MultiplicativeSet.MultiplicativeSetMem [Ring α]: Mem α (MultiplicativeSet α) where mem := fun x S => x ∈ S.subset
 
   theorem MultiplicativeSet.disjoint_ideal_proper [Ring α] {S : MultiplicativeSet α}
     {I : Ideal α} (hIS : Set.disjoint I.subset S.subset) : I.proper_ideal := fun h =>
@@ -31,7 +31,7 @@ namespace M4R
   theorem PrimeComp.disjoint_subset [Ring α] {P : Ideal α} (hP : P.is_prime) {I : Ideal α} (hIP : I ⊆ P) : Set.disjoint I.subset (PrimeComp hP).subset :=
     Set.ext.mp fun x => ⟨fun hx => absurd (hIP hx.left) hx.right, fun _ => by contradiction⟩
 
-  abbrev frac [Ring α] (S : MultiplicativeSet α) := α × S.subset
+  def frac [Ring α] (S : MultiplicativeSet α) := α × ↑S.subset
 
   namespace frac
     variable [Ring α] {S : MultiplicativeSet α} (f : frac S)
@@ -77,8 +77,6 @@ namespace M4R
     abbrev of_frac' (r : α) {s : α} (hs : s ∈ S) : localisation S :=
       of_frac (frac.mk r hs)
 
-    protected theorem frac_def (x : frac S) : Quot.mk Setoid.r x = of_frac x := rfl
-
     theorem equiv {x y : frac S} : of_frac x = of_frac y ↔
       ∃ s ∈ S, s * x.num * y.denom = s * y.num * x.denom :=
         ⟨Quotient.exact, @Quotient.sound (frac S) (frac.setoid S) x y⟩
@@ -104,15 +102,12 @@ namespace M4R
             sa * sb * (a₁.num * b₁.denom + b₁.num * a₁.denom) * (a₂.denom * b₂.denom)
               = sa * sb * (a₂.num * b₂.denom + b₂.num * a₂.denom) * (a₁.denom * b₁.denom))⟩
     protected instance add_inst : Add (localisation S) where add := localisation.add
-    protected theorem add_def (x y : frac S) : of_frac x + of_frac y =
-      of_frac' (x.num * y.denom + y.num * x.denom) (S.mul_closed x.denom_in_S y.denom_in_S) := rfl
 
     protected def neg : localisation S → localisation S :=
       Function.Quotient.map _ _ (fun f => frac.mk (-f.num) f.denom_in_S)
         fun a₁ a₂ ⟨s, hsS, hse⟩ => ⟨s, hsS, (by simp only [mul_neg, neg_mul, hse] :
           s * -a₁.num * a₂.denom = s * -a₂.num * a₁.denom)⟩
     protected instance neg_inst : Neg (localisation S) where neg := localisation.neg
-    protected theorem neg_def (x : frac S) : - of_frac x = of_frac' (-x.num) x.denom_in_S := rfl
 
     protected def mul : localisation S → localisation S → localisation S :=
       Function.Quotient.map₂ _ _ _ (frac.setoid S).refl (frac.setoid S).refl
@@ -125,8 +120,6 @@ namespace M4R
               sa * sb * (frac.num a₁ * frac.num b₁) * (frac.denom a₂ * frac.denom b₂) =
                 sa * sb * (frac.num a₂ * frac.num b₂) * (frac.denom a₁ * frac.denom b₁))⟩
     protected instance mul_inst : Mul (localisation S) where mul := localisation.mul
-    protected theorem mul_def (x y : frac S) : of_frac x * of_frac y =
-      of_frac' (x.num * y.num) (S.mul_closed x.denom_in_S y.denom_in_S) := rfl
 
     protected instance ring (S : MultiplicativeSet α) : Ring (localisation S) := Ring.construct {
       add_zero := Quot.ind fun _ => Quot.sound ⟨1, S.has_one, by
@@ -154,7 +147,7 @@ namespace M4R
     protected theorem trivial : (1 : localisation S) = (0 : localisation S) ↔ 0 ∈ S :=
       ⟨fun h => by
         rw [localisation.one_def, localisation.zero_def] at h
-        let ⟨s, hs, he⟩ := equiv'.mp h
+        let ⟨s, hs, he⟩ := equiv.mp h
         simp only [mul_one, mul_zero] at he
         exact he ▸ hs,
       fun h => by
@@ -175,9 +168,8 @@ namespace M4R
     theorem natural_hom_def (S : MultiplicativeSet α) (r : α) : natural_hom S r = of_frac' r S.has_one := rfl
 
     theorem natural_hom_factor {S : MultiplicativeSet α} (r : α) {s : α} (hs : s ∈ S) :
-      of_frac' r hs = of_frac' 1 hs * natural_hom S r := by
-        rw [natural_hom_def, localisation.mul_def]
-        exact equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]⟩
+      of_frac' r hs = of_frac' 1 hs * natural_hom S r :=
+        equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]⟩
 
     noncomputable def localise_ideal (S : MultiplicativeSet α) : Ideal α → Ideal (localisation S) :=
       Ideal.extension (natural_hom S)
@@ -209,9 +201,7 @@ namespace M4R
 
     theorem is_unit {S : MultiplicativeSet α} {r s : α} (hr : r ∈ S) (hs : s ∈ S) :
       isUnit (of_frac' r hs) :=
-        ⟨of_frac' s hr, by
-          rw [localisation.mul_def, localisation.one_def]
-          exact equiv'.mpr ⟨1, S.has_one, by simp only [mul_one, one_mul]; exact mul_comm r s⟩⟩
+        ⟨of_frac' s hr, equiv.mpr ⟨1, S.has_one, by simp only [mul_one, one_mul]; exact mul_comm r s⟩⟩
 
     theorem localise_ideal.proper {S : MultiplicativeSet α} {I : Ideal α} :
       (localise_ideal S I).proper_ideal ↔ Set.disjoint I.subset S.subset :=
@@ -269,9 +259,8 @@ namespace M4R
           fun x hx =>
             let ⟨r, s, hs, he⟩ := exists_frac x
             have : r ∈ delocalise_ideal S I :=
-              have : natural_hom S r = of_frac' s S.has_one * of_frac' r hs := by
-                rw [natural_hom_def, localisation.mul_def]
-                exact equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]; exact mul_comm r s⟩
+              have : natural_hom S r = of_frac' s S.has_one * of_frac' r hs :=
+                equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]; exact mul_comm r s⟩
               (this ▸ I.mul_closed _ (he ▸ hx) : _ ∈ I)
             he ▸ localise_ideal.contains_mul this hs
 
@@ -333,7 +322,7 @@ namespace M4R
         rw [h₁, ←h₂, h₃]; exact localise_ideal.prime_loc_deloc hP (PrimeComp.disjoint hP)
 
       theorem descending [Ring α] {P : Ideal α} (hP : P.is_prime) (n : Nat) : symbolic_power hP n.succ ⊆ symbolic_power hP n :=
-        Ideal.contraction.subset (natural_hom (PrimeComp hP)).preserve_mul_left (Ideal.extension.subset _ (Ideal.product.pow_succ_subset P n))
+        Ideal.contraction.subset (natural_hom (PrimeComp hP)).preserve_mul_right (Ideal.extension.subset _ (Ideal.product.pow_succ_subset P n))
 
       theorem subset_base [Ring α] {P : Ideal α} (hP : P.is_prime) {n : Nat} (hn : n ≠ 0) : symbolic_power hP n ⊆ P := by
         have := Ideal.radical.sub_self (symbolic_power hP n); rw [rad_eq hP hn] at this; exact this

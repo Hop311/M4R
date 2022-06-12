@@ -1017,18 +1017,16 @@ namespace M4R
       fun h => Ideal.antisymm (from_set.zero_set _ ▸ from_set.subset (Subset.trans (Function.image'_subset f h)
         fun x ⟨y, hy, hyx⟩ => hyx ▸ hy)) (zero_ideal_in _)⟩
 
-    abbrev preserve_mul_left [Ring α] [Ring β] (f : α →₋ β) : Prop := ∀ a b, ∃ c, f (a * b) = c * f b
+    abbrev preserve_mul_right [Ring α] [Ring β] (f : α →₊ β) : Prop := ∀ a b, ∃ c, f (a * b) = c * f b
   end Ideal
 
-    open Ideal
-
-    theorem RMulMap.preserve_mul_left [Ring α] [Ring β] (f : α →ᵣ β) : preserve_mul_left f.toGHomomorphism :=
-      fun a b => ⟨f a, f.preserve_mul a b⟩
-    theorem RHomomorphism.preserve_mul_left [Ring α] [Ring β] (f : α →ᵣ₁ β) : preserve_mul_left f.toGHomomorphism :=
-      f.toRMulMap.preserve_mul_left
+  theorem RMulMap.preserve_mul_right [Ring α] [Ring β] (f : α →ᵣ β) : Ideal.preserve_mul_right f.toMHomomorphism :=
+    fun a b => ⟨f a, f.preserve_mul a b⟩
+  theorem RHomomorphism.preserve_mul_right [Ring α] [Ring β] (f : α →ᵣ₁ β) : Ideal.preserve_mul_right f.toMHomomorphism :=
+    f.toRMulMap.preserve_mul_right
 
   namespace Ideal
-    variable [Ring α] [Ring β] {f : α →₋ β} (hf : preserve_mul_left f)
+    variable [Ring α] [Ring β] {f : α →₊ β} (hf : preserve_mul_right f)
 
     def contraction (I : Ideal β) : Ideal α where
       subset     := Function.inv_image f.hom I.subset
@@ -1036,7 +1034,7 @@ namespace M4R
       add_closed := fun ha hb => (f.preserve_add _ _ ▸ I.add_closed ha hb : _ ∈ I)
       mul_closed := fun a b hb => let ⟨c, hc⟩ := hf a b; (hc ▸ I.mul_closed c hb : f (a * b) ∈ I)
 
-    def contractionᵣ (f : α →ᵣ β) : Ideal β → Ideal α := contraction f.preserve_mul_left
+    def contractionᵣ (f : α →ᵣ β) : Ideal β → Ideal α := contraction f.preserve_mul_right
     def contractionᵣ₁ (f : α →ᵣ₁ β) : Ideal β → Ideal α := contractionᵣ f.toRMulMap
 
     theorem contraction_unit : contraction hf 1 = 1 := is_unit_ideal.mpr trivial
@@ -1106,17 +1104,17 @@ namespace M4R
         extension_eq_image_of_left_surjective f.toGHomomorphism (fun x y' =>
           let ⟨x', hx'⟩ := hf x; ⟨x', hx' ▸ f.preserve_mul x' y'⟩) I
 
-    theorem extension_contraction_eq_of_injective_eq_image {f : α →₋ β} (hf₁ : preserve_mul_left f)
-      (hf₂ : Function.injective f.hom) (hf₃ : ∀ I, (extension f I).subset = Function.image' f.hom I.subset) (I : Ideal α) :
-        contraction hf₁ (extension f I) = I :=
+    theorem extension_contraction_eq_of_injective_eq_image (hf₁ : Function.injective f.hom)
+      (hf₂ : ∀ I, (extension f I).subset = Function.image' f.hom I.subset) (I : Ideal α) :
+        contraction hf (extension f I) = I :=
           Ideal.antisymm (fun x hx =>
-            let ⟨y, hyI, hye⟩ := (Set.ext.mpr (hf₃ I) _).mp hx
-            hf₂ hye ▸ hyI) (extension_contraction _ I)
+            let ⟨y, hyI, hye⟩ := (Set.ext.mpr (hf₂ I) _).mp hx
+            hf₁ hye ▸ hyI) (extension_contraction _ I)
 
-    theorem extension_injective_of_injective_eq_image {f : α →₋ β} (hf₁ : preserve_mul_left f)
-      (hf₂ : Function.injective f.hom) (hf₃ : ∀ I, (extension f I).subset = Function.image' f.hom I.subset) :
+    theorem extension_injective_of_injective_eq_image (hf₁ : Function.injective f.hom)
+      (hf₂ : ∀ I, (extension f I).subset = Function.image' f.hom I.subset) :
         Function.injective (extension f.hom) :=
-          extension_injective_of_extension_contraction hf₁ (extension_contraction_eq_of_injective_eq_image hf₁ hf₂ hf₃)
+          extension_injective_of_extension_contraction hf (extension_contraction_eq_of_injective_eq_image hf hf₁ hf₂)
 
     theorem extension_eq_image_of_isomorphism (f : α ≅ᵣ β) : ∀ I, (extension f I).subset = Function.image' f.hom I.subset :=
       extension_eq_image_of_left_surjective f.toGHomomorphism
@@ -1125,7 +1123,7 @@ namespace M4R
           ⟨z, by rw [←hz, f.preserve_mul]⟩)
 
     theorem extension_contraction_eq_of_isomorphism (f : α ≅ᵣ β) : ∀ I, contractionᵣ f.toRMulMap (extension f I) = I :=
-      extension_contraction_eq_of_injective_eq_image f.preserve_mul_left
+      extension_contraction_eq_of_injective_eq_image f.preserve_mul_right
         f.toMIsomorphism.to_injective (extension_eq_image_of_isomorphism f)
 
     theorem exists_kernel_element {f : α →ᵣ β} (hf : Function.surjective f.hom) {I J : Ideal α}

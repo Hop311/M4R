@@ -114,7 +114,7 @@ namespace M4R
         fun ⟨n, hn, hnx⟩ => ⟨n, hn, f.preserve_pow x n ▸ hnx⟩⟩
 
     theorem contraction_is_primary [Ring β] (f : α →ᵣ₁ β) {I : Ideal β} (hI : I.is_primary) : (contractionᵣ₁ f I).is_primary :=
-      ⟨contraction.proper_of_preserve_one f.preserve_mul_left f.preserve_one hI.left, fun a b hab =>
+      ⟨contraction.proper_of_preserve_one f.preserve_mul_right f.preserve_one hI.left, fun a b hab =>
         (hI.right (f a) (f b) (f.preserve_mul a b ▸ hab)).imp_right (fun h => contraction_radical f I ▸ h)⟩
 
     theorem radical_prime_of_primary {I : Ideal α} (hI : I.is_primary) : I.radical.is_prime :=
