@@ -21,7 +21,10 @@ namespace M4R
     instance PredToSet : Coe (α → Prop) (Set α) where coe := id
     instance SetToSubtype {α : Type u} : CoeSort (Set α) (Type u) where coe := Subtype
 
-    def inclusion {s : Set α} : ↑s → α := fun x => x.val
+    protected def Empty : Set α := fun _ => False
+    protected def Universal : Set α := fun _ => True
+    instance EmptySetEmptyCollection : EmptyCollection (Set α) where
+      emptyCollection := Set.Empty
 
     abbrev toSet (b : β) [Mem α β] : Set α := { x | x ∈ b }
 
@@ -43,12 +46,6 @@ namespace M4R
 
     protected def equivalent (s₁ s₂ : Set α) : Prop := ∀ a, a ∈ s₁ ↔ a ∈ s₂
 
-    protected def Empty : Set α := fun _ => False
-    protected def Universal : Set α := fun _ => True
-
-    instance EmptySetEmptyCollection : EmptyCollection (Set α) where
-      emptyCollection := Set.Empty
-
     def disjoint (s₁ s₂ : Set α) : Prop := s₁ ∩ s₂ = ∅
 
     class SUnion (α : Type u) where
@@ -69,10 +66,4 @@ namespace M4R
   end Set
 
   def MultiProd {ι : Type _} (fι : ι → Type _) := ∀ i, fι i
-
-  namespace MultiProd
-    variable {ι : Type _} (fι : ι → Type _)
-
-    def proj (i : ι) : MultiProd fι → fι i := (· i)
-  end MultiProd
 end M4R

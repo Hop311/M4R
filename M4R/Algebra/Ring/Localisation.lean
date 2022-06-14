@@ -167,7 +167,7 @@ namespace M4R
 
     theorem natural_hom_def (S : MultiplicativeSet α) (r : α) : natural_hom S r = of_frac' r S.has_one := rfl
 
-    theorem natural_hom_factor {S : MultiplicativeSet α} (r : α) {s : α} (hs : s ∈ S) :
+    theorem natural_hom_factor (r : α) {s : α} (hs : s ∈ S) :
       of_frac' r hs = of_frac' 1 hs * natural_hom S r :=
         equiv'.mpr ⟨1, S.has_one, by simp only [one_mul, mul_one]⟩
 
@@ -177,33 +177,32 @@ namespace M4R
     def delocalise_ideal (S : MultiplicativeSet α) : Ideal (localisation S) → Ideal α :=
       Ideal.contractionᵣ₁ (natural_hom S)
 
-    theorem localise_ideal.contains_mul {S : MultiplicativeSet α} {I : Ideal α} {r s : α} (hr : r ∈ I) (hs : s ∈ S) :
+    theorem localise_ideal.contains_mul {I : Ideal α} {r s : α} (hr : r ∈ I) (hs : s ∈ S) :
       of_frac' r hs ∈ localise_ideal S I :=
         natural_hom_factor r hs ▸ Ideal.from_set.contains_mem_mul _ ⟨r, hr, rfl⟩
 
-    theorem exists_frac {S : MultiplicativeSet α} (x : localisation S) : ∃ (r s : α) (hs : s ∈ S), x = of_frac' r hs :=
+    theorem exists_frac (x : localisation S) : ∃ (r s : α) (hs : s ∈ S), x = of_frac' r hs :=
       @Quot.ind _ _ (fun x : localisation S => ∃ (r s : α) (hs : s ∈ S), x = of_frac' r hs)
         (fun f => ⟨f.num, f.denom, f.denom_in_S, equiv.mpr ⟨1, S.has_one, rfl⟩⟩) x
 
-    protected theorem localise_ideal.exists_frac {S : MultiplicativeSet α} {I : Ideal α} {x : localisation S} :
-      x ∈ localise_ideal S I ↔ ∃ (r s : α) (hr : r ∈ I) (hs : s ∈ S), x = of_frac' r hs :=
-        ⟨fun hx =>
-          Ideal.from_set.induction (fun x => ∃ (r s : α) (hr : r ∈ I) (hs : s ∈ S), x = of_frac' r hs) hx
-            ⟨0, 1, I.has_zero, S.has_one, rfl⟩
-            (fun x ⟨y, hy, he⟩ => ⟨y, 1, hy, S.has_one, he.symm⟩)
-            (fun x y ⟨rx, sx, hrx, hsx, hex⟩ ⟨ry, sy, hry, hsy, hey⟩ => ⟨rx * sy + ry * sx, sx * sy,
-              I.add_closed (I.mul_closed' hrx sy) (I.mul_closed' hry sx), S.mul_closed hsx hsy,
-              by rw [hex, hey]; rfl⟩)
-            (fun x y ⟨r, s, hr, hs, he⟩ =>
-              @Quot.ind _ _ (fun x : localisation S =>∃ (r s : α) (hr : r ∈ I) (hs : s ∈ S), x * y = of_frac' r hs)
-                (fun f => ⟨f.num * r, f.denom * s, I.mul_closed f.num hr, S.mul_closed f.denom_in_S hs, he ▸ rfl⟩) x),
+    protected theorem localise_ideal.exists_frac {I : Ideal α} {x : localisation S} :
+      x ∈ localise_ideal S I ↔ ∃ (r s : α) (hr : r ∈ I) (hs : s ∈ S), x = of_frac' r hs := ⟨fun hx =>
+        Ideal.from_set.induction (fun x => ∃ (r s : α) (hr : r ∈ I) (hs : s ∈ S), x = of_frac' r hs) hx
+          ⟨0, 1, I.has_zero, S.has_one, rfl⟩
+          (fun x ⟨y, hy, he⟩ => ⟨y, 1, hy, S.has_one, he.symm⟩)
+          (fun x y ⟨rx, sx, hrx, hsx, hex⟩ ⟨ry, sy, hry, hsy, hey⟩ => ⟨rx * sy + ry * sx, sx * sy,
+            I.add_closed (I.mul_closed' hrx sy) (I.mul_closed' hry sx), S.mul_closed hsx hsy,
+            by rw [hex, hey]; rfl⟩)
+          (fun x y ⟨r, s, hr, hs, he⟩ =>
+            @Quot.ind _ _ (fun x : localisation S => ∃ (r s : α) (hr : r ∈ I) (hs : s ∈ S), x * y = of_frac' r hs)
+              (fun f => ⟨f.num * r, f.denom * s, I.mul_closed f.num hr, S.mul_closed f.denom_in_S hs, he ▸ rfl⟩) x),
         fun ⟨r, s, hr, hs, he⟩ => he ▸ localise_ideal.contains_mul hr hs⟩
 
-    theorem is_unit {S : MultiplicativeSet α} {r s : α} (hr : r ∈ S) (hs : s ∈ S) :
+    theorem is_unit {r s : α} (hr : r ∈ S) (hs : s ∈ S) :
       isUnit (of_frac' r hs) :=
         ⟨of_frac' s hr, equiv.mpr ⟨1, S.has_one, by simp only [mul_one, one_mul]; exact mul_comm r s⟩⟩
 
-    theorem localise_ideal.proper {S : MultiplicativeSet α} {I : Ideal α} :
+    theorem localise_ideal.proper {I : Ideal α} :
       (localise_ideal S I).proper_ideal ↔ Set.disjoint I.subset S.subset :=
         not_iff_not.mp ⟨fun h => by
           apply Set.disjoint.not_disjoint_iff_nonempty.mpr
@@ -217,29 +216,26 @@ namespace M4R
           iff_not_not.mpr (Ideal.is_unit_ideal'.mpr ⟨of_frac' s hsS, is_unit hsS hsS,
             localise_ideal.contains_mul hsI hsS⟩)⟩
 
-    theorem localise_ideal.primary_numerator {S : MultiplicativeSet α} {Q : Ideal α} (hQ : Q.is_primary) (hQS : Set.disjoint Q.subset S.subset)
-      {r s : α} {hs : s ∈ S} : of_frac' r hs ∈ localise_ideal S Q ↔ r ∈ Q :=
-        ⟨fun h => by
-          let ⟨r', s', hr', hs', he⟩ := localise_ideal.exists_frac.mp h
-          let ⟨t, ht, he⟩ := equiv.mp he
-          rw [mul_right_comm] at he
-          exact (hQ.right r (t * s') (by rw [mul_comm, he, mul_right_comm]; exact Q.mul_closed _ hr')).resolve_right
-            (fun ⟨n, hn, h⟩ => Set.disjoint.elementwise.mp hQS _ h (S.pow_closed (S.mul_closed ht hs') n)), fun hr =>
-              localise_ideal.exists_frac.mpr ⟨r, s, hr, hs, rfl⟩⟩
+    theorem localise_ideal.primary_numerator {Q : Ideal α} (hQ : Q.is_primary) (hQS : Set.disjoint Q.subset S.subset)
+      {r s : α} {hs : s ∈ S} : of_frac' r hs ∈ localise_ideal S Q ↔ r ∈ Q := ⟨fun h => by
+        let ⟨r', s', hr', hs', he⟩ := localise_ideal.exists_frac.mp h
+        let ⟨t, ht, he⟩ := equiv.mp he
+        rw [mul_right_comm] at he
+        exact (hQ.right r (t * s') (by rw [mul_comm, he, mul_right_comm]; exact Q.mul_closed _ hr')).resolve_right
+          (fun ⟨n, hn, h⟩ => Set.disjoint.elementwise.mp hQS _ h (S.pow_closed (S.mul_closed ht hs') n)),
+        fun hr => localise_ideal.exists_frac.mpr ⟨r, s, hr, hs, rfl⟩⟩
 
-    theorem localise_ideal.primary_loc_deloc {S : MultiplicativeSet α} {Q : Ideal α} (hQ : Q.is_primary) (hQS : Set.disjoint Q.subset S.subset) :
+    theorem localise_ideal.primary_loc_deloc {Q : Ideal α} (hQ : Q.is_primary) (hQS : Set.disjoint Q.subset S.subset) :
       delocalise_ideal S (localise_ideal S Q) = Q :=
         Ideal.antisymm (fun a ha => (localise_ideal.primary_numerator hQ hQS).mp ha) (Ideal.extension_contraction _ Q)
 
-    theorem localise_ideal.prime_numerator {S : MultiplicativeSet α} {P : Ideal α} (hP : P.is_prime) (hPS : Set.disjoint P.subset S.subset)
-      {r s : α} {hs : s ∈ S} : of_frac' r hs ∈ localise_ideal S P ↔ r ∈ P :=
-        primary_numerator (Ideal.is_primary_of_prime hP) hPS
+    theorem localise_ideal.prime_numerator {P : Ideal α} (hP : P.is_prime) (hPS : Set.disjoint P.subset S.subset)
+      {r s : α} {hs : s ∈ S} : of_frac' r hs ∈ localise_ideal S P ↔ r ∈ P := primary_numerator (Ideal.is_primary_of_prime hP) hPS
 
-    theorem localise_ideal.prime_loc_deloc {S : MultiplicativeSet α} {P : Ideal α} (hP : P.is_prime) (hPS : Set.disjoint P.subset S.subset) :
-      delocalise_ideal S (localise_ideal S P) = P :=
-        primary_loc_deloc (Ideal.is_primary_of_prime hP) hPS
+    theorem localise_ideal.prime_loc_deloc {P : Ideal α} (hP : P.is_prime) (hPS : Set.disjoint P.subset S.subset) :
+      delocalise_ideal S (localise_ideal S P) = P := primary_loc_deloc (Ideal.is_primary_of_prime hP) hPS
 
-    theorem localise_ideal.prime {S : MultiplicativeSet α} {P : Ideal α} (hP : P.is_prime) (hPS : Set.disjoint P.subset S.subset) :
+    theorem localise_ideal.prime {P : Ideal α} (hP : P.is_prime) (hPS : Set.disjoint P.subset S.subset) :
       (localise_ideal S P).is_prime := ⟨localise_ideal.proper.mpr hPS,
         fun x y hxy => by
           let ⟨rx, sx, hsx, hex⟩ := exists_frac x
@@ -248,12 +244,12 @@ namespace M4R
           rw [this] at hxy
           exact Or.imp (hex ▸ (localise_ideal.prime_numerator hP hPS).mpr)
             (hey ▸ (localise_ideal.prime_numerator hP hPS).mpr)
-            (hP.right rx ry ((localise_ideal.primary_numerator (Ideal.is_primary_of_prime hP) hPS).mp hxy))⟩
+            (hP.right rx ry ((localise_ideal.prime_numerator hP hPS).mp hxy))⟩
 
-    theorem delocalise_ideal.prime (S : MultiplicativeSet α) {P : Ideal (localisation S)} (hP : P.is_prime) :
+    theorem delocalise_ideal.prime {P : Ideal (localisation S)} (hP : P.is_prime) :
       (delocalise_ideal S P).is_prime := Ideal.contraction_prime _ hP
 
-    theorem delocalise_ideal.deloc_loc (S : MultiplicativeSet α) (I : Ideal (localisation S)) :
+    theorem delocalise_ideal.deloc_loc (I : Ideal (localisation S)) :
       localise_ideal S (delocalise_ideal S I) = I :=
         Ideal.antisymm (Ideal.contraction_extension _ I)
           fun x hx =>
@@ -273,12 +269,12 @@ namespace M4R
     noncomputable def localiseₚ [Ring α] {P : Ideal α} (hP : P.is_prime) (I : Ideal α) :
       Ideal (localisationₚ hP) := localise_ideal (PrimeComp hP) I
 
-    noncomputable def delocaliseₚ [Ring α] {P : Ideal α} (hP : P.is_prime) (I : Ideal (localisationₚ hP)) :
+    def delocaliseₚ [Ring α] {P : Ideal α} (hP : P.is_prime) (I : Ideal (localisationₚ hP)) :
       Ideal α := delocalise_ideal (PrimeComp hP) I
 
     abbrev natural_homₚ [Ring α] {P : Ideal α} (hP : P.is_prime) : α →ᵣ₁ localisationₚ hP := natural_hom (PrimeComp hP)
 
-    theorem localisation_at.is_max [Ring α] {P : Ideal α} (hP : P.is_prime) :
+    theorem localisationₚ.is_max [Ring α] {P : Ideal α} (hP : P.is_prime) :
       ∀ I, I.is_maximal ↔ I = localiseₚ hP P :=
         have : ∀ I : Ideal (localisationₚ hP), I ⊈ localiseₚ hP P → I = 1 := fun I hI =>
           let ⟨x, hx₁, hx₂⟩ := NotSubset.exists_def.mp hI
@@ -291,10 +287,10 @@ namespace M4R
           fun h => by rw [h]; exact ⟨localise_ideal.proper.mpr (PrimeComp.disjoint hP), fun hJ =>
             or_iff_not_imp_left.mpr fun h => this _ fun h' => h (Ideal.antisymm h' hJ)⟩⟩
 
-    theorem localisation_at.maximal [Ring α] {P : Ideal α} (hP : P.is_prime) : (localiseₚ hP P).is_maximal :=
-      (localisation_at.is_max hP _).mpr rfl
+    theorem localisationₚ.maximal [Ring α] {P : Ideal α} (hP : P.is_prime) : (localiseₚ hP P).is_maximal :=
+      (localisationₚ.is_max hP _).mpr rfl
 
-    theorem localisation_at.prime [Ring α] {P : Ideal α} (hP : P.is_prime) : (localiseₚ hP P).is_prime :=
+    theorem localisationₚ.prime [Ring α] {P : Ideal α} (hP : P.is_prime) : (localiseₚ hP P).is_prime :=
       Ideal.maximal_is_prime (maximal hP)
 
     noncomputable def symbolic_power [Ring α] {P : Ideal α} (hP : P.is_prime) (n : Nat) : Ideal α :=
@@ -307,7 +303,7 @@ namespace M4R
       theorem primary [Ring α] {P : Ideal α} (hP : P.is_prime) {n : Nat} (hn : n ≠ 0) : (symbolic_power hP n).is_primary := by
         have h₁ : localiseₚ hP (P ^ n) = localiseₚ hP P ^ n := Ideal.extension_pow (natural_hom (PrimeComp hP)).toRMulMap P hn
         have h₂ : ((localiseₚ hP P) ^ n).is_primary := Ideal.is_primary_of_radical_maximal (by
-          rw [Ideal.radical_pow_of_prime (Ideal.maximal_is_prime (localisation_at.maximal hP)) n hn]; exact localisation_at.maximal hP)
+          rw [Ideal.radical_pow_of_prime (Ideal.maximal_is_prime (localisationₚ.maximal hP)) n hn]; exact localisationₚ.maximal hP)
         simp only [symbolic_power, h₁]; exact Ideal.contraction_is_primary _ h₂
 
       theorem proper [Ring α] {P : Ideal α} (hP : P.is_prime) {n : Nat} (hn : n ≠ 0) : (symbolic_power hP n).proper_ideal :=
@@ -318,7 +314,7 @@ namespace M4R
         have h₁ : localiseₚ hP (P ^ n) = localiseₚ hP P ^ n := Ideal.extension_pow (natural_hom (PrimeComp hP)).toRMulMap P hn
         have h₂ : delocaliseₚ hP (localiseₚ hP P ^ n).radical = (delocaliseₚ hP (localiseₚ hP P ^ n)).radical :=
           Ideal.contraction_radical (natural_hom (PrimeComp hP)) (localiseₚ hP P ^ n)
-        have h₃ : (localiseₚ hP P ^ n).radical = localiseₚ hP P := Ideal.radical_pow_of_prime (localisation_at.prime hP) n hn
+        have h₃ : (localiseₚ hP P ^ n).radical = localiseₚ hP P := Ideal.radical_pow_of_prime (localisationₚ.prime hP) n hn
         rw [h₁, ←h₂, h₃]; exact localise_ideal.prime_loc_deloc hP (PrimeComp.disjoint hP)
 
       theorem descending [Ring α] {P : Ideal α} (hP : P.is_prime) (n : Nat) : symbolic_power hP n.succ ⊆ symbolic_power hP n :=

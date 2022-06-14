@@ -15,8 +15,7 @@ namespace M4R
   namespace Subset
 
     @[simp] protected theorem antisymm [Mem α γ] (a b : γ) : a ⊆ b ∧ b ⊆ a ↔ ∀ x : α, x ∈ a ↔ x ∈ b :=
-      ⟨fun ⟨ab, ba⟩ x => ⟨@ab x, @ba x⟩, fun h =>
-        ⟨fun x => (h x).mp, fun x => (h x).mpr⟩⟩
+      ⟨fun ⟨ab, ba⟩ x => ⟨@ab x, @ba x⟩, fun h => ⟨fun x => (h x).mp, fun x => (h x).mpr⟩⟩
 
     @[simp] theorem toSuperset [Mem α γ] (a b : γ) (x : α) : x ∈ a → a ⊆ b → x ∈ b :=
       fun xa ab => @ab x xa
@@ -49,8 +48,7 @@ namespace M4R
       ⟨Subset.trans ab bc.left, let ⟨x, xb, xc⟩ := bc.right; ⟨x, fun xa => xb (ab xa), xc⟩⟩
 
     theorem toNotSubset [Mem α γ] {a b : γ} (h : a ⊊ b) : b ⊈ a :=
-      let ⟨x, hxa, hxb⟩ := h.right
-      fun h' => absurd (h' hxb) hxa
+      let ⟨x, hxa, hxb⟩ := h.right; fun h' => absurd (h' hxb) hxa
 
     theorem notProperSubset [Mem α γ] {a b : γ} : ¬a ⊊ b ↔ (∃ x, x ∈ a ∧ x ∉ b) ∨ ∀ x, x ∈ a ∨ x ∉ b := by
       simp only [ProperSubset.propersubset, not_and_iff_or_not, not_exists, iff_not_not, ←NotSubset.exists_def]

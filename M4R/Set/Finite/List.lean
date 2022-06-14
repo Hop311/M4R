@@ -377,7 +377,7 @@ namespace List
     @[simp] theorem mem_pmap {p : α → Prop} {f : ∀ a, p a → β} {l H b} :
       b ∈ pmap f l H ↔ ∃ (a : α) (h : a ∈ l), f a (H a h) = b := by
         simp only [pmap_eq_map_attach, mem_map, mem_attach, true_and, Subtype.exists]
-        exact Iff.refl _
+        exact Iff.rfl
 
     theorem pmap_length {p : α → Prop} (f : ∀ a, p a → β) {l : List α} (hl : ∀ a ∈ l, p a) : (l.pmap f hl).length = l.length := by
       induction l with
@@ -402,7 +402,7 @@ namespace List
     @[simp] theorem mem_insert_iff {l : List α} : a ∈ l.insert b ↔ a = b ∨ a ∈ l := by
       byCases h : b ∈ l
       { rw [insert_of_mem h]; exact ⟨Or.inr, fun h' => Or.elim h' (fun h'' => by rw [h'']; exact h) id⟩ }
-      simp only [insert_of_not_mem h, mem_cons_iff]; exact Iff.refl _
+      simp only [insert_of_not_mem h, mem_cons_iff]; exact Iff.rfl
 
     theorem Sublist.insert (a : α) (l : List α) : l <+ l.insert a := by
       byCases h : a ∈ l
@@ -451,7 +451,7 @@ namespace List
       induction l₁ with
       | nil => simp
       | cons x l ih =>
-        simp only [cons_union, mem_insert_iff, mem_cons_iff, ih, Or.assoc]; exact Iff.refl _
+        simp only [cons_union, mem_insert_iff, mem_cons_iff, ih, Or.assoc]; exact Iff.rfl
 
     theorem sublist_suffix_of_union : ∀ l₁ l₂ : List α, ∃ t, t <+ l₁ ∧ t ++ l₂ = l₁ ∪ l₂
     | []   , l₂ => ⟨[], Sublist.refl _, rfl⟩

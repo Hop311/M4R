@@ -455,7 +455,7 @@ namespace M4R
     protected noncomputable instance sep (s : Set α) (p : α → Prop) [Fintype s] :
       Fintype (Subtype ({a ∈ s | p a} : Set α)) :=
         Fintype.of_finset (s.to_finset.filter p) (fun _ => by
-          simp only [Finset.mem_filter, Set.mem_to_finset]; exact Iff.refl _)
+          simp only [Finset.mem_filter, Set.mem_to_finset]; exact Iff.rfl)
 
     protected noncomputable instance intersection (s t : Set α) [Fintype s] : Fintype (s ∩ t : Set α) :=
       Fintype.sep s t

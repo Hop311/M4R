@@ -23,8 +23,7 @@ namespace M4R
 
     protected def image [Ring α] (I : Ideal α) (a : α) (p : a ∈ I) : ↑I.subset := ⟨a, p⟩
     protected theorem image_eq [Ring α] (I : Ideal α) (a b : ↑I.subset) :
-      a = b ↔ Set.inclusion a = Set.inclusion b :=
-        ⟨congrArg Set.inclusion, Set.elementExt⟩
+      a = b ↔ a.val = b.val := ⟨congrArg Subtype.val, Set.elementExt⟩
 
     def ZeroIdeal (α : Type _) [Ring α] : Ideal α where
       subset     := Set.singleton 0
@@ -52,15 +51,13 @@ namespace M4R
         add_comm  := fun ⟨a, _⟩ ⟨b, _⟩ => by simp only [Ideal.image_eq]; exact r.add_comm a b
       }
 
-    protected def equivalent [Ring α] (I J: Ideal α) : Prop := I.subset = J.subset
-    protected theorem ext [Ring α] : ∀ {I J : Ideal α}, Ideal.equivalent I J ↔ I = J
-    | ⟨_, _, _, _⟩, ⟨_, _, _, _⟩ =>
-      ⟨by intro eq; rw [Ideal.mk.injEq]; exact eq, by simp [Ideal.equivalent]; exact id⟩
+    protected theorem ext [Ring α] {I J : Ideal α} : I.subset = J.subset ↔ I = J :=
+      ⟨fun h => by match I, J with | ⟨_, _, _, _⟩, ⟨_, _, _, _⟩ => rw [Ideal.mk.injEq]; exact h,
+        congrArg Ideal.subset⟩
     protected theorem ext' [Ring α] {I J : Ideal α} : I = J ↔ ∀ x, x ∈ I ↔ x ∈ J := by
-      simp only [←Ideal.ext, Ideal.equivalent, ←Set.ext]; exact Iff.rfl
+      simp only [←Ideal.ext, ←Set.ext]; exact Iff.rfl
     protected theorem antisymm [Ring α] {I J : Ideal α} (h₁ : I ⊆ J) (h₂ : J ⊆ I) : I = J := by
-      rw [←Ideal.ext]; simp only [Ideal.equivalent]; rw [←Set.ext]; simp only [Set.equivalent]
-      exact fun x => ⟨fun h => h₁ h, fun h => h₂ h⟩
+      rw [←Ideal.ext, ←Set.ext]; exact fun x => ⟨fun h => h₁ h, fun h => h₂ h⟩
     protected theorem subsetneq [Ring α] {I J : Ideal α} : I ⊊ J ↔ I ⊆ J ∧ I ≠ J :=
       ⟨(And.imp_right (fun h₁ h₂ => let ⟨x, hxI, hxJ⟩ := h₁
         absurd ((Ideal.ext'.mp h₂ x).mpr hxJ) hxI) ·),
@@ -108,10 +105,8 @@ namespace M4R
       protected theorem subset_add [Ring α] {I J K : Ideal α} (hI : I ⊆ K) (hJ : J ⊆ K) : I + J ⊆ K :=
         add.add_self K ▸ add.subset_add_subset hI hJ
 
-      protected theorem of_subset [Ring α] {I J : Ideal α} (h : J ⊆ I) : I + J = I := by
-        apply Ideal.antisymm
-        intro x ⟨i, iI, j, jJ, hij⟩; rw [←hij]; exact I.add_closed iI (h jJ)
-        exact Ideal.add.subset I J
+      protected theorem of_subset [Ring α] {I J : Ideal α} (h : J ⊆ I) : I + J = I :=
+        Ideal.antisymm  (fun x ⟨i, iI, j, jJ, hij⟩ => hij ▸ I.add_closed iI (h jJ)) (Ideal.add.subset I J)
 
       protected theorem of_subset' [Ring α] {I J : Ideal α} (h : I ⊆ J) : I + J = J :=
         add.comm I J ▸ add.of_subset h
@@ -150,7 +145,7 @@ namespace M4R
     def proper_ideal [Ring α] (I : Ideal α) : Prop := I ≠ 1
 
     theorem generator_in_principal [Ring α] (a : α) : a ∈ principal a := ⟨1, mul_one a⟩
-    theorem principal_principal [Ring α] (a : α) : is_principal (principal a) :=
+    theorem principal_is_principal [Ring α] (a : α) : is_principal (principal a) :=
       ⟨a, ⟨divides_self a, fun _ => id⟩⟩
 
     theorem principal_of_is_principal [Ring α] (I : Ideal α) (h : is_principal I) : ∃ a, I = principal a := by
@@ -188,7 +183,7 @@ namespace M4R
     theorem is_unit_ideal [Ring α] {I : Ideal α} : I = 1 ↔ 1 ∈ I :=
       is_unit_ideal'.trans ⟨fun ⟨x, ⟨y, hxy⟩, hxI⟩ => hxy ▸ I.mul_closed' hxI y, fun h => ⟨1, isUnit_1, h⟩⟩
     theorem is_zero_ideal [Ring α] {I : Ideal α} : I = 0 ↔ ∀ a ∈ I, a = 0 := by
-      simp only [←Ideal.ext, Ideal.equivalent, ←Set.ext, Set.equivalent]
+      simp only [←Ideal.ext, ←Set.ext, Set.equivalent]
       exact propext_iff.mpr (forall_congr fun _ => propext ⟨Iff.mp, fun h => ⟨h, (· ▸ I.has_zero)⟩⟩)
 
     theorem div_mem [Ring α] {I : Ideal α} {a : α} : a ∈ I ↔ ∃ b ∈ I, b ÷ a :=
@@ -249,12 +244,8 @@ namespace M4R
     protected def sIntersection [Ring α] (S : Set (Ideal α)) : Ideal α where
       subset     := ⋂₀ S.toSetSet Ideal.subset
       has_zero   := fun s ⟨I, IS, hIs⟩ => by rw [←hIs]; exact I.has_zero
-      add_closed := by
-        intro a b ha hb s ⟨I, IS, hIs⟩; rw [←hIs]; exact I.add_closed
-          (by rw [hIs]; exact ha s ⟨I, IS, hIs⟩)
-          (by rw [hIs]; exact hb s ⟨I, IS, hIs⟩)
-      mul_closed := by
-        intro a b hb s ⟨I, IS, hIs⟩; rw [←hIs]; exact I.mul_closed a (by rw [hIs]; exact hb s ⟨I, IS, hIs⟩)
+      add_closed := fun ha hb s ⟨I, IS, hIs⟩ => hIs ▸ I.add_closed (hIs ▸ ha s ⟨I, IS, hIs⟩) (hIs ▸ hb s ⟨I, IS, hIs⟩)
+      mul_closed := fun a b hb s ⟨I, IS, hIs⟩ => hIs ▸ I.mul_closed a (hIs ▸ hb s ⟨I, IS, hIs⟩)
     noncomputable instance IdealSIntersection [Ring α] : Set.SIntersection (Ideal α) where sIntersection := Ideal.sIntersection
 
     namespace sIntersection

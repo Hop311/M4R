@@ -37,10 +37,10 @@ namespace M4R
     def residue_field (α : Type _) [LocalRing α] := QClass (m : Ideal α)
 
     instance localisation_at [Ring α] {P : Ideal α} (hP : P.is_prime) : LocalRing (localisationₚ hP) where
-      loc := ⟨localiseₚ hP P, Set.singleton.ext.mpr (localisation_at.is_max hP)⟩
+      loc := ⟨localiseₚ hP P, Set.singleton.ext.mpr (localisationₚ.is_max hP)⟩
 
     theorem localisation_at.m_def [Ring α] {P : Ideal α} (hP : P.is_prime) : localiseₚ hP P = m :=
-      maximal_is_m ((localisation_at.is_max hP _).mpr rfl)
+      maximal_is_m ((localisationₚ.is_max hP _).mpr rfl)
 
     theorem jacobson_radical_eq_m (α : Type _) [LocalRing α] : Ring.jacobson_radical α = m :=
       Ideal.antisymm (Ring.maximal_subset_jacobson m_max)
@@ -93,7 +93,7 @@ namespace M4R
             (natural_hom.surjective (principal a)) Q ▸ this
         have : ∀ Q Q' : Ideal α, Q.is_prime → Q'.is_prime → Q' ⊊ Q → Q ⊊ m → False := fun Q Q' hQ hQ' hQ'Q hQm => by
           have haQ : a ∉ Q := fun h => absurd (hP.right.right hQ (principal_in h) hQm.left) (Ideal.subsetneq.mp hQm).right
-          let c : chain RaR := ⟨fun n => extension (QuotientRing.natural_hom (principal a)) (symbolic_power hQ n.succ)⟩
+          let c : chain RaR := fun n => extension (QuotientRing.natural_hom (principal a)) (symbolic_power hQ n.succ)
           have hc : c.descending := fun n => extension.subset _ (symbolic_power.descending hQ n.succ)
           let ⟨N, hN⟩ := ArtinianRing.artinian_of_primes_maximal this c hc
           have he := quotient_extension_injective (hN N.succ (Nat.le_succ N))
@@ -126,7 +126,7 @@ namespace M4R
               (natural_homₚ hQ).preserve_mul_right (Q ^ N.succ.succ)).symm))).trans (extension_pow (natural_homₚ hQ).toRMulMap Q N.succ.succ_ne_zero)
           conv at h₂ => rhs rw [pow_nat_succ, mul_comm]
           have := congrArg Ideal.radical (Ring.nakayama (NoetherianRing.ideal_finitely_generated _) h₁ h₂)
-          rw [radical_pow_of_prime (localisation_at.prime hQ) N.succ N.succ_ne_zero, Ring.nil_radical.def] at this
+          rw [radical_pow_of_prime (localisationₚ.prime hQ) N.succ N.succ_ne_zero, Ring.nil_radical.def] at this
           have : delocaliseₚ hQ (localiseₚ hQ Q) ⊆ delocaliseₚ hQ (localiseₚ hQ Q') := contraction.subset
             (natural_homₚ hQ).preserve_mul_right (this ▸ Ring.nil_radical.eq_prime_intersection (localisationₚ hQ)
             ▸ Ideal.sIntersection.contains (localise_ideal.prime hQ' (PrimeComp.disjoint_subset hQ hQ'Q.left)))

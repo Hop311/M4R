@@ -1,5 +1,7 @@
 import M4R.Set.Finite.Perm
 
+import M4R.Function
+
 def M4R.UnorderedList (α : Type u) : Type u := Quotient (Perm.PermSetoid α)
 
 def List.to_UnorderedList (l : List α) : M4R.UnorderedList α := Quotient.mk l
@@ -71,7 +73,7 @@ namespace M4R
 
     @[simp] theorem mem_cons {a b : α} {s : UnorderedList α} : a ∈ s.cons b ↔ a = b ∨ a ∈ s :=
       @Quotient.ind _ _ (fun (l : UnorderedList α) => a ∈ l.cons b ↔ a = b ∨ a ∈ l)
-        (fun l => Iff.refl _) s
+        (fun _ => Iff.rfl) s
 
     theorem mem_cons_of_mem {a b : α} {s : UnorderedList α} (h : a ∈ s) : a ∈ s.cons b :=
       mem_cons.mpr (Or.inr h)

@@ -63,11 +63,8 @@ theorem Or.imp_left (h : a → b) : a ∨ c → b ∨ c :=
 theorem Or.imp_right (h : a → b) : c ∨ a → c ∨ b :=
   Or.imp id h
 
-theorem M4R.exists_imp_exists {α : Sort u} {p q : α → Prop} (h : ∀ a, (p a → q a)) (p : ∃ a, p a) :
-  ∃ a, q a := Exists.elim p (fun a hp => ⟨a, h a hp⟩)
-
 theorem Exists.imp {p q : α → Prop} (h : ∀ a, (p a → q a)) (p : ∃ a, p a) : ∃ a, q a :=
-  M4R.exists_imp_exists h p
+  Exists.elim p (fun a hp => ⟨a, h a hp⟩)
 
 theorem Iff.or (h₁ : a ↔ b) (h₂ : c ↔ d) : a ∨ c ↔ b ∨ d :=
   ⟨fun h => Or.imp h₁.mp h₂.mp h, fun h => Or.imp h₁.mpr h₂.mpr h⟩

@@ -30,7 +30,7 @@ namespace M4R
     def ideal_chain [Ring α] (S : Set (Ideal α)) (hS : Nonempty S) (hc : Zorn.Chain Subset.subset S) : Ideal α where
       subset := ⋃₀ (Set.toSetSet S Ideal.subset)
       has_zero :=
-        let ⟨⟨x, xS⟩, _⟩ := Classical.exists_true_of_nonempty hS
+        let ⟨x, xS⟩ := Classical.choice hS
         ⟨x.subset, ⟨x, xS, rfl⟩, x.has_zero⟩
       add_closed := by
         intro a b ⟨i, ⟨I, IS, Ii⟩, ai⟩ ⟨j, ⟨J, JS, Jj⟩, bj⟩

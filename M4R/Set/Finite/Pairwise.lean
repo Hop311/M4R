@@ -48,7 +48,7 @@ namespace M4R
       Pairwise r (l₁ ++ a::l₂) ↔ Pairwise r (a::(l₁++l₂)) := by
         have : Pairwise r (l₁ ++ ([a] ++ l₂)) ↔ Pairwise r ([a] ++ l₁ ++ l₂) := by
           {rw [←List.append_assoc, appendIff, @appendIff _ _ ([a] ++ l₁), appendComm h]
-          simp only [List.mem_append, Or.comm']; apply Iff.refl}
+          simp only [List.mem_append, Or.comm']; exact Iff.rfl}
         simp only [List.appendSingleton] at this; exact this
 
     theorem imp_of_mem {r s : α → α → Prop} {l : List α}
@@ -106,7 +106,7 @@ namespace List
   @[simp] theorem nodup_nil : @nodup α [] := Pairwise.nil
 
   @[simp] theorem nodup_cons {a : α} {l : List α} : nodup (a::l) ↔ a ∉ l ∧ nodup l := by
-    simp only [nodup, Pairwise.consIff, forall_mem_ne]; exact Iff.refl _
+    simp only [nodup, Pairwise.consIff, forall_mem_ne]; exact Iff.rfl
 
   theorem nodup_of_nodup_map (f : α → β) {l : List α} : nodup (map f l) → nodup l :=
     Pairwise.of_pairwise_map f fun a b => mt (congrArg f)

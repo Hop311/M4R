@@ -26,7 +26,7 @@ namespace M4R
       match x, y with | ⟨xs, _, xc⟩, ⟨ys, _, yc⟩ => fun hf => by
         simp at hf
         rw [Finsupp.mk.injEq]
-        exact ⟨Finset.ext fun _ => by rw [xc, yc, hf]; exact Iff.refl _, hf⟩
+        exact ⟨Finset.ext fun _ => by rw [xc, yc, hf]; exact Iff.rfl, hf⟩
 
     protected theorem ext' [Zero β] {x y : α →₀ β} : x = y ↔ x.support = y.support ∧ ∀ a ∈ x.support, x a = y a :=
       ⟨fun h => by rw [h]; exact ⟨rfl, fun _ _ => rfl⟩, fun h => by
@@ -74,7 +74,7 @@ namespace M4R
 
     theorem support_of_fun_complete [Zero β] (x y : α →₀ β) (f : α → β) (h : ∀ a, x a = 0 → y a = 0 → f a = 0) :
       ∀ a, a ∈ support_of_fun x y f h ↔ f a ≠ 0 := fun _ => by
-        simp [support_of_fun]; exact Iff.refl _
+        simp [support_of_fun]; exact Iff.rfl
 
     noncomputable def finsupp_fun [Zero β] (f : (α →₀ β) → (α →₀ β) → α → β)
       (h : ∀ (x y : α →₀ β) (a : α), x a = 0 → y a = 0 → f x y a = 0) (x y : α →₀ β) : α →₀ β where

@@ -1,8 +1,6 @@
 import M4R.Set.Basic
 import M4R.Set.Finite.Pairwise
 
-import M4R.Function
-
 namespace M4R
 
   inductive Perm : List α → List α → Prop

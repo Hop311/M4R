@@ -112,7 +112,7 @@ namespace M4R
 
     theorem height_gt_one {I J K : Ideal α} (hI : I.is_prime) (hJ : J.is_prime) (hK : K.is_prime) (hIJ : I ⊊ J) (hJK : J ⊊ K) :
       ¬K.height_le 1 := fun ⟨h, h1⟩ =>
-        let c : chain α := ⟨fun n => match n with | 0 => K | 1 => J | n+2 => I⟩
+        let c : chain α := fun n => match n with | 0 => K | 1 => J | n+2 => I
         have hc₁ : ∀ n, n < 2 → c n ≠ c n.succ := fun n hn =>
           match n with
           | 0 => (Ideal.subsetneq.mp hJK).right.symm
@@ -194,7 +194,7 @@ namespace M4R
 
     theorem delocalise_chain.is_height_chain {c : chain (localisation S)} (hch : c ∈ height_chain (localise_ideal S P)) : delocalise_chain S c ∈ height_chain P :=
       ⟨(hch.left ▸ localise_ideal.prime_loc_deloc hP hPS : delocalise_ideal S (c 0) = P), contract_chain.descending _ hch.right.left,
-      fun n => delocalise_ideal.prime S (hch.right.right n)⟩
+      fun n => delocalise_ideal.prime (hch.right.right n)⟩
 
     theorem localise_chain.imp_strict_infinite {c : chain α} (hch : c ∈ height_chain P) (hc : c.strict_infinite) :
       (localise_chain S c).strict_infinite := fun n h => hc n (localise_ideal.prime_loc_deloc (hch.right.right n)
@@ -215,7 +215,7 @@ namespace M4R
         let ⟨N, hN₁, hN₂⟩ := hc
         ⟨N, fun n hn heq => hN₁ n hn (by
           have : localise_ideal S (delocalise_ideal S (c n)) = localise_ideal S (delocalise_ideal S (c n.succ)) := congrArg (localise_ideal S ·) heq
-          simp only [delocalise_ideal.deloc_loc S] at this; exact this),
+          simp only [delocalise_ideal.deloc_loc] at this; exact this),
         fun n hn => congrArg (delocalise_ideal S ·) (hN₂ n hn)⟩
 
     theorem localise_chain.preserve_length {c : chain α} (hch : c ∈ height_chain P) (hc : c.strict_stable) :
@@ -231,7 +231,7 @@ namespace M4R
       (delocalise_chain S c).stable_length (delocalise_chain.imp_strict_stable hch hc) = c.stable_length hc :=
         chain.stable_length_eq _ (fun n hn heq => (c.stable_length_spec hc).left n hn (by
           have : localise_ideal S (delocalise_ideal S (c n)) = localise_ideal S (delocalise_ideal S (c n.succ)) := congrArg (localise_ideal S ·) heq
-          simp only [delocalise_ideal.deloc_loc S] at this; exact this))
+          simp only [delocalise_ideal.deloc_loc] at this; exact this))
         fun n hn => congrArg (delocalise_ideal S ·) ((c.stable_length_spec hc).right n hn)
 
     theorem local_height_finite (h : (localise_ideal S P).height_finite) : P.height_finite :=
@@ -261,7 +261,7 @@ namespace M4R
     variable [Ring α]
 
     private def reverse_chain_at (c : chain α) (N : Nat) (P : Ideal α) : chain α :=
-        ⟨fun n => match n with | 0 => P | n+1 => c (N - n)⟩
+      fun n => match n with | 0 => P | n+1 => c (N - n)
 
     namespace reverse_chain_at
       variable {c : chain α} (hcprime : c.is_prime) (hcasc : c.ascending) {N : Nat} (hcstrict : ∀ n, n < N → c n ≠ c n.succ)
@@ -290,7 +290,7 @@ namespace M4R
           | n+1 => (N.sub_self ▸ congrArg _ ((N.sub_eq_zero_iff_le n).mpr (Nat.le_of_succ_le_succ hn)) : c (N - n) = c (N - N))
     end reverse_chain_at
 
-    private def reverse_chain (c : chain α) (N : Nat) : chain α := ⟨fun n => c (N - n)⟩
+    private def reverse_chain (c : chain α) (N : Nat) : chain α := fun n => c (N - n)
 
     namespace reverse_chain
       variable {c : chain α} (hcprime : c.is_prime) (hcdesc : c.descending) {N : Nat} (hcstrict : ∀ n, n < N → c n ≠ c n.succ)
@@ -340,9 +340,9 @@ namespace M4R
             have ⟨⟨hfinM', hfinMm'⟩, hm'N⟩ := Classical.choose_spec (height_eq_of_le (hN M' hM'))
             let ⟨⟨c', hc', hch', hcfinM'⟩, hcmax'⟩ := Ideal.height_spec hfinM'
             have := hcmax' (reverse_chain_at d (c.stable_length hc) M') (reverse_chain_at.is_strict_stable
-              (fun n hn => (d.stable_length_spec hd).left _ (Nat.lt_trans hn h)) hdcM')
+              (fun n hn => (d.stable_length_spec hd).left n (Nat.lt_trans hn h)) hdcM')
               (reverse_chain_at.is_height_chain hdprime hdasc (maximal_is_prime hM') hdcM')
-            rw [reverse_chain_at.length_eq_N_succ (fun n hn => (d.stable_length_spec hd).left _ (Nat.lt_trans hn h)) hdcM', hcfinM, hfinMm', hfinMm] at this
+            rw [reverse_chain_at.length_eq_N_succ (fun n hn => (d.stable_length_spec hd).left n (Nat.lt_trans hn h)) hdcM', hcfinM, hfinMm', hfinMm] at this
             exact absurd this (Nat.not_le.mpr (Nat.succ_le_succ (hmax ⟨M', hM'⟩ trivial)))⟩⟩
 
     variable (α : Type _) [Ring α]
@@ -377,7 +377,7 @@ namespace M4R
       (hbase : c.base 1) (hdesc : c.descending) (hmax : ∀ (d : chain α) (hd : d.strict_stable),
         (d.base 1 ∧ d.descending) → d.stable_length hd ≤ c.stable_length ⟨N, hltN, hNle⟩) : c N = 0 := by
           apply Classical.byContradiction; intro h0
-          let d : chain α := ⟨fun n => if n ≤ N then c n else 0⟩
+          let d : chain α := fun n => if n ≤ N then c n else 0
           have hd₁ : ∀ {n}, n ≤ N → d n = c n := fun hn => by simp only [hn, ite_true]
           have hd₂ : ∀ {n}, ¬n ≤ N → d n = 0 := fun hn => by simp only [hn, ite_false]
           have hdlt : ∀ n, n < N.succ → d n ≠ d n.succ := fun n hn =>
@@ -396,7 +396,7 @@ namespace M4R
 
     theorem length_finite_of_ses [Ring α] [Ring β] [Ring γ] {f₁ : α →₊ β} (hf₁ : preserve_mul_right f₁)
       (hf₁' : Function.injective f₁.hom) (hf₁'' : ∀ I, (extension f₁.hom I).subset = Function.image' f₁.hom I.subset)
-      {f₂ : β →ᵣ₁ γ} (hf₂ : Function.surjective f₂.hom) (hexact : f₁.image.subset = f₂.kernel.subset)
+      {f₂ : β →ᵣ γ} (hf₂ : Function.surjective f₂.hom) (hexact : f₁.image.subset = f₂.kernel.subset)
         (hα : Ring.length_finite α) (hγ : Ring.length_finite γ) : Ring.length_finite β :=
           have hstrict : ∀ I J : Ideal β, I ⊊ J → contraction hf₁ I ≠ contraction hf₁ J ∨ extension f₂.hom I ≠ extension f₂.hom J :=
             fun I J h => by
@@ -414,25 +414,25 @@ namespace M4R
               have hstrict : ∀ n, N ≤ n → chain.extend_chain f₂.hom c n ≠ chain.extend_chain f₂.hom c n.succ :=
                 fun n hn => ((hstrict (c n.succ) (c n) (chain.subsetneq_succ_of_strict_infinite_descending hc₃ hc₂ n)).resolve_left
                   (iff_not_not.mpr ((hN n.succ (Nat.le_trans hn (Nat.le_succ n))).trans (hN n hn).symm))).symm
-              let c' : chain γ := ⟨fun n => match n with
+              let c' : chain γ := fun n => match n with
                 | 0   => 1
-                | n+1 => (chain.extend_chain f₂.hom c).shift N.succ n⟩
+                | n+1 => (chain.extend_chain f₂.hom c).shift N.succ n
               have hdesc' : c'.descending := fun n => match n with
                 | 0   => in_unit_ideal _
                 | n+1 => chain.shift_descending N.succ (chain.extend_chain.descending f₂.hom hc₂) n
               have : c'.strict_infinite := by
                 intro n
                 match n with
-                | 0   => exact fun (h : 1 = c' 1) => hstrict N (Nat.le_refl N) (h ▸
-                  Ideal.unit_ideal_in (h ▸ (chain.extend_chain.descending f₂.hom hc₂) N))
+                | 0   => exact fun (h : 1 = chain.extend_chain f₂.hom c N.succ) => hstrict N (Nat.le_refl N) (by
+                  exact h ▸ Ideal.unit_ideal_in (h ▸ chain.extend_chain.descending f₂.hom hc₂ N))
                 | n+1 => exact hstrict (N.succ + n) (Nat.le_trans (Nat.le_succ N) (Nat.le_add_right N.succ n))
               exact absurd this (hγ.left c' ⟨rfl, hdesc'⟩) },
             let ⟨cα, ⟨Nα, hltNα, hNαle⟩, ⟨hbaseα, hdescα⟩, hmaxα⟩ := hα.right
             let ⟨cγ, ⟨Nγ, hltNγ, hNγle⟩, ⟨hbaseγ, hdescγ⟩, hmaxγ⟩ := hγ.right
             have hγ0 := finite_chain_ends_zero Nγ hltNγ hNγle hbaseγ hdescγ hmaxγ
-            let c' : chain β := ⟨fun n =>
+            let c' : chain β := fun n =>
               if n ≤ Nγ then chain.contract_chain f₂.preserve_mul_right cγ n
-              else chain.extend_chain f₁.hom cα (n - Nγ)⟩
+              else chain.extend_chain f₁.hom cα (n - Nγ)
             have hc'γ : ∀ {n}, n ≤ Nγ → c' n = chain.contract_chain f₂.preserve_mul_right cγ n :=
               fun h => by simp only [h, ite_true]
             have hc'α : ∀ {n}, ¬n ≤ Nγ → c' n = chain.extend_chain f₁.hom cα (n - Nγ) :=
@@ -532,7 +532,7 @@ namespace M4R
     open Classical
 
     private noncomputable def no_maximal_seq [Ring α] {S : Set (Ideal α)} (hS : Nonempty S)
-      (h : ∀ I ∈ S, ∃ J ∈ S, I ⊊ J) : Nat → Ideal α
+      (h : ∀ I ∈ S, ∃ J ∈ S, I ⊊ J) : chain α
     | 0   => (choice hS).val
     | n+1 => if hn : (no_maximal_seq hS h n) ∈ S then
         choose (h (no_maximal_seq hS h n) hn)
@@ -571,7 +571,7 @@ namespace M4R
         have h : ∀ I ∈ S, ∃ J ∈ S, I ⊊ J := fun I hI =>
           let ⟨J, hJ₁, hJ₂, hJ₃⟩ := h I hI
           ⟨J, hJ₁, Ideal.subsetneq.mpr ⟨hJ₂, Ne.symm hJ₃⟩⟩
-        let ⟨N, hN⟩ := NoetherianRing.noetherian ⟨no_maximal_seq hS h⟩ (no_maximal_seq_subset hS h)
+        let ⟨N, hN⟩ := NoetherianRing.noetherian (no_maximal_seq hS h) (no_maximal_seq_subset hS h)
         exact absurd (hN N.succ N.le_succ) (no_maximal_seq_neq hS h N).symm
 
     theorem ideal_finitely_generated [NoetherianRing α] (I : Ideal α) : I.finitely_generated :=
@@ -597,14 +597,14 @@ namespace M4R
           let ⟨Q, hQ, hIQ, hQP₁, hQP₂⟩ := h' (localise_ideal.prime h.left hPS) (extension.subset _ h.right.left)
           let Q' : Ideal α := delocalise_ideal S Q
           apply iff_not_not.mpr h.right; simp only [not_and, not_forall]; intro
-          exact ⟨Q', delocalise_ideal.prime S hQ, Subset.trans (I.extension_contraction (natural_hom S).preserve_mul_right)
+          exact ⟨Q', delocalise_ideal.prime hQ, Subset.trans (I.extension_contraction (natural_hom S).preserve_mul_right)
             (Ideal.contraction.subset (natural_hom S).preserve_mul_right hIQ), localise_ideal.prime_loc_deloc h.left hPS ▸
             Ideal.contraction.subset _ hQP₁, fun h' => hQP₂ (congrArg (localise_ideal S ·) h' ▸
-            (delocalise_ideal.deloc_loc S Q).symm)⟩
+            (delocalise_ideal.deloc_loc Q).symm)⟩
 
     theorem localisation_noetherian [NoetherianRing α] (S : MultiplicativeSet α) : Ring.is_noetherian (localisation S) := fun c hc =>
-      let ⟨N, hN⟩ := NoetherianRing.noetherian ⟨fun n => delocalise_ideal S (c n)⟩ fun n => contraction.subset (natural_hom S).preserve_mul_right (hc n)
-      ⟨N, fun n hn => delocalise_ideal.deloc_loc S (c n) ▸ delocalise_ideal.deloc_loc S (c N) ▸ congrArg _ (hN n hn)⟩
+      let ⟨N, hN⟩ := NoetherianRing.noetherian (fun n => delocalise_ideal S (c n)) fun n => contraction.subset (natural_hom S).preserve_mul_right (hc n)
+      ⟨N, fun n hn => delocalise_ideal.deloc_loc (c n) ▸ delocalise_ideal.deloc_loc (c N) ▸ congrArg _ (hN n hn)⟩
 
     instance localisation_NoetherianRing [NoetherianRing α] (S : MultiplicativeSet α) : NoetherianRing (localisation S) where
       noetherian := localisation_noetherian S
@@ -632,7 +632,7 @@ namespace M4R
     open Classical QuotientRing Monoid NCSemiring Semiring
 
     private noncomputable def no_minimal_seq [Ring α] {S : Set (Ideal α)} (hS : Nonempty S)
-      (h : ∀ I ∈ S, ∃ J ∈ S, J ⊊ I) : Nat → Ideal α
+      (h : ∀ I ∈ S, ∃ J ∈ S, J ⊊ I) : chain α
     | 0   => (choice hS).val
     | n+1 => if hn : (no_minimal_seq hS h n) ∈ S then
         choose (h (no_minimal_seq hS h n) hn)
@@ -671,7 +671,7 @@ namespace M4R
         have h : ∀ I ∈ S, ∃ J ∈ S, J ⊊ I := fun I hI =>
           let ⟨J, hJ₁, hJ₂, hJ₃⟩ := h I hI
           ⟨J, hJ₁, Ideal.subsetneq.mpr ⟨hJ₂, hJ₃⟩⟩
-        let ⟨N, hN⟩ := hart ⟨no_minimal_seq hS h⟩ (no_minimal_seq_subset hS h)
+        let ⟨N, hN⟩ := hart (no_minimal_seq hS h) (no_minimal_seq_subset hS h)
         exact absurd (hN N.succ N.le_succ) (no_minimal_seq_neq hS h N).symm
 
     theorem artinian_of_finite_length [Ring α] (h : Ring.length_finite α) : Ring.is_artinian α :=
@@ -712,7 +712,7 @@ namespace M4R
     open Ring
 
     theorem nilradical_nilpotent [Ring α] (hart : is_artinian α) : ∃ n : Nat, n ≠ 0 ∧ nil_radical α ^ n = 0 := by
-      let ⟨n, hn⟩ := hart ⟨fun n => nil_radical α ^ n⟩ (product.pow_succ_subset _)
+      let ⟨n, hn⟩ := hart (nil_radical α ^ ·) (product.pow_succ_subset _)
       byCases hn' : n = 0
       { exact ⟨1, Nat.one_ne_zero, eq_zero_ideal_of_trivial (mt Ring.nil_radical_proper (iff_not_not.mpr
         (pow_nat_0 (nil_radical α) ▸ hn' ▸ hn 1 (hn' ▸ Nat.le_of_lt Nat.zero_lt_one)))) _⟩ }
